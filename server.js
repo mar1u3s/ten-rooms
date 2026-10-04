@@ -16,7 +16,7 @@ const server = http.createServer((req, res) => {
   res.writeHead(404); res.end('Not found');
 });
 
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
 const rooms = NAMES.map((name, i) => ({ id: i + 1, name, topic: '', members: new Map(), chat: [] }));
 let nextId = 1;
 const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify(m));
@@ -58,15 +58,18 @@ wss.on('connection', (ws, req) => {
       const r = rooms[(m.room | 0) - 1]; if (!r) return;
       if (r.members.size >= MAX) return send(ws, { type: 'error', text: `${r.name} is full` });
       leave(ws); ws.st = {};
-      const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, ...p.st }));
+      const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, avatar: p.avatar, ...p.st }));
       r.members.set(ws.id, ws); ws.room = r;
       send(ws, { type: 'joined', room: r.id, name: r.name, topic: r.topic, peers, chat: r.chat });
-      toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, ...ws.st }, ws.id);
+      toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, avatar: ws.avatar, ...ws.st }, ws.id);
       say(r, `${ws.name} joined`); pushLobby();
     } else if (m.type === 'leave') leave(ws);
     else if (m.type === 'state' && ws.room) { // mute / camera-off status, shown on everyone's tiles
       ws.st = { muted: !!m.muted, camOff: !!m.camOff, sharing: !!m.sharing };
       toRoom(ws.room, { type: 'state', id: ws.id, ...ws.st }, ws.id);
+    } else if (m.type === 'avatar') { // small JPEG profile picture, validated before it is shared
+      const d = typeof m.data === 'string' && m.data.length < 30000 && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(m.data) ? m.data : '';
+      ws.avatar = d; if (ws.room) toRoom(ws.room, { type: 'avatar', id: ws.id, data: d }, ws.id);
     } else if (m.type === 'topic' && ws.room) {
       const t = String(m.text || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 40);
       ws.room.topic = t; toRoom(ws.room, { type: 'topic', text: t });
