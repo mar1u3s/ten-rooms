@@ -56,12 +56,16 @@ wss.on('connection', (ws, req) => {
       const r = rooms[(m.room | 0) - 1]; if (!r) return;
       if (r.members.size >= MAX) return send(ws, { type: 'error', text: `${r.name} is full` });
       leave(ws);
-      const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name }));
+      const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, muted: p.muted, camOff: p.camOff }));
       r.members.set(ws.id, ws); ws.room = r;
       send(ws, { type: 'joined', room: r.id, name: r.name, peers, chat: r.chat });
-      toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name }, ws.id);
+      toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, muted: ws.muted, camOff: ws.camOff }, ws.id);
       say(r, `${ws.name} joined`); pushLobby();
     } else if (m.type === 'leave') leave(ws);
+    else if (m.type === 'state' && ws.room) { // mute / camera-off status, shown on everyone's tiles
+      ws.muted = !!m.muted; ws.camOff = !!m.camOff;
+      toRoom(ws.room, { type: 'state', id: ws.id, muted: ws.muted, camOff: ws.camOff }, ws.id);
+    }
     else if (m.type === 'signal' && ws.room) {
       const to = ws.room.members.get(m.to);
       if (to) send(to, { type: 'signal', from: ws.id, data: m.data });
