@@ -2,7 +2,7 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 
-const PORT = process.env.PORT || 3000, MAX = 6;
+const PORT = process.env.PORT || 3000, MAX = 6, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
 const NAMES = ['Lounge','Studio','Kitchen','Garage','Rooftop','Library','Arcade','Garden','Workshop','Porch'];
 const ICE = (() => { try { return JSON.parse(process.env.ICE_SERVERS); } catch { return [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]; } })();
 
@@ -17,11 +17,11 @@ const server = http.createServer((req, res) => {
 });
 
 const wss = new WebSocketServer({ server });
-const rooms = NAMES.map((name, i) => ({ id: i + 1, name, members: new Map(), chat: [] }));
+const rooms = NAMES.map((name, i) => ({ id: i + 1, name, topic: '', members: new Map(), chat: [] }));
 let nextId = 1;
 const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify(m));
 const toRoom = (r, m, except) => r.members.forEach((p, id) => id !== except && send(p, m));
-const lobby = () => rooms.map(r => ({ id: r.id, name: r.name, max: MAX, users: [...r.members.values()].map(p => p.name) }));
+const lobby = () => rooms.map(r => ({ id: r.id, name: r.name, topic: r.topic, max: MAX, users: [...r.members.values()].map(p => p.name) }));
 const pushLobby = () => wss.clients.forEach(c => c.name && send(c, { type: 'lobby', rooms: lobby() }));
 
 function uniqueName(raw) { // two people can't share a name: "Sam" becomes "Sam 2"
@@ -40,7 +40,9 @@ function leave(ws) {
   const r = ws.room; if (!r) return;
   r.members.delete(ws.id); ws.room = null;
   toRoom(r, { type: 'peer-left', id: ws.id });
-  say(r, `${ws.name} left`); pushLobby();
+  say(r, `${ws.name} left`);
+  if (!r.members.size) { r.topic = ''; r.chat = []; } // empty room resets
+  pushLobby();
 }
 
 wss.on('connection', (ws, req) => {
@@ -55,16 +57,25 @@ wss.on('connection', (ws, req) => {
     if (m.type === 'join') {
       const r = rooms[(m.room | 0) - 1]; if (!r) return;
       if (r.members.size >= MAX) return send(ws, { type: 'error', text: `${r.name} is full` });
-      leave(ws);
-      const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, muted: p.muted, camOff: p.camOff }));
+      leave(ws); ws.st = {};
+      const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, ...p.st }));
       r.members.set(ws.id, ws); ws.room = r;
-      send(ws, { type: 'joined', room: r.id, name: r.name, peers, chat: r.chat });
-      toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, muted: ws.muted, camOff: ws.camOff }, ws.id);
+      send(ws, { type: 'joined', room: r.id, name: r.name, topic: r.topic, peers, chat: r.chat });
+      toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, ...ws.st }, ws.id);
       say(r, `${ws.name} joined`); pushLobby();
     } else if (m.type === 'leave') leave(ws);
     else if (m.type === 'state' && ws.room) { // mute / camera-off status, shown on everyone's tiles
-      ws.muted = !!m.muted; ws.camOff = !!m.camOff;
-      toRoom(ws.room, { type: 'state', id: ws.id, muted: ws.muted, camOff: ws.camOff }, ws.id);
+      ws.st = { muted: !!m.muted, camOff: !!m.camOff, sharing: !!m.sharing };
+      toRoom(ws.room, { type: 'state', id: ws.id, ...ws.st }, ws.id);
+    } else if (m.type === 'topic' && ws.room) {
+      const t = String(m.text || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 40);
+      ws.room.topic = t; toRoom(ws.room, { type: 'topic', text: t });
+      say(ws.room, t ? `${ws.name} set the topic: ${t}` : `${ws.name} cleared the topic`); pushLobby();
+    } else if (m.type === 'react' && ws.room && REACTS.includes(m.emoji)) {
+      const now = Date.now(); if (now - (ws.lastReact || 0) < 200) return; ws.lastReact = now;
+      toRoom(ws.room, { type: 'react', id: ws.id, emoji: m.emoji }, ws.id);
+    } else if (m.type === 'typing' && ws.room) {
+      toRoom(ws.room, { type: 'typing', id: ws.id, name: ws.name, on: !!m.on }, ws.id);
     }
     else if (m.type === 'signal' && ws.room) {
       const to = ws.room.members.get(m.to);
