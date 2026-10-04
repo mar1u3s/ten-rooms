@@ -27,9 +27,13 @@ h1,h2{font-family:Unbounded,Manrope,sans-serif;font-weight:700;letter-spacing:-.
 .panel{width:min(400px,100%);background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:18px;padding:32px;display:grid;gap:12px}
 .panel h1{font-size:2.4rem;margin-bottom:4px}
 .panel label{font-size:.9rem;color:var(--dim)}
-.panel input{background:#000;border:1px solid var(--line);border-radius:10px;padding:12px;width:100%}
-.panel input:focus{border-color:#fff}
+.panel input,.panel select{background:#000;border:1px solid var(--line);border-radius:10px;padding:12px;width:100%}
+.panel input:focus,.panel select:focus{border-color:#fff}
 
+#settings{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(0,0,0,.65);padding:20px}
+#settings h2{font-size:1.5rem;margin-bottom:6px}
+.panel select{color:#fff}
+.panel select option{background:#000}
 /* lobby */
 #lobby{max-width:1120px;margin:0 auto;padding:28px 22px 70px}
 .bar{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-bottom:46px}
@@ -37,28 +41,46 @@ h1,h2{font-family:Unbounded,Manrope,sans-serif;font-weight:700;letter-spacing:-.
 #lobby h1{font-size:clamp(2.6rem,9vw,6rem);line-height:.95;margin-bottom:16px}
 #lobby .sub{max-width:46ch;margin-bottom:44px}
 .rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
-.room{text-align:left;display:flex;flex-direction:column;gap:14px;min-height:190px;padding:24px;background:var(--glass);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:16px;transition:background .25s,color .25s,border-color .25s}
-.room h2{font-size:1.55rem}
+.room{text-align:left;display:flex;flex-direction:column;gap:14px;min-height:200px;padding:22px;background:var(--glass);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:18px;transition:background .25s,color .25s,border-color .25s,transform .1s}
+.room .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.room h2{font-size:1.5rem}
+.room .chip{color:inherit;opacity:.8}
 .pips{display:flex;gap:7px}
 .pips i{width:11px;height:11px;border-radius:50%;border:1px solid currentColor;opacity:.8}
 .pips i.on{background:currentColor;opacity:1}
-.room .who{margin:0;font-size:.9rem;opacity:.65;flex:1;overflow-wrap:anywhere}
-.room .go{font-weight:600}
+.room .who{margin:0;font-size:.9rem;opacity:.65;flex:1;overflow-wrap:anywhere;border-top:1px solid color-mix(in srgb,currentColor 22%,transparent);padding-top:12px}
+.room .go{align-self:flex-start;border:1px solid currentColor;border-radius:999px;padding:6px 18px;font-weight:600;font-size:.9rem}
 .room:hover:not(:disabled),.room:focus-visible{background:#fff;color:#000;border-color:#fff}
 .room:disabled{opacity:.45;cursor:not-allowed}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:.85rem;color:var(--dim)}
 
-/* call */
-#call{position:fixed;inset:0;z-index:1;display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr auto}
-#call header{grid-column:1/3;display:flex;align-items:center;gap:14px;padding:14px 20px;background:var(--glass);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-#call header h2{font-size:1.2rem;flex:1}
-.stage{padding:14px;overflow:auto;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));grid-auto-rows:minmax(190px,1fr)}
-.tile{position:relative;background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:190px}
+/* button feel */
+button{transition:transform .1s,background .2s,border-color .2s}
+button:active:not(:disabled){transform:scale(.95)}
+@keyframes pop{0%{transform:scale(1)}35%{transform:scale(.92)}70%{transform:scale(1.04)}100%{transform:scale(1)}}
+.pop{animation:pop .24s ease-out}
+
+/* call: every piece is its own rounded module */
+#call{position:fixed;inset:0;z-index:1;display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr auto;gap:14px;padding:14px}
+.mod{background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:18px}
+#call header{grid-column:1/3;display:flex;align-items:center;gap:12px;padding:12px 18px}
+#call header h2{font-size:1.15rem;flex:1}
+.stage{overflow:auto;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));grid-auto-rows:minmax(190px,1fr);min-height:0}
+.tile{position:relative;background:rgba(0,0,0,.72);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-height:190px;transition:border-color .15s,box-shadow .15s}
+.tile.talking{border-color:#2dff88;box-shadow:0 0 0 2px #2dff88,0 0 26px rgba(45,255,136,.35)}
 .tile video{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(1) contrast(1.05)}
 .tile.me video{transform:scaleX(-1)}
-.tile span{position:absolute;left:10px;bottom:10px;background:#000;border:1px solid var(--line);font-size:.85rem;padding:3px 10px;border-radius:999px}
-.controls{display:flex;justify-content:center;gap:10px;padding:14px;background:var(--glass);backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+.avatar{position:absolute;inset:0;display:none;place-items:center;background:#050505}
+.tile.nocam .avatar{display:grid}
+.avatar b{width:84px;height:84px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font:700 2rem Unbounded,sans-serif}
+.tag{position:absolute;left:10px;bottom:10px;display:flex;align-items:center;gap:7px;background:#000;border:1px solid var(--line);font-size:.85rem;padding:4px 12px 4px 9px;border-radius:999px}
+.tag svg{width:15px;height:15px;display:block}
+.tile.muted .tag{background:#fff;color:#000;border-color:#fff}
+.controls{grid-column:1;justify-self:center;display:flex;gap:8px;padding:8px;border-radius:999px}
+.controls .ghost{border-color:transparent}
+.controls .ghost:hover{background:rgba(255,255,255,.12)}
 .controls .ghost.off{text-decoration:line-through;opacity:.65}
-.chat{grid-row:2/4;grid-column:2;display:flex;flex-direction:column;min-height:0;background:var(--glass);backdrop-filter:blur(10px);border-left:1px solid var(--line)}
+.chat{grid-row:2/4;grid-column:2;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 #log{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:9px}
 .msg{font-size:.92rem;overflow-wrap:anywhere}
 .msg b{margin-right:7px}
@@ -66,10 +88,12 @@ h1,h2{font-family:Unbounded,Manrope,sans-serif;font-weight:700;letter-spacing:-.
 .chat form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
 .chat input{flex:1;min-width:0;background:#000;border:1px solid var(--line);border-radius:10px;padding:10px}
 .chat .solid{padding:0 16px;border-radius:10px}
+.chk{display:flex;gap:10px;align-items:center;color:#fff!important}
+.panel .chk input{width:auto}
 #toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:10px 18px;border-radius:999px;z-index:9;font-weight:600;max-width:90vw}
 @media(max-width:760px){
- #call{grid-template-columns:1fr;grid-template-rows:auto 1fr auto 38%}
- #call header{grid-column:1}.chat{grid-row:4;grid-column:1;border-left:0;border-top:1px solid var(--line)}
+ #call{grid-template-columns:1fr;grid-template-rows:auto 1fr auto 36%}
+ #call header{grid-column:1}.chat{grid-row:4;grid-column:1}
 }
 </style>
 </head>
@@ -86,25 +110,37 @@ h1,h2{font-family:Unbounded,Manrope,sans-serif;font-weight:700;letter-spacing:-.
 </section>
 
 <main id="lobby" class="view hidden">
-  <div class="bar"><span id="me"></span><button class="ghost" id="logout">Change name</button></div>
+  <div class="bar"><span id="me"></span><button class="ghost" id="openSet">Settings</button><button class="ghost" id="logout">Change name</button></div>
   <h1>Ten rooms</h1>
   <p class="sub">Walk into any open room to talk on video. Every room has its own chat.</p>
   <div class="rooms" id="rooms"></div>
 </main>
 
 <section id="call" class="hidden">
-  <header><h2 id="roomTitle"></h2><span id="roomCount" class="sub"></span></header>
+  <header class="mod"><h2 id="roomTitle"></h2><span id="roomCount" class="chip"></span></header>
   <div class="stage" id="stage"></div>
-  <div class="controls">
-    <button class="ghost" id="mic">Mute mic</button>
-    <button class="ghost" id="cam">Stop camera</button>
+  <div class="controls mod">
+    <button class="ghost" id="mic" data-sfx="none">Mute mic</button>
+    <button class="ghost" id="cam" data-sfx="none">Stop camera</button>
+    <button class="ghost" id="openSet2">Settings</button>
     <button class="solid" id="leave">Leave room</button>
   </div>
-  <aside class="chat">
+  <aside class="chat mod">
     <div id="log" aria-live="polite"></div>
     <form id="chatForm"><input id="chatText" maxlength="500" placeholder="Message this room" autocomplete="off"><button class="solid">Send</button></form>
   </aside>
 </section>
+
+<div id="settings" class="hidden">
+  <div class="panel" role="dialog" aria-label="Settings">
+    <h2>Settings</h2>
+    <label for="selCam">Camera</label><select id="selCam"></select>
+    <label for="selMic">Microphone</label><select id="selMic"></select>
+    <div id="spkRow" style="display:grid;gap:12px"><label for="selSpk">Speakers</label><select id="selSpk"></select></div>
+    <label class="chk"><input type="checkbox" id="selSfx"> Interface sounds</label>
+    <button class="solid" id="setDone">Done</button>
+  </div>
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -172,10 +208,11 @@ function handle(m) {
   else if (m.type === 'lobby') { rooms = m.rooms; drawLobby(); }
   else if (m.type === 'error') toast(m.text);
   else if (m.type === 'joined') onJoined(m);
-  else if (m.type === 'peer-joined') { addTile(m.id, m.name); updateCount(); }
-  else if (m.type === 'peer-left') dropPeer(m.id);
+  else if (m.type === 'peer-joined') { addTile(m.id, m.name, null, false, m); updateCount(); sfx.join(); }
+  else if (m.type === 'peer-left') { dropPeer(m.id); sfx.leave(); }
+  else if (m.type === 'state') setState(m.id, m);
   else if (m.type === 'signal') onSignal(m.from, m.data);
-  else if (m.type === 'chat') addMsg(m.msg);
+  else if (m.type === 'chat') { addMsg(m.msg); if (!m.msg.system && m.msg.name !== myName) sfx.msg(); }
 }
 
 /* ---------- lobby ---------- */
@@ -184,8 +221,8 @@ function drawLobby() {
   rooms.forEach(r => {
     const n = r.users.length, full = n >= r.max, b = document.createElement('button');
     b.className = 'room'; b.disabled = full;
-    b.innerHTML = '<h2></h2><div class="pips"></div><p class="who"></p><span class="go"></span>';
-    b.querySelector('h2').textContent = r.name;
+    b.innerHTML = '<div class="top"><h2></h2><span class="chip"></span></div><div class="pips"></div><p class="who"></p><span class="go"></span>';
+    b.querySelector('h2').textContent = r.name; b.querySelector('.chip').textContent = n + '/' + r.max;
     const pips = b.querySelector('.pips');
     for (let i = 0; i < r.max; i++) { const s = document.createElement('i'); if (i < n) s.className = 'on'; pips.appendChild(s); }
     b.querySelector('.who').textContent = n ? n + ' inside: ' + r.users.join(', ') : 'Empty. Be the first in.';
@@ -197,9 +234,9 @@ function drawLobby() {
 
 /* ---------- calls ---------- */
 async function joinRoom(id) {
-  try { local = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); }
+  try { local = await navigator.mediaDevices.getUserMedia(constraints()); }
   catch {
-    try { local = await navigator.mediaDevices.getUserMedia({ audio: true }); toast('No camera found: joining with audio only'); }
+    try { local = await navigator.mediaDevices.getUserMedia({ audio: constraints().audio }); toast('No camera found: joining with audio only'); }
     catch { local = null; toast('No mic or camera: joining as a viewer'); }
   }
   send({ type: 'join', room: id });
@@ -212,29 +249,33 @@ function onJoined(m) {
   $('mic').disabled = !local || !local.getAudioTracks().length;
   $('cam').disabled = !local || !local.getVideoTracks().length;
   // the newcomer sends offers to everyone already inside
-  m.peers.forEach(p => { addTile(p.id, p.name); call(p.id); });
+  m.peers.forEach(p => { addTile(p.id, p.name, null, false, p); call(p.id); });
+  meter('me', local); pushState();
   updateCount();
 }
 function updateCount() {
   const n = Object.keys(peers).length + 1; $('roomCount').textContent = n + (n === 1 ? ' person' : ' people');
 }
-function addTile(id, name, stream, mine) {
+function addTile(id, name, stream, mine, state) {
   let t = $('t-' + id);
   if (!t) {
     t = document.createElement('div'); t.id = 't-' + id; t.className = 'tile' + (mine ? ' me' : '');
-    t.innerHTML = '<video autoplay playsinline></video><span></span>';
+    t.innerHTML = '<video autoplay playsinline></video><div class="avatar"><b></b></div><div class="tag"><i class="ic"></i><span></span></div>';
+    t.querySelector('.avatar b').textContent = (name[0] || '?').toUpperCase();
     if (mine) t.querySelector('video').muted = true;
     $('stage').appendChild(t);
+    if (!mine) applySink(t.querySelector('video'));
   }
   t.querySelector('span').textContent = mine ? name + ' (you)' : name;
   if (stream) t.querySelector('video').srcObject = stream;
+  setState(id, state || { muted: false, camOff: false });
 }
 function makePC(id) {
   const pc = new RTCPeerConnection({ iceServers: ICE }); peers[id] = pc;
   if (local) local.getTracks().forEach(t => pc.addTrack(t, local));
   else { pc.addTransceiver('audio', { direction: 'recvonly' }); pc.addTransceiver('video', { direction: 'recvonly' }); }
   pc.onicecandidate = e => e.candidate && send({ type: 'signal', to: id, data: { candidate: e.candidate } });
-  pc.ontrack = e => { const t = $('t-' + id); if (t) t.querySelector('video').srcObject = e.streams[0]; };
+  pc.ontrack = e => { const t = $('t-' + id); if (t) t.querySelector('video').srcObject = e.streams[0]; if (e.track.kind === 'audio') meter(id, e.streams[0]); };
   return pc;
 }
 async function call(id) {
@@ -255,12 +296,13 @@ async function onSignal(from, d) {
   } catch (err) { console.warn('signal error', err); }
 }
 function dropPeer(id) {
+  unmeter(id);
   if (peers[id]) { peers[id].close(); delete peers[id]; }
   const t = $('t-' + id); if (t) t.remove();
   updateCount();
 }
 function exitRoom() {
-  inRoom = false; Object.keys(peers).forEach(dropPeer);
+  inRoom = false; Object.keys(peers).forEach(dropPeer); unmeter('me');
   if (local) local.getTracks().forEach(t => t.stop());
   local = null; $('mic').textContent = 'Mute mic'; $('cam').textContent = 'Stop camera';
   $('mic').classList.remove('off'); $('cam').classList.remove('off');
@@ -273,9 +315,134 @@ function toggle(btn, kind, on, off) {
     const tr = kind === 'a' ? local.getAudioTracks() : local.getVideoTracks();
     const v = !tr[0].enabled; tr.forEach(t => t.enabled = v);
     btn.textContent = v ? on : off; btn.classList.toggle('off', !v);
+    pushState(); (v ? sfx.on : sfx.off)();
   };
 }
 toggle($('mic'), 'a', 'Mute mic', 'Unmute mic'); toggle($('cam'), 'v', 'Stop camera', 'Start camera');
+
+/* ---------- device settings ---------- */
+const prefs = (() => { try { return JSON.parse(localStorage.getItem('devs')) || {}; } catch { return {}; } })();
+const savePrefs = () => localStorage.setItem('devs', JSON.stringify(prefs));
+const constraints = () => ({
+  video: prefs.cam ? { deviceId: { ideal: prefs.cam } } : true,
+  audio: prefs.mic ? { deviceId: { ideal: prefs.mic }, echoCancellation: true, noiseSuppression: true } : true
+});
+const canSink = 'setSinkId' in HTMLMediaElement.prototype;
+function applySink(v) { if (canSink && prefs.spk) v.setSinkId(prefs.spk).catch(() => {}); }
+
+async function fillDevices() {
+  let list = await navigator.mediaDevices.enumerateDevices();
+  if (!list.some(d => d.label)) { // names stay hidden until the browser has granted camera/mic access once
+    let t = null;
+    try { t = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); }
+    catch { try { t = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch {} }
+    if (t) t.getTracks().forEach(x => x.stop());
+    list = await navigator.mediaDevices.enumerateDevices();
+  }
+  const cur = k => local && (k === 'videoinput' ? local.getVideoTracks() : local.getAudioTracks())[0]?.getSettings().deviceId;
+  const fill = (sel, kind, saved) => {
+    const items = list.filter(d => d.kind === kind); sel.innerHTML = '';
+    if (!items.length) { sel.add(new Option('None found', '')); sel.disabled = true; return; }
+    sel.disabled = false;
+    items.forEach((d, i) => sel.add(new Option(d.label || kind.replace('input', '') + ' ' + (i + 1), d.deviceId)));
+    const want = saved || cur(kind); if (want && items.some(d => d.deviceId === want)) sel.value = want;
+  };
+  fill($('selCam'), 'videoinput', prefs.cam); fill($('selMic'), 'audioinput', prefs.mic);
+  $('spkRow').style.display = canSink ? 'grid' : 'none';
+  if (canSink) fill($('selSpk'), 'audiooutput', prefs.spk);
+}
+async function openSettings() {
+  $('selSfx').checked = sfxOn; $('settings').classList.remove('hidden'); await fillDevices(); $('selCam').focus(); }
+const closeSettings = () => $('settings').classList.add('hidden');
+$('openSet').onclick = $('openSet2').onclick = openSettings; $('setDone').onclick = closeSettings;
+$('settings').onclick = e => { if (e.target === $('settings')) closeSettings(); };
+addEventListener('keydown', e => { if (e.key === 'Escape') closeSettings(); });
+navigator.mediaDevices?.addEventListener?.('devicechange', () => { if (!$('settings').classList.contains('hidden')) fillDevices(); });
+
+async function switchDevice(kind, id) { // kind: 'cam' or 'mic'. Swaps the live track without leaving the room.
+  prefs[kind] = id; savePrefs();
+  if (!local || !id) return;
+  const vid = kind === 'cam';
+  let s;
+  try { s = await navigator.mediaDevices.getUserMedia(vid ? { video: { deviceId: { exact: id } } } : { audio: { deviceId: { exact: id }, echoCancellation: true, noiseSuppression: true } }); }
+  catch { return toast('Could not switch to that device'); }
+  const nt = s.getTracks()[0], old = (vid ? local.getVideoTracks() : local.getAudioTracks())[0];
+  const senders = Object.values(peers).map(pc => pc.getSenders().find(x => x.track && x.track.kind === nt.kind));
+  if (!old || senders.some(x => !x) ) { nt.stop(); return toast('Leave and rejoin the room to start using that device'); }
+  nt.enabled = old.enabled;
+  senders.forEach(x => x.replaceTrack(nt));
+  local.removeTrack(old); old.stop(); local.addTrack(nt);
+  if (!vid) meter('me', local);
+  const mine = $('t-me'); if (mine) mine.querySelector('video').srcObject = local;
+}
+$('selSfx').onchange = () => { sfxOn = $('selSfx').checked; localStorage.setItem('sfx', sfxOn ? 'on' : 'off'); if (sfxOn) sfx.pop(); };
+$('selCam').onchange = () => switchDevice('cam', $('selCam').value);
+$('selMic').onchange = () => switchDevice('mic', $('selMic').value);
+$('selSpk').onchange = () => { prefs.spk = $('selSpk').value; savePrefs(); document.querySelectorAll('.tile:not(.me) video').forEach(applySink); };
+
+/* ---------- mic icons, talking outline ---------- */
+const IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+const MIC = IC + '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+const MICOFF = IC + '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18"/></svg>';
+function setState(id, s) {
+  const t = $('t-' + id); if (!t) return;
+  t.classList.toggle('muted', !!s.muted); t.classList.toggle('nocam', !!s.camOff);
+  t.querySelector('.ic').innerHTML = s.muted ? MICOFF : MIC;
+  if (s.muted) t.classList.remove('talking');
+}
+function pushState() {
+  const a = local && local.getAudioTracks()[0], v = local && local.getVideoTracks()[0];
+  const st = { muted: !a || !a.enabled, camOff: !v || !v.enabled };
+  setState('me', st); send({ type: 'state', ...st });
+}
+let actx; const meters = {};
+function ctx() { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); return actx; }
+function meter(id, stream) {
+  unmeter(id);
+  if (!stream || !stream.getAudioTracks().length) return;
+  try {
+    const c = ctx(), src = c.createMediaStreamSource(stream), an = c.createAnalyser(); an.fftSize = 512; src.connect(an);
+    meters[id] = { an, src, buf: new Uint8Array(an.fftSize), hold: 0 };
+  } catch {}
+}
+function unmeter(id) { const m = meters[id]; if (m) { try { m.src.disconnect(); } catch {} delete meters[id]; } }
+setInterval(() => {
+  const now = Date.now();
+  for (const id in meters) {
+    const m = meters[id]; m.an.getByteTimeDomainData(m.buf);
+    let peak = 0; for (const v of m.buf) peak = Math.max(peak, Math.abs(v - 128));
+    if (peak > 10) m.hold = now + 350;
+    const t = $('t-' + id); if (t) t.classList.toggle('talking', now < m.hold && !t.classList.contains('muted'));
+  }
+}, 90);
+
+/* ---------- sounds (synthesized, no files) ---------- */
+let sfxOn = localStorage.getItem('sfx') !== 'off';
+function tone(f, d, type, vol, slide, delay) {
+  if (!sfxOn) return;
+  try {
+    const c = ctx(), o = c.createOscillator(), g = c.createGain(), t = c.currentTime + (delay || 0);
+    o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t + d);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + d);
+  } catch {}
+}
+const sfx = {
+  click: () => tone(1200, .05, 'square', .03, .6),
+  pop: () => tone(420, .12, 'sine', .12, 2.2),
+  on: () => { tone(520, .08, 'sine', .09); tone(780, .1, 'sine', .09, 1, .07); },
+  off: () => { tone(780, .08, 'sine', .09); tone(520, .1, 'sine', .09, 1, .07); },
+  join: () => { tone(523, .1, 'triangle', .08); tone(784, .14, 'triangle', .08, 1, .09); },
+  leave: () => { tone(659, .1, 'triangle', .08); tone(440, .16, 'triangle', .08, 1, .09); },
+  msg: () => tone(900, .07, 'sine', .05, 1.4)
+};
+document.addEventListener('click', e => { // every button: pop animation + sound
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+  b.addEventListener('animationend', () => b.classList.remove('pop'), { once: true });
+  if (b.dataset.sfx !== 'none') (b.classList.contains('solid') || b.classList.contains('room') ? sfx.pop : sfx.click)();
+});
 
 /* ---------- chat ---------- */
 function addMsg(m) {
