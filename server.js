@@ -17,8 +17,8 @@ const server = http.createServer((req, res) => {
 });
 
 const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
-const rooms = NAMES.map((name, i) => ({ id: i + 1, name, topic: '', members: new Map(), chat: [] }));
-let nextId = 1;
+const rooms = NAMES.map((name, i) => ({ id: i + 1, name, topic: '', board: [], members: new Map(), chat: [] }));
+let nextId = 1, msgSeq = 0;
 const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify(m));
 const toRoom = (r, m, except) => r.members.forEach((p, id) => id !== except && send(p, m));
 const lobby = () => rooms.map(r => ({ id: r.id, name: r.name, topic: r.topic, max: MAX, users: [...r.members.values()].map(p => p.name) }));
@@ -31,6 +31,13 @@ function uniqueName(raw) { // two people can't share a name: "Sam" becomes "Sam 
   while (taken.has(n.toLowerCase())) n = `${base} ${i++}`;
   return n;
 }
+function addStroke(r, sid, c, w, pts) { // whiteboard strokes are kept so late joiners see the board
+  let s = r.board.find(x => x.sid === sid);
+  if (!s) { s = { sid, c, w, pts: [] }; r.board.push(s); }
+  s.pts.push(...pts);
+  let n = r.board.reduce((a, x) => a + x.pts.length, 0);
+  while (n > 60000 && r.board.length > 1) n -= r.board.shift().pts.length;
+}
 function say(r, text) {
   const m = { system: true, text, t: Date.now() };
   r.chat.push(m); if (r.chat.length > 50) r.chat.shift();
@@ -41,7 +48,7 @@ function leave(ws) {
   r.members.delete(ws.id); ws.room = null;
   toRoom(r, { type: 'peer-left', id: ws.id });
   say(r, `${ws.name} left`);
-  if (!r.members.size) { r.topic = ''; r.chat = []; } // empty room resets
+  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; } // empty room resets
   pushLobby();
 }
 
@@ -60,7 +67,7 @@ wss.on('connection', (ws, req) => {
       leave(ws); ws.st = {};
       const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, avatar: p.avatar, ...p.st }));
       r.members.set(ws.id, ws); ws.room = r;
-      send(ws, { type: 'joined', room: r.id, name: r.name, topic: r.topic, peers, chat: r.chat });
+      send(ws, { type: 'joined', room: r.id, name: r.name, topic: r.topic, board: r.board, peers, chat: r.chat });
       toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, avatar: ws.avatar, ...ws.st }, ws.id);
       say(r, `${ws.name} joined`); pushLobby();
     } else if (m.type === 'leave') leave(ws);
@@ -70,6 +77,20 @@ wss.on('connection', (ws, req) => {
     } else if (m.type === 'avatar') { // small JPEG profile picture, validated before it is shared
       const d = typeof m.data === 'string' && m.data.length < 30000 && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(m.data) ? m.data : '';
       ws.avatar = d; if (ws.room) toRoom(ws.room, { type: 'avatar', id: ws.id, data: d }, ws.id);
+    } else if (m.type === 'stroke' && ws.room) {
+      const sid = String(m.sid || '').slice(0, 24), c = String(m.c || '');
+      if (!sid || !/^#[0-9a-fA-F]{6}$/.test(c) || !Array.isArray(m.pts) || m.pts.length > 400) return;
+      const pts = m.pts.slice(0, m.pts.length - (m.pts.length % 2)).map(n => Math.max(0, Math.min(1000, Math.round(+n) || 0)));
+      const w = Math.max(1, Math.min(90, +m.w || 4));
+      addStroke(ws.room, sid, c, w, pts); toRoom(ws.room, { type: 'stroke', sid, c, w, pts }, ws.id);
+    } else if (m.type === 'board-clear' && ws.room) {
+      ws.room.board = []; toRoom(ws.room, { type: 'board-clear', by: ws.name }, ws.id);
+    } else if (m.type === 'mreact' && ws.room && REACTS.includes(m.emoji)) { // toggle your reaction on a chat message
+      const msg = ws.room.chat.find(x => x.id === m.mid); if (!msg) return;
+      const arr = msg.reacts[m.emoji] = msg.reacts[m.emoji] || [], i = arr.indexOf(ws.name);
+      if (i >= 0) arr.splice(i, 1); else arr.push(ws.name);
+      if (!arr.length) delete msg.reacts[m.emoji];
+      toRoom(ws.room, { type: 'mreact', mid: msg.id, reacts: msg.reacts });
     } else if (m.type === 'topic' && ws.room) {
       const t = String(m.text || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 40);
       ws.room.topic = t; toRoom(ws.room, { type: 'topic', text: t });
@@ -85,7 +106,7 @@ wss.on('connection', (ws, req) => {
       if (to) send(to, { type: 'signal', from: ws.id, data: m.data });
     } else if (m.type === 'chat' && ws.room) {
       const text = String(m.text || '').trim().slice(0, 500); if (!text) return;
-      const msg = { name: ws.name, text, t: Date.now() };
+      const msg = { id: ++msgSeq, name: ws.name, text, t: Date.now(), reacts: {} };
       ws.room.chat.push(msg); if (ws.room.chat.length > 50) ws.room.chat.shift();
       toRoom(ws.room, { type: 'chat', msg });
     }
