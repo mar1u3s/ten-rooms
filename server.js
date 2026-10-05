@@ -5,15 +5,35 @@ const { WebSocketServer } = require('ws');
 const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
 // [name, max people]. Small rooms keep full video; bigger rooms get lower per-person video quality (see tune() in index.html).
 const ROOMS = [['Lounge', 6], ['Studio', 6], ['Kitchen', 6], ['Garage', 10], ['Rooftop', 10], ['Library', 15], ['Arcade', 15], ['Workshop', 15], ['Garden', 50], ['Porch', 50]];
-// Reaction images people can send in chat. Clients send the position in this list, never a link, so nobody can post their own image.
-const IMAGES = [
-  'https://media.tenor.com/w7_PLNJL8LQAAAAe/who-is-this-who.png',
-  'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1yw2qHnDCVXef5cGMn9ZoMGeyvoq9z1bIR7ZIbH1tJw&s=10'
-];
+// GIFs come from the Klipy catalog. Set KLIPY_KEY (Render: Environment) to turn GIF search on; without it the GIF button is hidden.
+// The key stays on the server: browsers ask /gifs and the server asks Klipy. Only links on Klipy's own domain can be sent in chat.
+const KLIPY = process.env.KLIPY_KEY || '', GIFURL = /^https:\/\/([a-z0-9-]+\.)*klipy\.(com|co)\/[\w\-./%~]+$/i, gifCache = new Map();
+async function gifs(q) { // search results, or what is trending when q is empty; answers are reused for 5 minutes
+  const key = q.toLowerCase(), hit = gifCache.get(key);
+  if (hit && Date.now() - hit.t < 300000) return hit.list;
+  const r = await fetch(`https://api.klipy.com/api/v1/${KLIPY}/gifs/${q ? 'search' : 'trending'}?per_page=24&customer_id=tenrooms&content_filter=high` + (q ? '&q=' + encodeURIComponent(q) : ''), { signal: AbortSignal.timeout(6000) });
+  if (!r.ok) throw new Error('Klipy answered ' + r.status);
+  const j = await r.json();
+  const list = ((j.data && j.data.data) || []).map(g => { // each GIF comes in sizes (hd, md, sm, xs) and formats; webp is the lightest that still animates
+    const f = g.file || {}, pick = s => f[s] && (f[s].webp || f[s].gif);
+    const big = pick('md') || pick('sm') || pick('hd'), small = pick('xs') || pick('sm') || big;
+    return big && small && GIFURL.test(big.url) && GIFURL.test(small.url) ? { url: big.url, thumb: small.url, title: String(g.title || '').slice(0, 60) } : null;
+  }).filter(Boolean);
+  if (gifCache.size > 300) gifCache.clear();
+  gifCache.set(key, { t: Date.now(), list });
+  return list;
+}
 const ICE = (() => { try { return JSON.parse(process.env.ICE_SERVERS); } catch { return [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]; } })();
 
 const server = http.createServer((req, res) => {
   if (req.url === '/health') { res.writeHead(200); return res.end('ok'); }
+  if (req.url === '/gifs' || req.url.startsWith('/gifs?')) {
+    if (!KLIPY) { res.writeHead(404); return res.end('GIF search is off'); }
+    const q = String(new URL(req.url, 'http://x').searchParams.get('q') || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 50);
+    return gifs(q).then(
+      list => { res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(list)); },
+      e => { console.warn('gif search failed:', e.message); res.writeHead(502, { 'Content-Type': 'application/json' }); res.end('[]'); });
+  }
   if (req.url === '/' || req.url.startsWith('/?')) {
     return fs.readFile(path.join(__dirname, 'index.html'), (e, d) => {
       res.writeHead(e ? 500 : 200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(e ? 'index.html missing' : d);
@@ -88,7 +108,7 @@ wss.on('connection', (ws, req) => {
   ws.name = uniqueName(new URL(req.url, 'http://x').searchParams.get('name'));
   ws.id = nextId++; ws.room = null; ws.alive = true;
   ws.on('pong', () => ws.alive = true);
-  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, images: IMAGES });
+  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY });
   pushLobby();
 
   ws.on('message', raw => {
@@ -137,12 +157,12 @@ wss.on('connection', (ws, req) => {
       const to = ws.room.members.get(m.to);
       if (to) send(to, { type: 'signal', from: ws.id, data: m.data });
     } else if (m.type === 'chat' && ws.room) {
-      const img = Number.isInteger(m.img) && IMAGES[m.img] ? m.img : null; // a reaction image instead of text
-      const text = img === null ? String(m.text || '').trim().slice(0, 500) : ''; if (!text && img === null) return;
-      if (img !== null && slow(ws, 'lastImg', 1000)) return;
-      const msg = newMsg(ws, { text }); if (img !== null) msg.img = img;
+      const gif = KLIPY && typeof m.gif === 'string' && m.gif.length < 300 && GIFURL.test(m.gif) ? m.gif : null; // a GIF instead of text
+      const text = gif ? '' : String(m.text || '').trim().slice(0, 500); if (!text && !gif) return;
+      if (gif && slow(ws, 'lastGif', 1000)) return;
+      const msg = newMsg(ws, { text }); if (gif) msg.gif = gif;
       const src = findMsg(ws.room, m.re); // the message this one replies to, if any
-      if (src) msg.re = { id: src.id, name: src.name, text: src.text ? src.text.slice(0, 80) : src.img !== undefined ? 'Image' : src.poll ? 'Poll' : 'Game' };
+      if (src) msg.re = { id: src.id, name: src.name, text: src.text ? src.text.slice(0, 80) : src.gif ? 'GIF' : src.poll ? 'Poll' : 'Game' };
       const at = mentions(ws.room, text); if (at.length) msg.at = at;
       post(ws.room, msg);
     } else if (m.type === 'poll' && ws.room) { // a poll is a chat message with options people vote on
