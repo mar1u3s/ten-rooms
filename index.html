@@ -226,6 +226,32 @@ button:active:not(:disabled){transform:scale(.95)}
 .grow{display:flex;gap:6px;margin-top:8px}
 .gpick{width:46px;height:46px;padding:0;font-size:1.5rem;border:1px solid var(--line);border-radius:12px;background:transparent}
 .gshow{font-size:1.8rem;margin-top:6px}
+/* friends and direct messages */
+#frDlg{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgb(var(--bgc)/.65);padding:20px}
+#frDlg h2{font-size:1.5rem}
+#frDlg .panel{width:min(440px,100%);max-height:100%;overflow:auto}
+#frHome,#frChat{display:grid;gap:12px;min-width:0}
+.frme,.frhead{display:flex;align-items:center;gap:12px}
+.frme b{font:700 1.3rem Unbounded,sans-serif;letter-spacing:.08em}
+#frAdd,#frSend{display:flex;gap:8px}
+#frAdd .solid,#frSend .solid{flex:none;border-radius:10px;padding:0 16px}
+#frList{display:grid;gap:8px}
+.frow{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:14px;padding:10px;background:rgb(var(--bgc)/.4)}
+.frow .pav{width:36px;height:36px;font-size:.9rem}
+.frow.on .pav{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.frn{flex:1;min-width:0}
+.frn b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frn small{color:var(--dim);font-size:.78rem}
+.frow button{flex:none;padding:5px 11px;font-size:.8rem}
+#frLog{height:min(46vh,360px);overflow:auto;display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:12px;padding:10px}
+.dm{max-width:82%;align-self:flex-start;padding:7px 11px;border:1px solid var(--line);border-radius:12px;font-size:.92rem;overflow-wrap:anywhere}
+.dm.me{align-self:flex-end;background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.bar .has-new::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc);margin-left:8px}
+/* people list buttons and the vote kick bar */
+.pacts{display:flex;gap:6px;flex-wrap:wrap}
+.pacts button{padding:4px 10px;font-size:.75rem}
+#kickBar{position:fixed;top:74px;left:50%;transform:translateX(-50%);z-index:8;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:10px 14px;width:max-content;max-width:92vw;background:var(--bg)}
+#kickBar button{padding:6px 16px}
 /* themes */
 #settings .panel{max-height:100%;overflow:auto}
 .themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -275,7 +301,7 @@ button:active:not(:disabled){transform:scale(.95)}
 </section>
 
 <main id="lobby" class="view hidden">
-  <div class="bar mod"><div id="meAv" class="pav"></div><span id="me"></span><button class="ghost" id="openSet">Settings</button><button class="ghost" id="logout">Change name</button></div>
+  <div class="bar mod"><div id="meAv" class="pav"></div><span id="me"></span><button class="ghost" id="openFr">Friends</button><button class="ghost" id="openSet">Settings</button><button class="ghost" id="logout">Change name</button></div>
   <h1>Ten rooms</h1>
   <p class="sub">Walk into any open room to talk on video. Every room has its own chat.</p>
   <div class="stats">
@@ -301,6 +327,7 @@ button:active:not(:disabled){transform:scale(.95)}
     <button class="ghost" id="pollBtn">Poll</button>
     <button class="ghost" id="gamesBtn">Games</button>
     <span class="sep"></span>
+    <button class="ghost" id="openFr2">Friends</button>
     <button class="ghost" id="openSet2">Settings</button>
     <button class="solid" id="leave">Leave room</button>
     <div id="reactBar" class="mod hidden" role="group" aria-label="Reactions"></div>
@@ -332,6 +359,26 @@ button:active:not(:disabled){transform:scale(.95)}
     <div id="themes" class="themes" role="group" aria-labelledby="thLbl"></div>
     <label class="chk"><input type="checkbox" id="selSfx"> Interface sounds</label>
     <button class="solid" id="setDone">Done</button>
+  </div>
+</div>
+
+<div id="kickBar" class="mod hidden" role="alert"><span id="kickText"></span><button type="button" class="solid" id="kickYes">Kick</button><button type="button" class="ghost" id="kickNo">Keep</button></div>
+
+<div id="frDlg" class="hidden">
+  <div class="panel" role="dialog" aria-label="Friends">
+    <div id="frHome">
+      <h2>Friends</h2>
+      <p class="sub">Your friend code. Share it so people can add you.</p>
+      <div class="frme"><b id="frCode">…</b><button type="button" class="ghost" id="frCopy">Copy</button></div>
+      <form id="frAdd"><input id="frIn" maxlength="12" placeholder="Enter a friend's code" aria-label="Friend code" autocomplete="off"><button class="solid">Add</button></form>
+      <div id="frList"></div>
+      <button type="button" class="solid" id="frDone">Done</button>
+    </div>
+    <div id="frChat" class="hidden">
+      <div class="frhead"><button type="button" class="ghost" id="frBack">Back</button><b id="frWho"></b></div>
+      <div id="frLog" aria-live="polite"></div>
+      <form id="frSend"><input id="frText" maxlength="500" placeholder="Message" aria-label="Message" autocomplete="off"><button class="solid">Send</button></form>
+    </div>
   </div>
 </div>
 
@@ -423,9 +470,9 @@ function connect() {
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); $('me').textContent = 'You are ' + myName; drawLobby(); show('lobby'); setAv($('meAv'), myName, myAvatar); if (myAvatar) send({ type: 'avatar', data: myAvatar }); }
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); send({ type: 'id', key: uid }); sendFriends(); $('me').textContent = 'You are ' + myName; drawLobby(); show('lobby'); setAv($('meAv'), myName, myAvatar); if (myAvatar) send({ type: 'avatar', data: myAvatar }); }
   else if (m.type === 'lobby') { rooms = m.rooms; drawLobby(); }
-  else if (m.type === 'error') toast(m.text);
+  else if (m.type === 'error') { toast(m.text); if (!inRoom && local) { local.getTracks().forEach(t => t.stop()); local = null; } } // a refused join must not leave the camera on
   else if (m.type === 'joined') onJoined(m);
   else if (m.type === 'peer-joined') { addTile(m.id, m.name, null, false, m); updateCount(); sfx.join(); }
   else if (m.type === 'peer-left') { dropPeer(m.id); sfx.leave(); }
@@ -438,6 +485,13 @@ function handle(m) {
   else if (m.type === 'typing') setTyper(m.id, m.name, m.on);
   else if (m.type === 'topic') { if (document.activeElement !== $('topicIn')) $('topicIn').value = m.text; }
   else if (m.type === 'signal') onSignal(m.from, m.data);
+  else if (m.type === 'me') { myCode = m.code; drawFriends(); renderPeople(); }
+  else if (m.type === 'presence') onPresence(m.list);
+  else if (m.type === 'friend-req') onFriendReq(m);
+  else if (m.type === 'dm') onDm(m);
+  else if (m.type === 'dm-fail') toast(m.text);
+  else if (m.type === 'kickvote') drawKick(m);
+  else if (m.type === 'kicked') { exitRoom(); toast(m.text); }
   else if (m.type === 'poll') { const d = msgEl(m.mid); if (d) drawPoll(d, m.poll); }
   else if (m.type === 'game') { const d = msgEl(m.mid); if (d) { drawGame(d, m.game); sfx.msg(); } }
   else if (m.type === 'chat') { addMsg(m.msg, true); if (!m.msg.system) { Object.keys(typers).forEach(k => { if (typers[k].name === m.msg.name) setTyper(k, '', false); }); if (m.msg.name !== myName) sfx.msg(); } }
@@ -486,7 +540,7 @@ async function joinRoom(id) {
 }
 function onJoined(m) {
   inRoom = true; roomMax = m.max || 6; show('call');
-  $('roomTitle').textContent = m.name; $('stage').innerHTML = ''; $('log').innerHTML = ''; setReply(null);
+  $('roomTitle').textContent = m.name; $('stage').innerHTML = ''; $('log').innerHTML = ''; setReply(null); drawKick(m.vote || { over: true });
   m.chat.forEach(x => addMsg(x));
   addTile('me', myName, local, true, { avatar: myAvatar });
   updateBtns(); pin(null); $('topicIn').value = m.topic || '';
@@ -559,7 +613,7 @@ function dropPeer(id) {
   updateCount();
 }
 function exitRoom() {
-  inRoom = false; Object.keys(peers).forEach(dropPeer); unmeter('me'); boardOpen = false; boardEl.classList.add('hidden'); strokes = []; cur = null; pend = []; redraw();
+  drawKick({ over: true }); inRoom = false; Object.keys(peers).forEach(dropPeer); unmeter('me'); boardOpen = false; boardEl.classList.add('hidden'); strokes = []; cur = null; pend = []; redraw();
   sharing = null; screenAudio = null; $('share').textContent = 'Share screen'; pin(null); Object.keys(people).forEach(k => delete people[k]); renderPeople(); Object.keys(typers).forEach(k => setTyper(k, '', false));
   if (local) local.getTracks().forEach(t => t.stop());
   local = null; $('mic').textContent = 'Mute mic'; $('cam').textContent = 'Stop camera';
@@ -854,7 +908,7 @@ $('topicIn').addEventListener('change', () => send({ type: 'topic', text: $('top
 /* ---------- people list, volume, profile pictures ---------- */
 const people = {}, rows = {};
 const AVRE = /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/, safeAv = d => (AVRE.test(d || '') ? d : '');
-const pick = s => { const o = {}; ['muted', 'camOff', 'sharing'].forEach(k => { if (s[k] !== undefined) o[k] = s[k]; }); if (s.avatar !== undefined) o.avatar = safeAv(s.avatar); return o; };
+const pick = s => { const o = {}; ['muted', 'camOff', 'sharing'].forEach(k => { if (s[k] !== undefined) o[k] = s[k]; }); if (s.avatar !== undefined) o.avatar = safeAv(s.avatar); if (s.code) o.code = s.code; return o; };
 function setAv(el, name, data) { el.style.backgroundImage = data ? 'url("' + data + '")' : ''; el.textContent = data ? '' : ((name || '?')[0] || '?').toUpperCase(); }
 function upsert(id, d) {
   people[id] = Object.assign(people[id] || {}, d); renderPeople();
@@ -880,6 +934,12 @@ function makeRow(id) {
     inp.oninput = () => { setVol(people[id].name, k, inp.value); applyVol(id); };
     r.querySelector('.pmeta').appendChild(d);
   });
+  if (id !== 'me') { // add friend (hidden once they are on your list) and vote kick
+    const acts = document.createElement('div'), fb = document.createElement('button'), kb = document.createElement('button'); acts.className = 'pacts';
+    fb.type = kb.type = 'button'; fb.className = 'ghost addfr hidden'; kb.className = 'ghost'; fb.textContent = 'Add friend'; kb.textContent = 'Vote kick';
+    fb.onclick = () => addFriend(people[id].code, people[id].name); kb.onclick = () => send({ type: 'kick', id: +id });
+    acts.append(fb, kb); r.querySelector('.pmeta').appendChild(acts);
+  }
   return r;
 }
 function renderPeople() {
@@ -891,6 +951,7 @@ function renderPeople() {
     setAv(r.querySelector('.pav'), p.name, p.avatar);
     r.classList.toggle('muted', !!p.muted); r.querySelector('.pic').innerHTML = p.muted ? MICOFF : MIC;
     r.querySelector('.badge').classList.toggle('hidden', !p.sharing);
+    const fb = r.querySelector('.addfr'); if (fb) fb.classList.toggle('hidden', !p.code || p.code === myCode || friends.some(f => f.code === p.code));
     const sv = r.querySelector('.vol.screen'); if (sv) sv.classList.toggle('hidden', !(p.sharing && p.screenAudio));
   });
   $('peopleCount').textContent = Object.keys(people).length;
@@ -1178,6 +1239,106 @@ $('imgBtn').onclick = () => {
   $('gifQ').focus(); if (!$('gifGrid').children.length) gifSearch();
 };
 document.addEventListener('click', e => { if (!imgPick.contains(e.target) && !e.target.closest('#imgBtn')) imgPick.classList.add('hidden'); });
+/* ---------- vote kick: the bar everyone in the room sees while a vote is running ---------- */
+let kickTick;
+function drawKick(m) {
+  clearInterval(kickTick); const bar = $('kickBar');
+  if (m.over) return bar.classList.add('hidden');
+  const mine = m.target === myId, until = Date.now() + m.left;
+  const show = () => { $('kickText').textContent = (mine ? 'The room is voting to kick you' : 'Kick ' + m.name + '?') + ' · ' + m.yes + ' of the ' + m.need + ' votes needed · ' + Math.max(0, Math.ceil((until - Date.now()) / 1000)) + 's'; };
+  show(); kickTick = setInterval(show, 1000);
+  $('kickYes').classList.toggle('hidden', mine); $('kickNo').classList.toggle('hidden', mine); bar.classList.remove('hidden');
+}
+$('kickYes').onclick = () => send({ type: 'kickv', yes: true }); $('kickNo').onclick = () => send({ type: 'kickv', yes: false });
+
+/* ---------- friends and direct messages ---------- */
+// No accounts: this browser keeps a secret id, and the server turns it into the friend code that other people add.
+// The friends list and the message history are saved in this browser only. A friend shows as online once you have both added each other.
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch { return d; } };
+const keep = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const uid = (() => {
+  let k = localStorage.getItem('uid');
+  if (!/^[a-f0-9]{32}$/.test(k || '')) { k = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem('uid', k); }
+  return k;
+})();
+const friends = load('friends', []), ignored = load('ignored', []), dms = load('dms', {}), unread = {};
+let myCode = '', pres = {}, reqs = [], dmOpen = null;
+const sendFriends = () => send({ type: 'friends', codes: friends.map(f => f.code) });
+const saveFriends = () => { keep('friends', friends); sendFriends(); drawFriends(); renderPeople(); };
+const nameOf = code => (friends.find(f => f.code === code) || {}).name || 'Friend';
+function addFriend(raw, name) {
+  const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!/^[A-Z2-9]{8}$/.test(code)) return toast('Friend codes are 8 letters and numbers');
+  if (code === myCode) return toast('That is your own code');
+  if (friends.some(f => f.code === code)) return toast('Already on your list');
+  friends.push({ code, name: name || 'Friend ' + code.slice(0, 4) }); reqs = reqs.filter(r => r.code !== code);
+  saveFriends(); toast('Added. They show as online once they add you back');
+}
+function onPresence(list) {
+  pres = {}; let renamed = false;
+  list.forEach(p => { pres[p.code] = p; const f = friends.find(x => x.code === p.code); if (f && f.name !== p.name) { f.name = p.name; renamed = true; } });
+  if (renamed) keep('friends', friends);
+  drawFriends();
+}
+function onFriendReq(m) {
+  if (ignored.includes(m.code) || friends.some(f => f.code === m.code) || reqs.some(r => r.code === m.code)) return;
+  reqs.push({ code: m.code, name: m.name }); drawFriends(); toast(m.name + ' added you as a friend');
+}
+function frBadge() { // the dot on the Friends buttons: a request or an unread message is waiting
+  const on = reqs.length > 0 || Object.keys(unread).length > 0;
+  $('openFr').classList.toggle('has-new', on); $('openFr2').classList.toggle('has-new', on);
+}
+function drawFriends() {
+  $('frCode').textContent = myCode || '…'; const box = $('frList'); box.innerHTML = '';
+  const row = (name, sub, on) => {
+    const r = document.createElement('div'); r.className = 'frow' + (on ? ' on' : '');
+    r.innerHTML = '<div class="pav"></div><div class="frn"><b></b><small></small></div>';
+    r.querySelector('.pav').textContent = (name[0] || '?').toUpperCase(); r.querySelector('b').textContent = name; r.querySelector('small').textContent = sub;
+    box.appendChild(r); return r;
+  };
+  const btn = (r, cls, text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = text; b.onclick = fn; r.appendChild(b); return b; };
+  reqs.forEach(q => {
+    const r = row(q.name, 'Added you. Add them back?');
+    btn(r, 'solid', 'Add', () => addFriend(q.code, q.name));
+    btn(r, 'ghost', 'Ignore', () => { ignored.push(q.code); keep('ignored', ignored); reqs = reqs.filter(x => x !== q); drawFriends(); });
+  });
+  if (!friends.length && !reqs.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'No friends yet. Share your code, or press Add friend on someone in a room\'s People tab.'; box.appendChild(p); }
+  [...friends].sort((a, b) => !!pres[b.code] - !!pres[a.code]).forEach(f => {
+    const p = pres[f.code], room = p && rooms.find(x => x.id === p.room);
+    const r = row(f.name, p ? (room ? 'In ' + room.name : 'Online') : 'Offline, or has not added you back', !!p);
+    if (room && !(inRoom && $('roomTitle').textContent === room.name)) btn(r, 'solid', 'Join', () => {
+      closeFr(); if (inRoom) { send({ type: 'leave' }); exitRoom(); }
+      joinRoom(room.id);
+    });
+    btn(r, 'ghost', 'Message' + (unread[f.code] ? ' (' + unread[f.code] + ')' : ''), () => openDm(f.code));
+    btn(r, 'ghost', '×', () => { if (confirm('Remove ' + f.name + ' from your friends?')) { friends.splice(friends.indexOf(f), 1); saveFriends(); } }).setAttribute('aria-label', 'Remove ' + f.name);
+  });
+  frBadge();
+}
+function dmLine(d) {
+  const el = document.createElement('div'); el.className = 'dm' + (d.me ? ' me' : ''); el.textContent = d.text; el.title = new Date(d.t).toLocaleString();
+  $('frLog').appendChild(el); $('frLog').scrollTop = $('frLog').scrollHeight;
+}
+function openDm(code) {
+  dmOpen = code; delete unread[code]; $('frHome').classList.add('hidden'); $('frChat').classList.remove('hidden');
+  $('frWho').textContent = nameOf(code); $('frLog').innerHTML = ''; (dms[code] || []).forEach(dmLine); frBadge(); $('frText').focus();
+}
+function onDm(m) { // m.from is set on messages to you; your own come back with m.to so every open tab shows them
+  const code = m.from || m.to; if (!friends.some(f => f.code === code)) return;
+  const list = dms[code] = dms[code] || [], d = { me: !m.from, text: m.text, t: m.t };
+  list.push(d); if (list.length > 100) list.shift(); keep('dms', dms);
+  if (dmOpen === code && !$('frDlg').classList.contains('hidden')) dmLine(d);
+  else if (m.from) { unread[code] = (unread[code] || 0) + 1; sfx.ping(); toast(m.name + ': ' + m.text.slice(0, 60)); drawFriends(); }
+}
+const closeFr = () => $('frDlg').classList.add('hidden');
+const frHome = () => { dmOpen = null; $('frChat').classList.add('hidden'); $('frHome').classList.remove('hidden'); drawFriends(); };
+$('openFr').onclick = $('openFr2').onclick = () => { frHome(); $('frDlg').classList.remove('hidden'); };
+$('frDone').onclick = closeFr; $('frBack').onclick = frHome;
+$('frDlg').onclick = e => { if (e.target === $('frDlg')) closeFr(); };
+addEventListener('keydown', e => { if (e.key === 'Escape') closeFr(); });
+$('frCopy').onclick = () => { if (myCode) navigator.clipboard.writeText(myCode).then(() => toast('Code copied'), () => toast('Your code is ' + myCode)); };
+$('frAdd').onsubmit = e => { e.preventDefault(); addFriend($('frIn').value); $('frIn').value = ''; };
+$('frSend').onsubmit = e => { e.preventDefault(); const v = $('frText').value.trim(); if (v && dmOpen) send({ type: 'dm', to: dmOpen, text: v }); $('frText').value = ''; };
 function toast(t) {
   const old = $('toast'); if (old) old.remove();
   const d = document.createElement('div'); d.id = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 4000);
