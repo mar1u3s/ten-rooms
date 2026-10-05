@@ -5,6 +5,11 @@ const { WebSocketServer } = require('ws');
 const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
 // [name, max people]. Small rooms keep full video; bigger rooms get lower per-person video quality (see tune() in index.html).
 const ROOMS = [['Lounge', 6], ['Studio', 6], ['Kitchen', 6], ['Garage', 10], ['Rooftop', 10], ['Library', 15], ['Arcade', 15], ['Workshop', 15], ['Garden', 50], ['Porch', 50]];
+// Reaction images people can send in chat. Clients send the position in this list, never a link, so nobody can post their own image.
+const IMAGES = [
+  'https://media.tenor.com/w7_PLNJL8LQAAAAe/who-is-this-who.png',
+  'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1yw2qHnDCVXef5cGMn9ZoMGeyvoq9z1bIR7ZIbH1tJw&s=10'
+];
 const ICE = (() => { try { return JSON.parse(process.env.ICE_SERVERS); } catch { return [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]; } })();
 
 const server = http.createServer((req, res) => {
@@ -44,6 +49,32 @@ function say(r, text) {
   r.chat.push(m); if (r.chat.length > 50) r.chat.shift();
   toRoom(r, { type: 'chat', msg: m });
 }
+const findMsg = (r, id) => r.chat.find(x => !x.system && x.id === id);
+const newMsg = (ws, extra) => ({ id: ++msgSeq, name: ws.name, text: '', t: Date.now(), reacts: {}, ...extra });
+function post(r, msg) { r.chat.push(msg); if (r.chat.length > 50) r.chat.shift(); toRoom(r, { type: 'chat', msg }); }
+const clean = (s, n) => String(s || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, n);
+const slow = (ws, key, ms) => { const now = Date.now(); if (now - (ws[key] || 0) < ms) return true; ws[key] = now; return false; }; // true = too soon, ignore it
+function mentions(r, text) { // names in the room that the text @s; longest first so "@Sam 2" is not also read as "@Sam"
+  let low = text.toLowerCase(); const at = [];
+  [...r.members.values()].map(p => p.name).sort((a, b) => b.length - a.length).forEach(n => {
+    const k = '@' + n.toLowerCase(); if (low.includes(k)) { at.push(n); low = low.split(k).join(' '); }
+  });
+  return at;
+}
+// Mini-games live inside a chat message (msg.game) and the server checks every move.
+const GAMES = ['ttt', 'c4', 'rps'], RPS = ['rock', 'paper', 'scissors'], secrets = new WeakMap(); // secrets: rock-paper-scissors picks, hidden until both have chosen
+const TTT = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+function c4win(b, i) { // b is 7 wide and 6 tall with row 0 at the top; i is the cell that was just filled
+  const x = i % 7, y = (i / 7) | 0, v = b[i];
+  return [[1, 0], [0, 1], [1, 1], [1, -1]].some(([dx, dy]) => {
+    let n = 1;
+    for (const s of [1, -1]) for (let k = 1; k < 4; k++) {
+      const cx = x + dx * k * s, cy = y + dy * k * s;
+      if (cx < 0 || cx > 6 || cy < 0 || cy > 5 || b[cy * 7 + cx] !== v) break; n++;
+    }
+    return n >= 4;
+  });
+}
 function leave(ws) {
   const r = ws.room; if (!r) return;
   r.members.delete(ws.id); ws.room = null;
@@ -57,7 +88,7 @@ wss.on('connection', (ws, req) => {
   ws.name = uniqueName(new URL(req.url, 'http://x').searchParams.get('name'));
   ws.id = nextId++; ws.room = null; ws.alive = true;
   ws.on('pong', () => ws.alive = true);
-  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE });
+  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, images: IMAGES });
   pushLobby();
 
   ws.on('message', raw => {
@@ -87,7 +118,7 @@ wss.on('connection', (ws, req) => {
     } else if (m.type === 'board-clear' && ws.room) {
       ws.room.board = []; toRoom(ws.room, { type: 'board-clear', by: ws.name }, ws.id);
     } else if (m.type === 'mreact' && ws.room && REACTS.includes(m.emoji)) { // toggle your reaction on a chat message
-      const msg = ws.room.chat.find(x => x.id === m.mid); if (!msg) return;
+      const msg = findMsg(ws.room, m.mid); if (!msg) return;
       const arr = msg.reacts[m.emoji] = msg.reacts[m.emoji] || [], i = arr.indexOf(ws.name);
       if (i >= 0) arr.splice(i, 1); else arr.push(ws.name);
       if (!arr.length) delete msg.reacts[m.emoji];
@@ -106,10 +137,60 @@ wss.on('connection', (ws, req) => {
       const to = ws.room.members.get(m.to);
       if (to) send(to, { type: 'signal', from: ws.id, data: m.data });
     } else if (m.type === 'chat' && ws.room) {
-      const text = String(m.text || '').trim().slice(0, 500); if (!text) return;
-      const msg = { id: ++msgSeq, name: ws.name, text, t: Date.now(), reacts: {} };
-      ws.room.chat.push(msg); if (ws.room.chat.length > 50) ws.room.chat.shift();
-      toRoom(ws.room, { type: 'chat', msg });
+      const img = Number.isInteger(m.img) && IMAGES[m.img] ? m.img : null; // a reaction image instead of text
+      const text = img === null ? String(m.text || '').trim().slice(0, 500) : ''; if (!text && img === null) return;
+      if (img !== null && slow(ws, 'lastImg', 1000)) return;
+      const msg = newMsg(ws, { text }); if (img !== null) msg.img = img;
+      const src = findMsg(ws.room, m.re); // the message this one replies to, if any
+      if (src) msg.re = { id: src.id, name: src.name, text: src.text ? src.text.slice(0, 80) : src.img !== undefined ? 'Image' : src.poll ? 'Poll' : 'Game' };
+      const at = mentions(ws.room, text); if (at.length) msg.at = at;
+      post(ws.room, msg);
+    } else if (m.type === 'poll' && ws.room) { // a poll is a chat message with options people vote on
+      const q = clean(m.q, 100), opts = (Array.isArray(m.opts) ? m.opts.slice(0, 6) : []).map(o => clean(o, 50)).filter(Boolean);
+      if (!q || opts.length < 2 || slow(ws, 'lastPoll', 3000)) return;
+      post(ws.room, newMsg(ws, { poll: { q, opts: opts.map(t => ({ t, v: [] })) } }));
+    } else if (m.type === 'vote' && ws.room) { // one vote each: picking another option moves it, picking yours again removes it
+      const msg = findMsg(ws.room, m.mid), p = msg && msg.poll, o = p && p.opts[m.opt | 0]; if (!o) return;
+      const had = o.v.includes(ws.name);
+      p.opts.forEach(x => { const i = x.v.indexOf(ws.name); if (i >= 0) x.v.splice(i, 1); });
+      if (!had) o.v.push(ws.name);
+      toRoom(ws.room, { type: 'poll', mid: msg.id, poll: p });
+    } else if (m.type === 'luck' && ws.room) {
+      if (slow(ws, 'lastLuck', 1000)) return;
+      if (m.kind === 'roll') say(ws.room, `${ws.name} rolled a ${1 + Math.floor(Math.random() * 6)}`);
+      else if (m.kind === 'flip') say(ws.room, `${ws.name} flipped a coin: ${Math.random() < .5 ? 'heads' : 'tails'}`);
+    } else if (m.type === 'game' && ws.room && GAMES.includes(m.kind)) { // start a game; it waits for a second player
+      if (slow(ws, 'lastGame', 3000)) return;
+      const g = { kind: m.kind, p: [ws.name], turn: 0, win: null };
+      if (m.kind === 'ttt') g.b = Array(9).fill(null); else if (m.kind === 'c4') g.b = Array(42).fill(null); else g.done = [false, false];
+      post(ws.room, newMsg(ws, { game: g }));
+    } else if (m.type === 'gjoin' && ws.room) {
+      const msg = findMsg(ws.room, m.mid), g = msg && msg.game;
+      if (!g || g.p.length > 1 || g.p[0] === ws.name) return;
+      g.p.push(ws.name); toRoom(ws.room, { type: 'game', mid: msg.id, game: g });
+    } else if (m.type === 'gmove' && ws.room) {
+      const msg = findMsg(ws.room, m.mid), g = msg && msg.game, me = g ? g.p.indexOf(ws.name) : -1;
+      if (!g || g.p.length < 2 || g.win !== null || me < 0) return;
+      if (g.kind === 'rps') {
+        if (!RPS.includes(m.pick) || g.done[me]) return;
+        const s = secrets.get(msg) || []; s[me] = m.pick; secrets.set(msg, s); g.done[me] = true;
+        if (g.done[0] && g.done[1]) { // both chose: show the picks. Each choice beats the one before it in RPS
+          const d = (RPS.indexOf(s[0]) - RPS.indexOf(s[1]) + 3) % 3;
+          g.picks = s; g.win = d === 0 ? 'draw' : d === 1 ? 0 : 1;
+        }
+      } else {
+        if (me !== g.turn) return;
+        let i = m.i | 0;
+        if (g.kind === 'c4') { // i is a column; the piece drops to the lowest empty cell
+          if (i < 0 || i > 6) return;
+          let y = 5; while (y >= 0 && g.b[y * 7 + i] !== null) y--;
+          if (y < 0) return; i = y * 7 + i;
+        } else if (i < 0 || i > 8 || g.b[i] !== null) return;
+        g.b[i] = me; g.last = i; g.turn = 1 - me;
+        const won = g.kind === 'c4' ? c4win(g.b, i) : TTT.some(l => l.every(c => g.b[c] === me));
+        g.win = won ? me : g.b.every(c => c !== null) ? 'draw' : null;
+      }
+      toRoom(ws.room, { type: 'game', mid: msg.id, game: g });
     }
   });
   ws.on('close', () => { leave(ws); ws.name = null; });
