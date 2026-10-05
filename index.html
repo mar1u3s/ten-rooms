@@ -66,7 +66,7 @@ button:active:not(:disabled){transform:scale(.95)}
 .pop{animation:pop .24s ease-out}
 
 /* call: every piece is its own rounded module */
-#call{position:fixed;inset:0;z-index:1;display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr auto;gap:14px;padding:14px}
+#call{position:fixed;inset:0;z-index:1;display:grid;grid-template-columns:1fr min(var(--chatw,340px),60vw);grid-template-rows:auto 1fr auto;gap:14px;padding:14px}
 .mod{background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:18px;box-shadow:inset 0 1px 0 rgb(var(--fgc)/.07)}
 #call header{grid-column:1/3;display:flex;align-items:center;gap:12px;padding:12px 18px}
 #call header h2{font-size:1.15rem;flex:none}
@@ -103,7 +103,7 @@ button:active:not(:disabled){transform:scale(.95)}
 .pinbtn svg{width:15px;height:15px}
 .pinbtn:hover,.pinbtn:focus-visible{opacity:1}
 .pinbtn[aria-pressed=true]{background:var(--fg);color:var(--bg);opacity:1}
-.stage.pinned{grid-template-columns:1fr 200px;grid-template-rows:repeat(5,minmax(110px,1fr));grid-auto-rows:110px}
+.stage.pinned{grid-template-columns:1fr min(var(--sidew,200px),60%);grid-template-rows:repeat(5,minmax(110px,1fr));grid-auto-rows:110px}
 .stage.pinned .tile:not(.pin){grid-column:2}
 .stage.dense:not(.pinned){grid-template-columns:repeat(auto-fill,minmax(150px,1fr));grid-auto-rows:120px}
 .stage.dense .tile{min-height:0}
@@ -236,15 +236,29 @@ button:active:not(:disabled){transform:scale(.95)}
 .chat form{position:relative}
 .chat form .ghost{flex:none;padding:0 11px;border-radius:10px;display:grid;place-items:center}
 .chat form .ghost svg{width:18px;height:18px}
-#imgPick{position:absolute;left:12px;right:12px;bottom:calc(100% + 8px);z-index:6;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px;max-height:260px;overflow:auto;background:var(--bg)}
-#imgPick button{padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:transparent;aspect-ratio:1}
-#imgPick button:hover{border-color:var(--fg)}
-#imgPick img{width:100%;height:100%;object-fit:cover;display:block}
+#imgPick{position:absolute;left:12px;right:12px;bottom:calc(100% + 8px);z-index:6;display:flex;flex-direction:column;gap:8px;padding:10px;height:340px;max-height:60vh;background:var(--bg)}
+#imgPick input{flex:none;width:100%}
+#gifGrid{flex:1;min-height:0;overflow:auto;columns:2;column-gap:6px;font-size:.85rem;color:var(--dim)}
+#gifGrid button{display:block;width:100%;margin:0 0 6px;padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:transparent;break-inside:avoid}
+#gifGrid button:hover{border-color:var(--fg)}
+#gifGrid img{display:block;width:100%;min-height:40px}
+#imgPick small{font-size:.7rem;color:var(--dim);text-align:right}
+/* drag handles for resizing the chat and the side strip of tiles */
+.stage,.chat{position:relative}
+.grip{position:absolute;z-index:4;touch-action:none}
+.grip::after{content:"";position:absolute;inset:0;margin:auto;border-radius:9px;background:var(--fg);opacity:.25;transition:opacity .15s}
+.grip:hover::after,.grip.on::after{opacity:.8}
+#chatGrip{left:0;top:0;bottom:0;width:9px;cursor:col-resize}
+#sideGrip{top:0;bottom:0;right:min(var(--sidew,200px),60%);width:12px;cursor:col-resize}
+#chatGrip::after,#sideGrip::after{width:3px;height:44px}
 .mimg{display:block;max-width:100%;max-height:180px;border-radius:10px;margin-top:4px}
 @media(max-width:760px){
- #call{grid-template-columns:1fr;grid-template-rows:auto 1fr auto 36%}
+ #call{grid-template-columns:1fr;grid-template-rows:auto 1fr auto min(var(--chath,36%),70%)}
  #call header{grid-column:1}.chat{grid-row:4;grid-column:1}
  .stage.pinned{grid-template-columns:1fr 104px}
+ #chatGrip{right:0;bottom:auto;width:auto;height:10px;cursor:row-resize}
+ #chatGrip::after{width:44px;height:3px}
+ #sideGrip{display:none}
 }
 </style>
 </head>
@@ -293,12 +307,13 @@ button:active:not(:disabled){transform:scale(.95)}
     <div id="gameBar" class="mod hidden" role="group" aria-label="Games"></div>
   </div>
   <aside class="chat mod">
+    <div id="chatGrip" class="grip" role="separator" aria-label="Resize chat" title="Drag to resize. Double-click to reset"></div>
     <div class="tabs2" role="tablist"><button type="button" id="tabChat" class="on">Chat</button><button type="button" id="tabPeople">People <span id="peopleCount">1</span></button></div>
     <div id="chatPane" class="pane">
     <div id="log" aria-live="polite"></div>
     <div id="typing" class="typing" aria-live="polite"></div>
     <div id="replyBar" class="replybar hidden"><span></span><button type="button" id="replyX" aria-label="Cancel reply" title="Cancel reply">×</button></div>
-    <form id="chatForm"><div id="atPick" class="mod hidden" role="group" aria-label="Mention someone"></div><div id="imgPick" class="mod hidden" role="group" aria-label="Reaction images"></div><button type="button" class="ghost hidden" id="imgBtn" aria-label="Send a reaction image" title="Send a reaction image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 9"/></svg></button><input id="chatText" maxlength="500" placeholder="Message this room" autocomplete="off"><button class="solid">Send</button></form>
+    <form id="chatForm"><div id="atPick" class="mod hidden" role="group" aria-label="Mention someone"></div><div id="imgPick" class="mod hidden" role="group" aria-label="GIFs"><input id="gifQ" maxlength="50" placeholder="Search KLIPY" aria-label="Search GIFs" autocomplete="off"><div id="gifGrid"></div><small>Powered by KLIPY</small></div><button type="button" class="ghost hidden" id="imgBtn" aria-label="Send a GIF" title="Send a GIF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 9"/></svg></button><input id="chatText" maxlength="500" placeholder="Message this room" autocomplete="off"><button class="solid">Send</button></form>
     </div>
     <div id="peoplePane" class="pane hidden"><div id="peopleList"></div></div>
   </aside>
@@ -348,7 +363,7 @@ button:active:not(:disabled){transform:scale(.95)}
 
 <script>
 const $ = id => document.getElementById(id);
-let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, IMGS = [], dotRGB = '255,255,255';
+let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, dotRGB = '255,255,255';
 
 /* ---------- floating dot web (always running; slower if reduced motion is on) ---------- */
 (() => {
@@ -408,7 +423,7 @@ function connect() {
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; IMGS = m.images || []; drawImgPick(); $('me').textContent = 'You are ' + myName; drawLobby(); show('lobby'); setAv($('meAv'), myName, myAvatar); if (myAvatar) send({ type: 'avatar', data: myAvatar }); }
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); $('me').textContent = 'You are ' + myName; drawLobby(); show('lobby'); setAv($('meAv'), myName, myAvatar); if (myAvatar) send({ type: 'avatar', data: myAvatar }); }
   else if (m.type === 'lobby') { rooms = m.rooms; drawLobby(); }
   else if (m.type === 'error') toast(m.text);
   else if (m.type === 'joined') onJoined(m);
@@ -910,8 +925,32 @@ let boardOpen = false, strokes = [], brush = '#ffffff', mySeq = 0, cur = null, p
 const boardEl = $('board'), bcv = $('bcv'), bx = bcv.getContext('2d');
 const SW = ['#ffffff', '#2dff88', '#ffd23f', '#ff5fa2', '#3fd0ff', '#0b0b0b']; // last one is the eraser
 function layout() {
-  $('stage').classList.toggle('pinned', !!pinId || boardOpen); $('stage').classList.toggle('boardopen', boardOpen);
+  const st = $('stage'); st.classList.toggle('pinned', !!pinId || boardOpen); st.classList.toggle('boardopen', boardOpen);
+  if (sideGrip.parentNode !== st) st.appendChild(sideGrip); // the stage is emptied on every join, so put the handle back
+  sideGrip.classList.toggle('hidden', !pinId && !boardOpen);
 }
+
+/* ---------- resizable panels: drag the chat's edge, or the gap beside the pinned tile or board. Sizes are saved in this browser ---------- */
+const sizes = (() => { try { return JSON.parse(localStorage.getItem('sizes')) || {}; } catch { return {}; } })();
+const sideGrip = document.createElement('div'); sideGrip.id = 'sideGrip'; sideGrip.className = 'grip hidden'; sideGrip.title = 'Drag to resize. Double-click to reset';
+const clamp = (v, lo, hi) => Math.round(Math.max(lo, Math.min(hi, v)));
+function applySizes() {
+  const s = document.documentElement.style;
+  ['chatw', 'chath', 'sidew'].forEach(k => { if (sizes[k]) s.setProperty('--' + k, sizes[k] + 'px'); else s.removeProperty('--' + k); });
+}
+function grip(el, onMove, keys) { // keys: the saved sizes a double-click puts back to normal
+  const save = () => { applySizes(); localStorage.setItem('sizes', JSON.stringify(sizes)); };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('on'); });
+  el.addEventListener('pointermove', e => { if (el.hasPointerCapture(e.pointerId)) { onMove(e); applySizes(); } });
+  ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, () => { el.classList.remove('on'); save(); }));
+  el.addEventListener('dblclick', () => { keys.forEach(k => delete sizes[k]); save(); });
+}
+grip($('chatGrip'), e => {
+  if (matchMedia('(max-width:760px)').matches) sizes.chath = clamp(innerHeight - 14 - e.clientY, 140, innerHeight * .7); // phones: the chat sits under the video, so the drag changes its height
+  else sizes.chatw = clamp(innerWidth - 14 - e.clientX, 240, innerWidth * .6);
+}, ['chatw', 'chath']);
+grip(sideGrip, e => { const r = $('stage').getBoundingClientRect(); sizes.sidew = clamp(r.right - e.clientX - 6, 110, r.width * .6); }, ['sidew']);
+applySizes();
 SW.forEach((c, i) => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.style.setProperty('--c', c);
   b.title = i === 5 ? 'Eraser' : 'Colour'; b.setAttribute('aria-label', b.title + ' ' + (i + 1)); b.setAttribute('aria-pressed', c === brush);
@@ -1097,7 +1136,7 @@ function addMsg(m, live) {
       const q = d.querySelector('.mquote'); q.classList.remove('hidden'); q.textContent = m.re.name + ': ' + m.re.text;
       q.onclick = () => { const o = msgEl(m.re.id); if (o) { o.scrollIntoView({ block: 'center' }); o.classList.add('flash'); setTimeout(() => o.classList.remove('flash'), 1200); } };
     }
-    d.querySelector('.mrep').onclick = () => setReply({ id: m.id, name: m.name, text: m.text || (m.img !== undefined ? 'Image' : m.poll ? 'Poll' : 'Game') });
+    d.querySelector('.mrep').onclick = () => setReply({ id: m.id, name: m.name, text: m.text || (m.gif ? 'GIF' : m.poll ? 'Poll' : 'Game') });
     if (m.poll) drawPoll(d, m.poll);
     if (m.game) drawGame(d, m.game);
     if (m.name !== myName && ((m.at || []).includes(myName) || (m.re && m.re.name === myName))) { // someone @'d you or replied to you
@@ -1105,9 +1144,9 @@ function addMsg(m, live) {
       if (live) { sfx.ping(); if ($('chatPane').classList.contains('hidden')) toast(m.name + (m.re && m.re.name === myName ? ' replied to you' : ' mentioned you')); }
     }
     d.querySelector('time').textContent = new Date(m.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    if (m.img !== undefined && IMGS[m.img]) {
-      const im = document.createElement('img'); im.className = 'mimg'; im.alt = 'Reaction image'; im.referrerPolicy = 'no-referrer';
-      im.onload = () => { log.scrollTop = log.scrollHeight; }; im.src = IMGS[m.img]; d.querySelector('.mtext').appendChild(im);
+    if (m.gif && GIFRE.test(m.gif)) {
+      const im = document.createElement('img'); im.className = 'mimg'; im.alt = 'GIF'; im.referrerPolicy = 'no-referrer';
+      im.onload = () => { log.scrollTop = log.scrollHeight; }; im.src = m.gif; d.querySelector('.mtext').appendChild(im);
     }
     const av = d.querySelector('.mav'); av.dataset.name = m.name; setAv(av, m.name, avatarOf(m.name));
     d.querySelector('.madd:not(.mrep)').onclick = ev => openMPick(ev.currentTarget, m.id);
@@ -1116,19 +1155,28 @@ function addMsg(m, live) {
   log.appendChild(d); log.scrollTop = log.scrollHeight;
 }
 $('chatForm').onsubmit = e => { e.preventDefault(); const v = $('chatText').value.trim(); if (v) { send({ type: 'chat', text: v, re: replyTo ? replyTo.id : undefined }); setReply(null); } atPick.classList.add('hidden'); $('chatText').value = ''; clearTimeout(typingTimer); typingSent = 0; send({ type: 'typing', on: false }); };
-/* ---------- reaction images (the list comes from the server) ---------- */
-const imgPick = $('imgPick');
-function drawImgPick() {
-  imgPick.innerHTML = '';
-  IMGS.forEach((src, i) => {
-    const b = document.createElement('button'); b.type = 'button'; b.dataset.sfx = 'none'; b.setAttribute('aria-label', 'Send reaction image ' + (i + 1));
-    const im = document.createElement('img'); im.alt = ''; im.referrerPolicy = 'no-referrer'; im.src = src; b.appendChild(im);
-    b.onclick = () => { send({ type: 'chat', img: i, re: replyTo ? replyTo.id : undefined }); setReply(null); imgPick.classList.add('hidden'); sfx.pop(); };
-    imgPick.appendChild(b);
+/* ---------- GIFs: the search goes to our server, which asks the Klipy catalog ---------- */
+const imgPick = $('imgPick'), GIFRE = /^https:\/\/([a-z0-9-]+\.)*klipy\.(com|co)\//i; let gifTimer, gifSeq = 0;
+async function gifSearch() { // an empty search box shows what is trending
+  const n = ++gifSeq, grid = $('gifGrid'); let list = [];
+  try { list = await (await fetch('/gifs?q=' + encodeURIComponent($('gifQ').value.trim()))).json(); } catch {}
+  if (n !== gifSeq) return; // a newer search has started since
+  grid.innerHTML = '';
+  if (!Array.isArray(list) || !list.length) { grid.textContent = 'No GIFs found'; return; }
+  list.forEach(g => {
+    if (!GIFRE.test(g.url) || !GIFRE.test(g.thumb)) return;
+    const b = document.createElement('button'); b.type = 'button'; b.dataset.sfx = 'none';
+    const im = document.createElement('img'); im.alt = g.title || 'GIF'; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer'; im.src = g.thumb; b.appendChild(im);
+    b.onclick = () => { send({ type: 'chat', gif: g.url, re: replyTo ? replyTo.id : undefined }); setReply(null); imgPick.classList.add('hidden'); sfx.pop(); };
+    grid.appendChild(b);
   });
-  $('imgBtn').classList.toggle('hidden', !IMGS.length);
 }
-$('imgBtn').onclick = () => imgPick.classList.toggle('hidden');
+$('gifQ').addEventListener('input', () => { clearTimeout(gifTimer); gifTimer = setTimeout(gifSearch, 350); });
+$('gifQ').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); clearTimeout(gifTimer); gifSearch(); } }); // Enter must not send the chat form
+$('imgBtn').onclick = () => {
+  if (imgPick.classList.toggle('hidden')) return;
+  $('gifQ').focus(); if (!$('gifGrid').children.length) gifSearch();
+};
 document.addEventListener('click', e => { if (!imgPick.contains(e.target) && !e.target.closest('#imgBtn')) imgPick.classList.add('hidden'); });
 function toast(t) {
   const old = $('toast'); if (old) old.remove();
