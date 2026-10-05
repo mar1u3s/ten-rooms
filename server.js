@@ -1,5 +1,5 @@
 // Ten Rooms: lobby + signaling server. Video/audio go browser-to-browser (WebRTC); this only handles names, rooms, handshakes and chat.
-const http = require('http'), fs = require('fs'), path = require('path');
+const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
@@ -43,12 +43,54 @@ const server = http.createServer((req, res) => {
 });
 
 const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
-const rooms = ROOMS.map(([name, max], i) => ({ id: i + 1, name, max, topic: '', board: [], members: new Map(), chat: [] }));
+const rooms = ROOMS.map(([name, max], i) => ({ id: i + 1, name, max, topic: '', board: [], members: new Map(), chat: [], bans: new Map(), vote: null }));
 let nextId = 1, msgSeq = 0;
 const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify(m));
 const toRoom = (r, m, except) => r.members.forEach((p, id) => id !== except && send(p, m));
 const lobby = () => rooms.map(r => ({ id: r.id, name: r.name, topic: r.topic, max: r.max, users: [...r.members.values()].map(p => p.name) }));
-const pushLobby = () => wss.clients.forEach(c => c.name && send(c, { type: 'lobby', rooms: lobby() }));
+const pushLobby = () => { const l = lobby(); wss.clients.forEach(c => { if (c.name) { send(c, { type: 'lobby', rooms: l }); presence(c); } }); };
+
+// Friends without accounts: each browser keeps a secret id and the server turns it into a short friend code.
+// Nothing here is saved; friend lists live in the browsers. Two people count as friends once each has added the other's code.
+const online = new Map(); // friend code -> the sockets using it right now (one per open tab)
+function codeOf(key) { // the same secret always gives the same 8-character code, and the code cannot be turned back into the secret
+  const h = crypto.createHash('sha256').update('tenrooms:' + key).digest(); let s = '';
+  for (let i = 0; i < 8; i++) s += 'ABCDEFGHJKMNPQRSTVWXYZ23456789'[h[i] % 30];
+  return s;
+}
+const socketsOf = code => [...(online.get(code) || [])];
+const isFriend = (ws, code) => !!ws.friends && ws.friends.has(code);
+const mutual = (ws, code) => isFriend(ws, code) && socketsOf(code).some(o => isFriend(o, ws.code));
+function presence(ws) { // tell one person which of their friends are online and which room they are in
+  if (!ws.code || !ws.friends) return;
+  const list = [...ws.friends].filter(c => mutual(ws, c)).map(c => {
+    const all = socketsOf(c), o = all.find(x => x.room) || all[0];
+    return { code: c, name: o.name, room: o.room ? o.room.id : 0 };
+  });
+  send(ws, { type: 'presence', list });
+}
+
+// Vote kicks: one vote per room at a time, 30 seconds, and more than half of the other people must say yes.
+const KICK_MS = 30000, BAN_MS = 10 * 60000;
+const need = r => Math.floor((r.members.size - 1) / 2) + 1; // the person being voted on does not count
+const voteInfo = r => r.vote && { target: r.vote.target, name: r.vote.name, by: r.vote.by, yes: r.vote.yes.size, need: need(r), left: r.vote.ends - Date.now() };
+function endVote(r, text) { clearTimeout(r.vote.timer); r.vote = null; toRoom(r, { type: 'kickvote', over: true }); if (text) say(r, text); }
+function checkVote(r) { // called after every vote and whenever someone leaves
+  const v = r.vote; if (!v) return;
+  const target = r.members.get(v.target), n = need(r);
+  if (!target) return endVote(r, `${v.name} left, so the vote ended`);
+  if (r.members.size < 3) return endVote(r, `The vote to kick ${v.name} ended: not enough people left`);
+  if (v.yes.size >= n) {
+    endVote(r, `${v.name} was voted out of the room`);
+    const until = Date.now() + BAN_MS; // kept out for 10 minutes, by friend code and by name
+    r.bans.forEach((t, k) => { if (t < Date.now()) r.bans.delete(k); });
+    if (target.code) r.bans.set('c:' + target.code, until);
+    r.bans.set('n:' + target.name.toLowerCase(), until);
+    send(target, { type: 'kicked', text: `You were voted out of ${r.name}. You can come back in 10 minutes.` });
+    leave(target);
+  } else if (v.no.size > r.members.size - 1 - n) endVote(r, `The vote to kick ${v.name} failed`); // too many said no for it to pass
+  else toRoom(r, { type: 'kickvote', ...voteInfo(r) });
+}
 
 function uniqueName(raw) { // two people can't share a name: "Sam" becomes "Sam 2"
   const base = String(raw || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 20) || 'Guest';
@@ -100,6 +142,7 @@ function leave(ws) {
   r.members.delete(ws.id); ws.room = null;
   toRoom(r, { type: 'peer-left', id: ws.id });
   say(r, `${ws.name} left`);
+  if (r.vote) { r.vote.yes.delete(ws.id); r.vote.no.delete(ws.id); checkVote(r); }
   if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; } // empty room resets
   pushLobby();
 }
@@ -116,11 +159,13 @@ wss.on('connection', (ws, req) => {
     if (m.type === 'join') {
       const r = rooms[(m.room | 0) - 1]; if (!r) return;
       if (r.members.size >= r.max) return send(ws, { type: 'error', text: `${r.name} is full` });
+      const banned = Math.max(r.bans.get('c:' + ws.code) || 0, r.bans.get('n:' + ws.name.toLowerCase()) || 0) - Date.now();
+      if (banned > 0) return send(ws, { type: 'error', text: `You were voted out of ${r.name}. Try again in ${Math.ceil(banned / 60000)} min.` });
       leave(ws); ws.st = {};
-      const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, avatar: p.avatar, ...p.st }));
+      const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, avatar: p.avatar, code: p.code, ...p.st }));
       r.members.set(ws.id, ws); ws.room = r;
-      send(ws, { type: 'joined', room: r.id, name: r.name, max: r.max, topic: r.topic, board: r.board, peers, chat: r.chat });
-      toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, avatar: ws.avatar, ...ws.st }, ws.id);
+      send(ws, { type: 'joined', room: r.id, name: r.name, max: r.max, topic: r.topic, board: r.board, peers, chat: r.chat, vote: voteInfo(r) });
+      toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, avatar: ws.avatar, code: ws.code, ...ws.st }, ws.id);
       say(r, `${ws.name} joined`); pushLobby();
     } else if (m.type === 'leave') leave(ws);
     else if (m.type === 'state' && ws.room) { // mute / camera-off status, shown on everyone's tiles
@@ -211,9 +256,44 @@ wss.on('connection', (ws, req) => {
         g.win = won ? me : g.b.every(c => c !== null) ? 'draw' : null;
       }
       toRoom(ws.room, { type: 'game', mid: msg.id, game: g });
+    } else if (m.type === 'kick' && ws.room) { // start a vote to kick someone; the starter counts as a yes
+      const r = ws.room, t = r.members.get(m.id);
+      if (!t || t === ws) return;
+      if (r.vote) return send(ws, { type: 'error', text: 'A vote is already running' });
+      if (r.members.size < 3) return send(ws, { type: 'error', text: 'Vote kicks need at least 3 people in the room' });
+      if (slow(ws, 'lastKick', 60000)) return send(ws, { type: 'error', text: 'You can start one vote a minute' });
+      const v = r.vote = { target: t.id, name: t.name, by: ws.name, yes: new Set([ws.id]), no: new Set(), ends: Date.now() + KICK_MS };
+      v.timer = setTimeout(() => { if (r.vote === v) endVote(r, `The vote to kick ${v.name} ran out of time`); }, KICK_MS);
+      say(r, `${ws.name} started a vote to kick ${t.name}`); checkVote(r);
+    } else if (m.type === 'kickv' && ws.room && ws.room.vote) {
+      const v = ws.room.vote; if (ws.id === v.target) return;
+      v.yes.delete(ws.id); v.no.delete(ws.id); (m.yes ? v.yes : v.no).add(ws.id); checkVote(ws.room);
+    } else if (m.type === 'id') { // the browser's secret id, sent once after connecting
+      if (ws.code || typeof m.key !== 'string' || !/^[a-f0-9]{32,64}$/.test(m.key)) return;
+      ws.code = codeOf(m.key);
+      if (!online.has(ws.code)) online.set(ws.code, new Set());
+      online.get(ws.code).add(ws); send(ws, { type: 'me', code: ws.code });
+    } else if (m.type === 'friends' && ws.code && Array.isArray(m.codes)) { // this browser's whole friend list, sent again whenever it changes
+      ws.friends = new Set(m.codes.slice(0, 100).filter(c => typeof c === 'string' && /^[A-Z2-9]{8}$/.test(c) && c !== ws.code));
+      wss.clients.forEach(o => { // anyone who has added one side but not the other gets asked to add them back
+        if (!o.code || o === ws || o.code === ws.code) return;
+        if (isFriend(ws, o.code) && !isFriend(o, ws.code)) send(o, { type: 'friend-req', code: ws.code, name: ws.name });
+        if (isFriend(o, ws.code) && !isFriend(ws, o.code)) send(ws, { type: 'friend-req', code: o.code, name: o.name });
+      });
+      pushLobby();
+    } else if (m.type === 'dm' && ws.code) { // direct message: passed straight on, never stored here
+      const text = String(m.text || '').trim().slice(0, 500); if (!text || slow(ws, 'lastDm', 300)) return;
+      if (!mutual(ws, m.to)) return send(ws, { type: 'dm-fail', text: 'Not sent: they are offline or have not added you back' });
+      const t = Date.now();
+      socketsOf(m.to).forEach(o => { if (isFriend(o, ws.code)) send(o, { type: 'dm', from: ws.code, name: ws.name, text, t }); });
+      socketsOf(ws.code).forEach(o => send(o, { type: 'dm', to: m.to, text, t }));
     }
   });
-  ws.on('close', () => { leave(ws); ws.name = null; });
+  ws.on('close', () => {
+    leave(ws); ws.name = null;
+    const set = online.get(ws.code);
+    if (set) { set.delete(ws); if (!set.size) online.delete(ws.code); pushLobby(); } // friends see them go offline
+  });
 });
 setInterval(() => wss.clients.forEach(c => { if (!c.alive) return c.terminate(); c.alive = false; c.ping(); }), 30000);
 server.listen(PORT, () => console.log(`Ten Rooms running on port ${PORT}`));
