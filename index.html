@@ -36,7 +36,8 @@ h1,h2{font-family:Unbounded,Manrope,sans-serif;font-weight:700;letter-spacing:-.
 .panel select option{background:#000}
 /* lobby */
 #lobby{max-width:1120px;margin:0 auto;padding:28px 22px 70px}
-.bar{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-bottom:46px}
+.bar{display:flex;align-items:center;gap:12px;width:fit-content;margin:0 0 46px auto;padding:7px 8px 7px 8px;border-radius:999px}
+.bar .pav{width:34px;height:34px;font-size:.9rem}
 .bar span{color:var(--dim)}
 #lobby h1{font-size:clamp(2.6rem,9vw,6rem);line-height:.95;margin-bottom:16px}
 #lobby .sub{max-width:46ch;margin-bottom:44px}
@@ -62,7 +63,7 @@ button:active:not(:disabled){transform:scale(.95)}
 
 /* call: every piece is its own rounded module */
 #call{position:fixed;inset:0;z-index:1;display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr auto;gap:14px;padding:14px}
-.mod{background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:18px}
+.mod{background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
 #call header{grid-column:1/3;display:flex;align-items:center;gap:12px;padding:12px 18px}
 #call header h2{font-size:1.15rem;flex:none}
 .stage{overflow:auto;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));grid-auto-rows:minmax(190px,1fr);min-height:0}
@@ -131,6 +132,51 @@ button:active:not(:disabled){transform:scale(.95)}
 .avbtns{display:flex;gap:8px;flex-wrap:wrap}
 #reactBar button{position:relative}
 #reactBar small{position:absolute;right:5px;bottom:3px;font-size:.62rem;color:var(--dim)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;max-width:560px}
+.stat{padding:14px 18px;border:1px solid var(--line);border-radius:16px;background:var(--glass);backdrop-filter:blur(8px);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.stat b{display:block;font:700 1.8rem Unbounded,sans-serif;letter-spacing:-.03em}
+.stat span{font-size:.8rem;color:var(--dim)}
+.credits{margin-top:44px;display:flex;align-items:center;gap:12px;width:fit-content;padding:9px 20px 9px 10px;border-radius:999px}
+.credits b{font-family:Unbounded,sans-serif;font-size:.95rem;font-weight:500}
+.room{position:relative}
+.room::before,.room::after{content:"";position:absolute;width:12px;height:12px;border:1px solid currentColor;opacity:.5;pointer-events:none}
+.room::before{top:8px;left:8px;border-right:0;border-bottom:0}
+.room::after{right:8px;bottom:8px;border-left:0;border-top:0}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2dff88;box-shadow:0 0 8px #2dff88;animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{50%{opacity:.35}}
+.sep{width:1px;align-self:stretch;background:var(--line);margin:4px 2px}
+.tile:hover{border-color:rgba(255,255,255,.5)}
+.controls .has-new::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#2dff88;box-shadow:0 0 8px #2dff88;margin-left:8px}
+/* board */
+.boardmod{display:flex;flex-direction:column;min-height:0;overflow:hidden;grid-column:1;grid-row:1/span 5}
+.stage.boardopen .tile.pin{grid-column:auto;grid-row:auto}
+.bh{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.bh h3{margin:0;font:700 1rem Unbounded,sans-serif}
+#swatches{display:flex;gap:8px}
+.sw{width:24px;height:24px;padding:0;border-radius:50%;border:2px solid transparent;background:var(--c);outline:1px solid var(--line)}
+.sw[aria-pressed=true]{border-color:#fff;box-shadow:0 0 0 2px #000 inset}
+.bsz{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--dim)}
+.bsz input{width:90px;accent-color:#fff}
+.bwrap{flex:1;min-height:0;display:grid;place-items:center;padding:12px;background:rgba(0,0,0,.35);container-type:size}
+#bcv{width:min(100cqw,160cqh);height:auto;aspect-ratio:8/5;background:#0b0b0b;border:1px solid var(--line);border-radius:12px;touch-action:none;cursor:crosshair}
+/* chat messages */
+.msg:not(.sys){display:flex;gap:10px;align-items:flex-start;position:relative;padding:10px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.35)}
+.mav{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font:700 .85rem Unbounded,sans-serif;background:#000 center/cover no-repeat}
+.mbody{flex:1;min-width:0}
+.mhead{display:flex;align-items:baseline;gap:8px}
+.mhead b{margin:0}
+.mhead time{font-size:.72rem;color:var(--dim)}
+.mtext{margin-top:2px;overflow-wrap:anywhere}
+.mreacts{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.mreacts:empty{display:none}
+.rchip{border:1px solid var(--line);background:#000;border-radius:999px;padding:2px 9px;font-size:.8rem}
+.rchip.mine{background:#fff;color:#000;border-color:#fff}
+.madd{position:absolute;top:6px;right:6px;width:26px;height:26px;padding:0;border-radius:50%;border:1px solid var(--line);background:#000;opacity:0;line-height:1}
+.msg:hover .madd,.madd:focus-visible{opacity:1}
+@media(hover:none){.madd{opacity:.7}}
+#mpick{position:fixed;z-index:30;display:flex;gap:2px;padding:6px;border-radius:999px}
+#mpick button{background:transparent;border:0;font-size:1.3rem;width:38px;height:38px;border-radius:50%;padding:0}
+#mpick button:hover{background:rgba(255,255,255,.15)}
 #toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:10px 18px;border-radius:999px;z-index:9;font-weight:600;max-width:90vw}
 @media(max-width:760px){
  #call{grid-template-columns:1fr;grid-template-rows:auto 1fr auto 36%}
@@ -152,20 +198,29 @@ button:active:not(:disabled){transform:scale(.95)}
 </section>
 
 <main id="lobby" class="view hidden">
-  <div class="bar"><span id="me"></span><button class="ghost" id="openSet">Settings</button><button class="ghost" id="logout">Change name</button></div>
+  <div class="bar mod"><div id="meAv" class="pav"></div><span id="me"></span><button class="ghost" id="openSet">Settings</button><button class="ghost" id="logout">Change name</button></div>
   <h1>Ten rooms</h1>
   <p class="sub">Walk into any open room to talk on video. Every room has its own chat.</p>
+  <div class="stats">
+    <div class="stat"><b id="stLive">0</b><span>live rooms</span></div>
+    <div class="stat"><b id="stOnline">0</b><span>people online</span></div>
+    <div class="stat"><b id="stFree">0</b><span>free seats</span></div>
+  </div>
   <div class="rooms" id="rooms"></div>
+  <footer class="credits mod"><span class="chip">Credits</span><b>diddydespacito</b></footer>
 </main>
 
 <section id="call" class="hidden">
-  <header class="mod"><h2 id="roomTitle"></h2><input id="topicIn" maxlength="40" placeholder="Add a topic" aria-label="Room topic" autocomplete="off"><span id="roomCount" class="chip"></span></header>
+  <header class="mod"><h2 id="roomTitle"></h2><input id="topicIn" maxlength="40" placeholder="Add a topic" aria-label="Room topic" autocomplete="off"><span class="chip"><i class="dot"></i>Live</span><span id="roomCount" class="chip"></span></header>
   <div class="stage" id="stage"></div>
   <div class="controls mod">
     <button class="ghost" id="mic" data-sfx="none">Mute mic</button>
     <button class="ghost" id="cam" data-sfx="none">Stop camera</button>
+    <span class="sep"></span>
     <button class="ghost" id="share">Share screen</button>
+    <button class="ghost" id="boardBtn">Board</button>
     <button class="ghost" id="react">React</button>
+    <span class="sep"></span>
     <button class="ghost" id="openSet2">Settings</button>
     <button class="solid" id="leave">Leave room</button>
     <div id="reactBar" class="mod hidden" role="group" aria-label="Reactions"></div>
@@ -193,6 +248,18 @@ button:active:not(:disabled){transform:scale(.95)}
     <label class="chk"><input type="checkbox" id="selSfx"> Interface sounds</label>
     <button class="solid" id="setDone">Done</button>
   </div>
+</div>
+
+<div id="board" class="boardmod mod hidden" role="region" aria-label="Shared drawing board">
+  <div class="bh">
+    <h3>Board</h3>
+    <div id="swatches" role="group" aria-label="Colour"></div>
+    <label class="bsz">Size <input type="range" id="bsize" min="2" max="30" value="5"></label>
+    <span style="flex:1"></span>
+    <button type="button" class="ghost" id="bclear">Clear</button>
+    <button type="button" class="ghost" id="bclose">Close</button>
+  </div>
+  <div class="bwrap"><canvas id="bcv" width="2000" height="1250"></canvas></div>
 </div>
 
 <script>
@@ -257,7 +324,7 @@ function connect() {
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('me').textContent = 'You are ' + myName; drawLobby(); show('lobby'); if (myAvatar) send({ type: 'avatar', data: myAvatar }); }
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('me').textContent = 'You are ' + myName; drawLobby(); show('lobby'); setAv($('meAv'), myName, myAvatar); if (myAvatar) send({ type: 'avatar', data: myAvatar }); }
   else if (m.type === 'lobby') { rooms = m.rooms; drawLobby(); }
   else if (m.type === 'error') toast(m.text);
   else if (m.type === 'joined') onJoined(m);
@@ -265,6 +332,9 @@ function handle(m) {
   else if (m.type === 'peer-left') { dropPeer(m.id); sfx.leave(); }
   else if (m.type === 'state') setState(m.id, m);
   else if (m.type === 'avatar') { if (people[m.id]) upsert(m.id, { avatar: safeAv(m.data) }); }
+  else if (m.type === 'stroke') onStroke(m);
+  else if (m.type === 'board-clear') { strokes = []; redraw(); toast(m.by + ' cleared the board'); }
+  else if (m.type === 'mreact') { const d = document.querySelector('.msg[data-mid="' + m.mid + '"]'); if (d) drawReacts(d, m.reacts); }
   else if (m.type === 'react') { floatEmoji(m.id, m.emoji); tone(700, .08, 'sine', .04, 1.5); }
   else if (m.type === 'typing') setTyper(m.id, m.name, m.on);
   else if (m.type === 'topic') { if (document.activeElement !== $('topicIn')) $('topicIn').value = m.text; }
@@ -274,6 +344,9 @@ function handle(m) {
 
 /* ---------- lobby ---------- */
 function drawLobby() {
+  $('stLive').textContent = rooms.filter(r => r.users.length).length;
+  $('stOnline').textContent = rooms.reduce((a, r) => a + r.users.length, 0);
+  $('stFree').textContent = rooms.reduce((a, r) => a + r.max - r.users.length, 0);
   const box = $('rooms'); box.innerHTML = '';
   rooms.forEach(r => {
     const n = r.users.length, full = n >= r.max, b = document.createElement('button');
@@ -304,6 +377,7 @@ function onJoined(m) {
   m.chat.forEach(addMsg);
   addTile('me', myName, local, true, { avatar: myAvatar });
   updateBtns(); pin(null); $('topicIn').value = m.topic || '';
+  strokes = (m.board || []).map(x => ({ ...x })); redraw();
   // the newcomer sends offers to everyone already inside
   m.peers.forEach(p => { addTile(p.id, p.name, null, false, p); call(p.id); });
   meter('me', local); pushState();
@@ -368,7 +442,8 @@ function dropPeer(id) {
   updateCount();
 }
 function exitRoom() {
-  inRoom = false; Object.keys(peers).forEach(dropPeer); unmeter('me'); sharing = null; screenAudio = null; $('share').textContent = 'Share screen'; pin(null); Object.keys(people).forEach(k => delete people[k]); renderPeople(); Object.keys(typers).forEach(k => setTyper(k, '', false));
+  inRoom = false; Object.keys(peers).forEach(dropPeer); unmeter('me'); boardOpen = false; boardEl.classList.add('hidden'); strokes = []; cur = null; pend = []; redraw();
+  sharing = null; screenAudio = null; $('share').textContent = 'Share screen'; pin(null); Object.keys(people).forEach(k => delete people[k]); renderPeople(); Object.keys(typers).forEach(k => setTyper(k, '', false));
   if (local) local.getTracks().forEach(t => t.stop());
   local = null; $('mic').textContent = 'Mute mic'; $('cam').textContent = 'Stop camera';
   $('mic').classList.remove('off'); $('cam').classList.remove('off');
@@ -569,7 +644,7 @@ $('share').onclick = toggleShare;
 let pinId = null, autoPin = null;
 function pin(id, auto) {
   pinId = id || null; autoPin = id && auto ? id : null;
-  $('stage').classList.toggle('pinned', !!pinId);
+  layout();
   document.querySelectorAll('.tile').forEach(t => {
     const on = !!pinId && t.id === 't-' + pinId; t.classList.toggle('pin', on);
     t.querySelector('.pinbtn').setAttribute('aria-pressed', on);
@@ -622,6 +697,7 @@ const pick = s => { const o = {}; ['muted', 'camOff', 'sharing'].forEach(k => { 
 function setAv(el, name, data) { el.style.backgroundImage = data ? 'url("' + data + '")' : ''; el.textContent = data ? '' : ((name || '?')[0] || '?').toUpperCase(); }
 function upsert(id, d) {
   people[id] = Object.assign(people[id] || {}, d); renderPeople();
+  if (d.avatar !== undefined || d.name !== undefined) refreshMsgAv();
   const t = $('t-' + id); if (t) setAv(t.querySelector('.avatar b'), people[id].name, people[id].avatar);
 }
 const vols = (() => { try { return JSON.parse(localStorage.getItem('vols')) || {}; } catch { return {}; } })();
@@ -667,7 +743,7 @@ $('tabChat').onclick = () => tab('chat'); $('tabPeople').onclick = () => tab('pe
 let myAvatar = safeAv(localStorage.getItem('avatar'));
 function setMyAvatar(d) {
   myAvatar = d; localStorage.setItem('avatar', d); send({ type: 'avatar', data: d });
-  setAv($('avPrev'), myName, d); if (people.me) upsert('me', { avatar: d });
+  setAv($('avPrev'), myName, d); setAv($('meAv'), myName, d); if (people.me) upsert('me', { avatar: d });
 }
 $('avPick').onclick = () => $('avFile').click();
 $('avClear').onclick = () => setMyAvatar('');
@@ -683,11 +759,96 @@ $('avFile').onchange = e => {
   img.src = URL.createObjectURL(f);
 };
 
+/* ---------- shared drawing board ---------- */
+let boardOpen = false, strokes = [], brush = '#ffffff', mySeq = 0, cur = null, pend = [];
+const boardEl = $('board'), bcv = $('bcv'), bx = bcv.getContext('2d');
+const SW = ['#ffffff', '#2dff88', '#ffd23f', '#ff5fa2', '#3fd0ff', '#0b0b0b']; // last one is the eraser
+function layout() {
+  $('stage').classList.toggle('pinned', !!pinId || boardOpen); $('stage').classList.toggle('boardopen', boardOpen);
+}
+SW.forEach((c, i) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.style.setProperty('--c', c);
+  b.title = i === 5 ? 'Eraser' : 'Colour'; b.setAttribute('aria-label', b.title + ' ' + (i + 1)); b.setAttribute('aria-pressed', c === brush);
+  b.onclick = () => { brush = c; document.querySelectorAll('.sw').forEach(x => x.setAttribute('aria-pressed', x === b)); };
+  $('swatches').appendChild(b);
+});
+function drawStroke(s, from) {
+  const p = s.pts; if (p.length < 2) return;
+  bx.save(); bx.setTransform(2, 0, 0, 2, 0, 0); bx.strokeStyle = s.c; bx.lineWidth = s.w; bx.lineCap = bx.lineJoin = 'round';
+  bx.beginPath(); const st = Math.max(0, (from || 0) - 2); bx.moveTo(p[st], p[st + 1]);
+  for (let i = st + 2; i < p.length; i += 2) bx.lineTo(p[i], p[i + 1]);
+  if (p.length === 2) bx.lineTo(p[0] + .01, p[1]);
+  bx.stroke(); bx.restore();
+}
+function redraw() { bx.clearRect(0, 0, 2000, 1250); strokes.forEach(s => drawStroke(s, 0)); }
+function onStroke(m) {
+  let s = strokes.find(x => x.sid === m.sid); const from = s ? s.pts.length : 0;
+  if (!s) { s = { sid: m.sid, c: m.c, w: m.w, pts: [] }; strokes.push(s); }
+  s.pts.push(...m.pts);
+  if (boardOpen) drawStroke(s, from); else $('boardBtn').classList.add('has-new');
+}
+function setBoard(open) {
+  boardOpen = open;
+  if (open) { $('stage').appendChild(boardEl); boardEl.classList.remove('hidden'); $('boardBtn').classList.remove('has-new'); redraw(); }
+  else boardEl.classList.add('hidden');
+  layout();
+}
+$('boardBtn').onclick = () => setBoard(!boardOpen); $('bclose').onclick = () => setBoard(false);
+$('bclear').onclick = () => { strokes = []; redraw(); send({ type: 'board-clear' }); };
+const bpt = e => { const r = bcv.getBoundingClientRect(); return [Math.max(0, Math.min(1000, Math.round((e.clientX - r.left) / r.width * 1000))), Math.max(0, Math.min(625, Math.round((e.clientY - r.top) / r.height * 625)))]; };
+function extend(x, y) { const from = cur.pts.length; cur.pts.push(x, y); pend.push(x, y); drawStroke(cur, from); }
+function flush() {
+  if (!cur || !pend.length) return;
+  for (let i = 0; i < pend.length; i += 300) send({ type: 'stroke', sid: cur.sid, c: cur.c, w: cur.w, pts: pend.slice(i, i + 300) });
+  pend = [];
+}
+bcv.addEventListener('pointerdown', e => {
+  if (e.button > 0) return; bcv.setPointerCapture(e.pointerId);
+  cur = { sid: myId + '-' + (++mySeq), c: brush, w: +$('bsize').value * (brush === SW[5] ? 3 : 1), pts: [] };
+  strokes.push(cur); const [x, y] = bpt(e); extend(x, y); extend(x, y);
+});
+bcv.addEventListener('pointermove', e => { if (cur) { const [x, y] = bpt(e); extend(x, y); } });
+['pointerup', 'pointercancel'].forEach(t => bcv.addEventListener(t, () => { flush(); cur = null; }));
+setInterval(flush, 50);
+
+/* ---------- message reactions ---------- */
+const avatarOf = n => { const p = Object.values(people).find(x => x.name === n); return (p && p.avatar) || ''; };
+function refreshMsgAv() { document.querySelectorAll('.mav').forEach(el => setAv(el, el.dataset.name, avatarOf(el.dataset.name))); }
+function drawReacts(d, reacts) {
+  const box = d.querySelector('.mreacts'); box.innerHTML = '';
+  Object.entries(reacts).forEach(([e, names]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'rchip' + (names.includes(myName) ? ' mine' : '');
+    b.textContent = e + ' ' + names.length; b.title = names.join(', ');
+    b.onclick = () => send({ type: 'mreact', mid: +d.dataset.mid, emoji: e }); box.appendChild(b);
+  });
+}
+const mpick = document.createElement('div'); mpick.id = 'mpick'; mpick.className = 'mod hidden'; document.body.appendChild(mpick);
+function openMPick(btn, mid) {
+  mpick.innerHTML = '';
+  EMOJIS.forEach(e => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = e; b.dataset.sfx = 'none';
+    b.onclick = () => { send({ type: 'mreact', mid, emoji: e }); mpick.classList.add('hidden'); sfx.pop(); }; mpick.appendChild(b);
+  });
+  const r = btn.getBoundingClientRect(); mpick.classList.remove('hidden');
+  mpick.style.top = Math.max(8, r.top - 52) + 'px';
+  mpick.style.left = Math.max(8, Math.min(innerWidth - mpick.offsetWidth - 8, r.right - mpick.offsetWidth)) + 'px';
+}
+document.addEventListener('click', e => { if (!mpick.contains(e.target) && !e.target.closest('.madd')) mpick.classList.add('hidden'); });
+
 /* ---------- chat ---------- */
 function addMsg(m) {
-  const d = document.createElement('div'); d.className = 'msg' + (m.system ? ' sys' : '');
-  if (m.system) d.textContent = m.text; else { const b = document.createElement('b'); b.textContent = m.name; d.append(b, m.text); }
-  const log = $('log'); log.appendChild(d); log.scrollTop = log.scrollHeight;
+  const log = $('log'), d = document.createElement('div');
+  if (m.system) { d.className = 'msg sys'; d.textContent = m.text; }
+  else {
+    d.className = 'msg'; d.dataset.mid = m.id;
+    d.innerHTML = '<div class="mav"></div><div class="mbody"><div class="mhead"><b></b><time></time></div><div class="mtext"></div><div class="mreacts"></div></div><button type="button" class="madd" aria-label="Add reaction" title="React">+</button>';
+    d.querySelector('b').textContent = m.name; d.querySelector('.mtext').textContent = m.text;
+    d.querySelector('time').textContent = new Date(m.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const av = d.querySelector('.mav'); av.dataset.name = m.name; setAv(av, m.name, avatarOf(m.name));
+    d.querySelector('.madd').onclick = ev => openMPick(ev.currentTarget, m.id);
+    drawReacts(d, m.reacts || {});
+  }
+  log.appendChild(d); log.scrollTop = log.scrollHeight;
 }
 $('chatForm').onsubmit = e => { e.preventDefault(); const v = $('chatText').value.trim(); if (v) send({ type: 'chat', text: v }); $('chatText').value = ''; clearTimeout(typingTimer); typingSent = 0; send({ type: 'typing', on: false }); };
 function toast(t) {
