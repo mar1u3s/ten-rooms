@@ -2,8 +2,9 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 
-const PORT = process.env.PORT || 3000, MAX = 6, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
-const NAMES = ['Lounge','Studio','Kitchen','Garage','Rooftop','Library','Arcade','Garden','Workshop','Porch'];
+const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
+// [name, max people]. Small rooms keep full video; bigger rooms get lower per-person video quality (see tune() in index.html).
+const ROOMS = [['Lounge', 6], ['Studio', 6], ['Kitchen', 6], ['Garage', 10], ['Rooftop', 10], ['Library', 15], ['Arcade', 15], ['Workshop', 15], ['Garden', 50], ['Porch', 50]];
 const ICE = (() => { try { return JSON.parse(process.env.ICE_SERVERS); } catch { return [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]; } })();
 
 const server = http.createServer((req, res) => {
@@ -17,11 +18,11 @@ const server = http.createServer((req, res) => {
 });
 
 const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
-const rooms = NAMES.map((name, i) => ({ id: i + 1, name, topic: '', board: [], members: new Map(), chat: [] }));
+const rooms = ROOMS.map(([name, max], i) => ({ id: i + 1, name, max, topic: '', board: [], members: new Map(), chat: [] }));
 let nextId = 1, msgSeq = 0;
 const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify(m));
 const toRoom = (r, m, except) => r.members.forEach((p, id) => id !== except && send(p, m));
-const lobby = () => rooms.map(r => ({ id: r.id, name: r.name, topic: r.topic, max: MAX, users: [...r.members.values()].map(p => p.name) }));
+const lobby = () => rooms.map(r => ({ id: r.id, name: r.name, topic: r.topic, max: r.max, users: [...r.members.values()].map(p => p.name) }));
 const pushLobby = () => wss.clients.forEach(c => c.name && send(c, { type: 'lobby', rooms: lobby() }));
 
 function uniqueName(raw) { // two people can't share a name: "Sam" becomes "Sam 2"
@@ -63,11 +64,11 @@ wss.on('connection', (ws, req) => {
     let m; try { m = JSON.parse(raw); } catch { return; }
     if (m.type === 'join') {
       const r = rooms[(m.room | 0) - 1]; if (!r) return;
-      if (r.members.size >= MAX) return send(ws, { type: 'error', text: `${r.name} is full` });
+      if (r.members.size >= r.max) return send(ws, { type: 'error', text: `${r.name} is full` });
       leave(ws); ws.st = {};
       const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, avatar: p.avatar, ...p.st }));
       r.members.set(ws.id, ws); ws.room = r;
-      send(ws, { type: 'joined', room: r.id, name: r.name, topic: r.topic, board: r.board, peers, chat: r.chat });
+      send(ws, { type: 'joined', room: r.id, name: r.name, max: r.max, topic: r.topic, board: r.board, peers, chat: r.chat });
       toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, avatar: ws.avatar, ...ws.st }, ws.id);
       say(r, `${ws.name} joined`); pushLobby();
     } else if (m.type === 'leave') leave(ws);
