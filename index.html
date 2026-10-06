@@ -40,7 +40,7 @@ h1,h2{font-family:Unbounded,Manrope,sans-serif;font-weight:700;letter-spacing:-.
 .bar .pav{width:34px;height:34px;font-size:.9rem}
 .bar span{color:var(--dim)}
 #lobby h1{font-size:clamp(2.6rem,9vw,6rem);line-height:.95;margin-bottom:16px}
-#lobby .sub{max-width:46ch;margin-bottom:44px}
+#lobby .sub{max-width:46ch;margin-bottom:28px}
 .rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
 .room{text-align:left;display:flex;flex-direction:column;gap:14px;min-height:200px;padding:22px;background:var(--glass);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:18px;transition:background .25s,color .25s,border-color .25s,transform .1s}
 .room .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -143,7 +143,7 @@ button:active:not(:disabled){transform:scale(.95)}
 .stat{padding:14px 18px;border:1px solid var(--line);border-radius:16px;background:var(--glass);backdrop-filter:blur(8px);box-shadow:inset 0 1px 0 rgb(var(--fgc)/.07)}
 .stat b{display:block;font:700 1.8rem Unbounded,sans-serif;letter-spacing:-.03em}
 .stat span{font-size:.8rem;color:var(--dim)}
-.credits{margin-top:44px;flex-wrap:wrap;max-width:100%;display:flex;align-items:center;gap:12px;width:fit-content;padding:9px 20px 9px 10px;border-radius:999px}
+.credits{margin-top:20px;flex-wrap:wrap;max-width:100%;display:flex;align-items:center;gap:12px;width:fit-content;padding:9px 20px 9px 10px;border-radius:999px}
 .credits b{font-family:Unbounded,sans-serif;font-size:.95rem;font-weight:500}
 .room{position:relative}
 .room::before,.room::after{content:"";position:absolute;width:12px;height:12px;border:1px solid currentColor;opacity:.5;pointer-events:none}
@@ -273,11 +273,53 @@ button:active:not(:disabled){transform:scale(.95)}
 .stage,.chat{position:relative}
 .grip{position:absolute;z-index:4;touch-action:none}
 .grip::after{content:"";position:absolute;inset:0;margin:auto;border-radius:9px;background:var(--fg);opacity:.25;transition:opacity .15s}
-.grip:hover::after,.grip.on::after{opacity:.8}
+.grip:hover::after,.grip.on::after,.grip:focus-visible::after{opacity:.8}
 #chatGrip{left:0;top:0;bottom:0;width:9px;cursor:col-resize}
 #sideGrip{top:0;bottom:0;right:min(var(--sidew,200px),60%);width:12px;cursor:col-resize}
 #chatGrip::after,#sideGrip::after{width:3px;height:44px}
 .mimg{display:block;max-width:100%;max-height:180px;border-radius:10px;margin-top:4px}
+/* lobby tabs, global polls, the global feed, analytics */
+.ltabs{display:flex;gap:6px;width:fit-content;max-width:100%;padding:6px;border-radius:999px;margin:0 0 26px}
+.ltabs button{border:0;background:transparent;color:var(--dim);border-radius:999px;padding:9px 22px;font-weight:600}
+.ltabs .on{background:var(--fg);color:var(--bg)}
+.ltabs .has-new::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc);margin-left:8px;vertical-align:middle}
+.gpbox{padding:20px;max-width:640px;margin-bottom:18px;display:grid;gap:10px}
+.gpbox h3{margin:0;font:700 1rem Unbounded,sans-serif}
+.gq{font-size:1.2rem;font-weight:600}
+.gpbox .popt{padding:11px 14px;font-size:1rem}
+.gpbox .popt:disabled{cursor:default}
+.gpbox small{color:var(--dim)}
+.gpadmin input{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%}
+.gpadmin .row{display:flex;gap:8px;flex-wrap:wrap}
+.gph{display:grid;gap:4px;font-size:.9rem;padding:10px 0;border-top:1px solid var(--line)}
+.gph b{font-weight:600}
+.gph span{color:var(--dim)}
+.postbox{padding:16px;max-width:640px;margin-bottom:18px;display:grid;gap:10px}
+.postbox textarea{width:100%;min-height:76px;resize:vertical;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--fg);font:inherit}
+.postrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.postrow small{color:var(--dim)}
+#feedList{display:grid;gap:14px;max-width:640px}
+.post{padding:16px;display:grid;gap:10px}
+.phead{display:flex;align-items:center;gap:12px}
+.pwho{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.pwho b{overflow-wrap:anywhere}
+.pcode{font:700 .72rem Unbounded,sans-serif;letter-spacing:.06em;color:var(--acc)}
+.pwho time{font-size:.78rem;color:var(--dim)}
+.postacts{display:flex;gap:6px;flex-wrap:wrap}
+.postacts button,.postbar button{padding:5px 12px;font-size:.82rem}
+.ptext{white-space:pre-wrap;overflow-wrap:anywhere}
+.postbar{display:flex;gap:8px}
+.plike[aria-pressed=true]{border-color:var(--acc);color:var(--acc)}
+.pcomments{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.clist{display:grid;gap:8px}
+.cmt{font-size:.9rem;overflow-wrap:anywhere}
+.cmt b{margin-right:6px}
+.cmt .pcode{margin-right:6px}
+.cmt button{border:0;background:transparent;color:var(--dim);padding:0 6px}
+.cform{display:flex;gap:8px}
+.cform input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px}
+.cform .solid{padding:0 16px;border-radius:10px}
+.an{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:48px;max-width:760px}
 @media(max-width:760px){
  #call{grid-template-columns:1fr;grid-template-rows:auto 1fr auto min(var(--chath,36%),70%)}
  #call header{grid-column:1}.chat{grid-row:4;grid-column:1}
@@ -304,14 +346,50 @@ button:active:not(:disabled){transform:scale(.95)}
   <div class="bar mod"><div id="meAv" class="pav"></div><span id="me"></span><button class="ghost" id="openFr">Friends</button><button class="ghost" id="openSet">Settings</button><button class="ghost" id="logout">Change name</button></div>
   <h1>Ten rooms</h1>
   <p class="sub">Walk into any open room to talk on video. Every room has its own chat.</p>
-  <div class="stats">
-    <div class="stat"><b id="stLive">0</b><span>live rooms</span></div>
-    <div class="stat"><b id="stOnline">0</b><span>people online</span></div>
-    <div class="stat"><b id="stFree">0</b><span>free seats</span></div>
+  <nav class="ltabs mod" aria-label="Sections"><button type="button" id="ltRooms" class="on">Rooms</button><button type="button" id="ltPolls">Polls</button><button type="button" id="ltFeed">Feed</button></nav>
+
+  <div id="paneRooms">
+    <div class="stats">
+      <div class="stat"><b id="stLive">0</b><span>live rooms</span></div>
+      <div class="stat"><b id="stOnline">0</b><span>people in rooms</span></div>
+      <div class="stat"><b id="stFree">0</b><span>free seats</span></div>
+    </div>
+    <button class="solid" id="quick">Quick join</button>
+    <div class="rooms" id="rooms"></div>
   </div>
-  <button class="solid" id="quick">Quick join</button>
-  <div class="rooms" id="rooms"></div>
-  <footer class="credits mod"><span class="chip">Credits</span><b>Follow diddydespacito on TT and IG</b></footer>
+
+  <section id="panePolls" class="hidden">
+    <div class="gpbox mod"><h3>Community poll</h3><div id="gpCard"></div></div>
+    <form id="gpAdmin" class="gpbox gpadmin mod hidden">
+      <h3>Admin: send a poll</h3>
+      <input id="gpQ" maxlength="140" placeholder="Question" aria-label="Poll question" autocomplete="off" required>
+      <input class="gpO" maxlength="60" placeholder="Option 1" aria-label="Option 1" autocomplete="off" required>
+      <input class="gpO" maxlength="60" placeholder="Option 2" aria-label="Option 2" autocomplete="off" required>
+      <input class="gpO" maxlength="60" placeholder="Option 3 (optional)" aria-label="Option 3" autocomplete="off">
+      <input class="gpO" maxlength="60" placeholder="Option 4 (optional)" aria-label="Option 4" autocomplete="off">
+      <input class="gpO" maxlength="60" placeholder="Option 5 (optional)" aria-label="Option 5" autocomplete="off">
+      <input class="gpO" maxlength="60" placeholder="Option 6 (optional)" aria-label="Option 6" autocomplete="off">
+      <div class="row"><button class="solid">Publish new poll</button><button type="button" class="ghost" id="gpTpl">Edit as new</button><button type="button" class="ghost" id="gpClose">Close voting</button><button type="button" class="ghost" id="gpDel">Delete poll</button></div>
+      <small>Publishing replaces the current poll, which moves to Previous polls. Everyone sees the change straight away.</small>
+    </form>
+    <div id="gpHistBox" class="gpbox mod hidden"><h3>Previous polls</h3><div id="gpHist"></div></div>
+  </section>
+
+  <section id="paneFeed" class="hidden">
+    <form id="postForm" class="postbox mod">
+      <textarea id="postText" maxlength="300" placeholder="Post something for everyone…" aria-label="Write a post"></textarea>
+      <div class="postrow"><small id="postCount">0 / 300</small><button class="solid">Post</button></div>
+    </form>
+    <div id="feedList"></div>
+  </section>
+
+  <section class="an" aria-label="Site analytics">
+    <div class="stat"><b id="anToday">0</b><span>logged on today</span></div>
+    <div class="stat"><b id="anEver">0</b><span>ever logged on</span></div>
+    <div class="stat"><b id="anOnline">0</b><span>online now</span></div>
+    <div class="stat"><b id="anIdle">0</b><span>online, not in a room</span></div>
+  </section>
+  <footer class="credits mod"><span class="chip">Credits</span><b>@diddydespacito</b></footer>
 </main>
 
 <section id="call" class="hidden">
@@ -410,7 +488,7 @@ button:active:not(:disabled){transform:scale(.95)}
 
 <script>
 const $ = id => document.getElementById(id);
-let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, dotRGB = '255,255,255';
+let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, dotRGB = '255,255,255', isAdmin = false;
 
 /* ---------- floating dot web (always running; slower if reduced motion is on) ---------- */
 (() => {
@@ -470,8 +548,8 @@ function connect() {
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); send({ type: 'id', key: uid }); sendFriends(); $('me').textContent = 'You are ' + myName; drawLobby(); show('lobby'); setAv($('meAv'), myName, myAvatar); if (myAvatar) send({ type: 'avatar', data: myAvatar }); }
-  else if (m.type === 'lobby') { rooms = m.rooms; drawLobby(); }
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; feedLoaded = false; if (m.stats) drawStats(m.stats); $('imgBtn').classList.toggle('hidden', !m.gifs); send({ type: 'id', key: uid }); sendFriends(); $('me').textContent = 'You are ' + myName; drawLobby(); show('lobby'); setAv($('meAv'), myName, myAvatar); if (myAvatar) send({ type: 'avatar', data: myAvatar }); }
+  else if (m.type === 'lobby') { rooms = m.rooms; drawLobby(); if (m.stats) drawStats(m.stats); }
   else if (m.type === 'error') { toast(m.text); if (!inRoom && local) { local.getTracks().forEach(t => t.stop()); local = null; } } // a refused join must not leave the camera on
   else if (m.type === 'joined') onJoined(m);
   else if (m.type === 'peer-joined') { addTile(m.id, m.name, null, false, m); updateCount(); sfx.join(); }
@@ -485,7 +563,7 @@ function handle(m) {
   else if (m.type === 'typing') setTyper(m.id, m.name, m.on);
   else if (m.type === 'topic') { if (document.activeElement !== $('topicIn')) $('topicIn').value = m.text; }
   else if (m.type === 'signal') onSignal(m.from, m.data);
-  else if (m.type === 'me') { myCode = m.code; drawFriends(); renderPeople(); }
+  else if (m.type === 'me') { myCode = m.code; isAdmin = !!m.admin; drawFriends(); renderPeople(); drawGPoll(); Object.values(feedEls).forEach(refreshPost); if (!$('paneFeed').classList.contains('hidden')) send({ type: 'feed' }); }
   else if (m.type === 'presence') onPresence(m.list);
   else if (m.type === 'friend-req') onFriendReq(m);
   else if (m.type === 'dm') onDm(m);
@@ -494,6 +572,15 @@ function handle(m) {
   else if (m.type === 'kicked') { exitRoom(); toast(m.text); }
   else if (m.type === 'poll') { const d = msgEl(m.mid); if (d) drawPoll(d, m.poll); }
   else if (m.type === 'game') { const d = msgEl(m.mid); if (d) { drawGame(d, m.game); sfx.msg(); } }
+  else if (m.type === 'gpoll') { gpoll = m.poll; gphist = m.hist || []; drawGPoll(); gpDot(); }
+  else if (m.type === 'feed') { feedLoaded = true; drawFeed(m.posts); }
+  else if (m.type === 'post') onPost(m.post);
+  else if (m.type === 'post-like') { const d = feedEls[m.id]; if (d) { d._p.n = m.n; refreshPost(d); } }
+  else if (m.type === 'post-liked') { const d = feedEls[m.id]; if (d) { d._p.me = m.on; refreshPost(d); } }
+  else if (m.type === 'post-del') { const d = feedEls[m.id]; if (d) { d.remove(); delete feedEls[m.id]; } }
+  else if (m.type === 'comments') { const d = feedEls[m.id]; if (d) { d._c = m.list; drawComments(d); } }
+  else if (m.type === 'comment') onComment(m);
+  else if (m.type === 'comment-del') onCommentDel(m);
   else if (m.type === 'chat') { addMsg(m.msg, true); if (!m.msg.system) { Object.keys(typers).forEach(k => { if (typers[k].name === m.msg.name) setTyper(k, '', false); }); if (m.msg.name !== myName) sfx.msg(); } }
 }
 
@@ -991,26 +1078,33 @@ function layout() {
   sideGrip.classList.toggle('hidden', !pinId && !boardOpen);
 }
 
-/* ---------- resizable panels: drag the chat's edge, or the gap beside the pinned tile or board. Sizes are saved in this browser ---------- */
+/* ---------- resizable panels: drag the chat's edge, or the gap beside the pinned tile or board. Arrow keys work too. Sizes are saved in this browser ---------- */
 const sizes = (() => { try { return JSON.parse(localStorage.getItem('sizes')) || {}; } catch { return {}; } })();
 const sideGrip = document.createElement('div'); sideGrip.id = 'sideGrip'; sideGrip.className = 'grip hidden'; sideGrip.title = 'Drag to resize. Double-click to reset';
+sideGrip.setAttribute('role', 'separator'); sideGrip.setAttribute('aria-label', 'Resize the side tiles');
 const clamp = (v, lo, hi) => Math.round(Math.max(lo, Math.min(hi, v)));
 function applySizes() {
   const s = document.documentElement.style;
   ['chatw', 'chath', 'sidew'].forEach(k => { if (sizes[k]) s.setProperty('--' + k, sizes[k] + 'px'); else s.removeProperty('--' + k); });
 }
-function grip(el, onMove, keys) { // keys: the saved sizes a double-click puts back to normal
+function grip(el, onMove, keys, onKey) { // keys: the saved sizes a double-click puts back to normal. onKey(d): d is 1 to make the panel bigger, -1 smaller
   const save = () => { applySizes(); localStorage.setItem('sizes', JSON.stringify(sizes)); };
+  el.tabIndex = 0;
   el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('on'); });
   el.addEventListener('pointermove', e => { if (el.hasPointerCapture(e.pointerId)) { onMove(e); applySizes(); } });
   ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, () => { el.classList.remove('on'); save(); }));
   el.addEventListener('dblclick', () => { keys.forEach(k => delete sizes[k]); save(); });
+  el.addEventListener('keydown', e => { const d = { ArrowLeft: 1, ArrowUp: 1, ArrowRight: -1, ArrowDown: -1 }[e.key]; if (d) { e.preventDefault(); onKey(d); save(); } });
 }
 grip($('chatGrip'), e => {
   if (matchMedia('(max-width:760px)').matches) sizes.chath = clamp(innerHeight - 14 - e.clientY, 140, innerHeight * .7); // phones: the chat sits under the video, so the drag changes its height
   else sizes.chatw = clamp(innerWidth - 14 - e.clientX, 240, innerWidth * .6);
-}, ['chatw', 'chath']);
-grip(sideGrip, e => { const r = $('stage').getBoundingClientRect(); sizes.sidew = clamp(r.right - e.clientX - 6, 110, r.width * .6); }, ['sidew']);
+}, ['chatw', 'chath'], d => {
+  if (matchMedia('(max-width:760px)').matches) sizes.chath = clamp((sizes.chath || innerHeight * .36) + d * 24, 140, innerHeight * .7);
+  else sizes.chatw = clamp((sizes.chatw || 340) + d * 24, 240, innerWidth * .6);
+});
+grip(sideGrip, e => { const r = $('stage').getBoundingClientRect(); sizes.sidew = clamp(r.right - e.clientX - 6, 110, r.width * .6); }, ['sidew'],
+  d => { sizes.sidew = clamp((sizes.sidew || 200) + d * 24, 110, $('stage').getBoundingClientRect().width * .6); });
 applySizes();
 SW.forEach((c, i) => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.style.setProperty('--c', c);
@@ -1083,9 +1177,9 @@ document.addEventListener('click', e => { if (!mpick.contains(e.target) && !e.ta
 
 /* ---------- chat ---------- */
 const msgEl = mid => document.querySelector('.msg[data-mid="' + mid + '"]');
-function fillText(el, m) { // message text, with the @names the server found picked out
+function fillText(el, m) { // message text, with the @names the server found picked out (not when the name is just the start of a longer word)
   if (!m.at || !m.at.length) { el.textContent = m.text; return; }
-  const re = new RegExp('@(' + m.at.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
+  const re = new RegExp('@(' + m.at.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?![\\w])', 'gi');
   m.text.split(re).forEach((part, i) => {
     if (i % 2) { const s = document.createElement('span'); s.className = 'at'; s.textContent = '@' + part; el.appendChild(s); }
     else if (part) el.appendChild(document.createTextNode(part));
@@ -1262,16 +1356,20 @@ const uid = (() => {
   return k;
 })();
 const friends = load('friends', []), ignored = load('ignored', []), dms = load('dms', {}), unread = {};
-let myCode = '', pres = {}, reqs = [], dmOpen = null;
+{ // older versions saved friends as plain names; drop anything that is not a { code, name } entry so the Friends window can not break
+  const ok = friends.filter(f => f && typeof f.code === 'string' && /^[A-Z2-9]{8}$/.test(f.code) && typeof f.name === 'string');
+  if (ok.length !== friends.length) { friends.splice(0, friends.length, ...ok); keep('friends', friends); }
+}
+let myCode = '', pres = {}, reqs = load('reqs', []).filter(r => r && typeof r.code === 'string' && typeof r.name === 'string'), dmOpen = null; // requests are kept too, so a reconnect does not announce them again
 const sendFriends = () => send({ type: 'friends', codes: friends.map(f => f.code) });
-const saveFriends = () => { keep('friends', friends); sendFriends(); drawFriends(); renderPeople(); };
+const saveFriends = () => { keep('friends', friends); sendFriends(); drawFriends(); renderPeople(); Object.values(feedEls).forEach(refreshPost); };
 const nameOf = code => (friends.find(f => f.code === code) || {}).name || 'Friend';
 function addFriend(raw, name) {
   const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!/^[A-Z2-9]{8}$/.test(code)) return toast('Friend codes are 8 letters and numbers');
   if (code === myCode) return toast('That is your own code');
   if (friends.some(f => f.code === code)) return toast('Already on your list');
-  friends.push({ code, name: name || 'Friend ' + code.slice(0, 4) }); reqs = reqs.filter(r => r.code !== code);
+  friends.push({ code, name: name || 'Friend ' + code.slice(0, 4) }); reqs = reqs.filter(r => r.code !== code); keep('reqs', reqs);
   saveFriends(); toast('Added. They show as online once they add you back');
 }
 function onPresence(list) {
@@ -1282,7 +1380,7 @@ function onPresence(list) {
 }
 function onFriendReq(m) {
   if (ignored.includes(m.code) || friends.some(f => f.code === m.code) || reqs.some(r => r.code === m.code)) return;
-  reqs.push({ code: m.code, name: m.name }); drawFriends(); toast(m.name + ' added you as a friend');
+  reqs.push({ code: m.code, name: m.name }); keep('reqs', reqs); drawFriends(); toast(m.name + ' added you as a friend');
 }
 function frBadge() { // the dot on the Friends buttons: a request or an unread message is waiting
   const on = reqs.length > 0 || Object.keys(unread).length > 0;
@@ -1300,9 +1398,9 @@ function drawFriends() {
   reqs.forEach(q => {
     const r = row(q.name, 'Added you. Add them back?');
     btn(r, 'solid', 'Add', () => addFriend(q.code, q.name));
-    btn(r, 'ghost', 'Ignore', () => { ignored.push(q.code); keep('ignored', ignored); reqs = reqs.filter(x => x !== q); drawFriends(); });
+    btn(r, 'ghost', 'Ignore', () => { ignored.push(q.code); keep('ignored', ignored); reqs = reqs.filter(x => x !== q); keep('reqs', reqs); drawFriends(); });
   });
-  if (!friends.length && !reqs.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'No friends yet. Share your code, or press Add friend on someone in a room\'s People tab.'; box.appendChild(p); }
+  if (!friends.length && !reqs.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'No friends yet. Share your code, or press Add friend on someone in a room\'s People tab, or on their post in the Feed.'; box.appendChild(p); }
   [...friends].sort((a, b) => !!pres[b.code] - !!pres[a.code]).forEach(f => {
     const p = pres[f.code], room = p && rooms.find(x => x.id === p.room);
     const r = row(f.name, p ? (room ? 'In ' + room.name : 'Online') : 'Offline, or has not added you back', !!p);
@@ -1339,6 +1437,117 @@ addEventListener('keydown', e => { if (e.key === 'Escape') closeFr(); });
 $('frCopy').onclick = () => { if (myCode) navigator.clipboard.writeText(myCode).then(() => toast('Code copied'), () => toast('Your code is ' + myCode)); };
 $('frAdd').onsubmit = e => { e.preventDefault(); addFriend($('frIn').value); $('frIn').value = ''; };
 $('frSend').onsubmit = e => { e.preventDefault(); const v = $('frText').value.trim(); if (v && dmOpen) send({ type: 'dm', to: dmOpen, text: v }); $('frText').value = ''; };
+
+/* ---------- lobby tabs: Rooms, Polls, Feed ---------- */
+const mk = (tag, cls, txt) => { const x = document.createElement(tag); if (cls) x.className = cls; if (txt !== undefined) x.textContent = txt; return x; };
+let feedLoaded = false, gpoll = null, gphist = [], gpSeen = +localStorage.getItem('gpSeen') || 0;
+function lobTab(w) {
+  [['rooms', 'Rooms'], ['polls', 'Polls'], ['feed', 'Feed']].forEach(([k, n]) => {
+    $('pane' + n).classList.toggle('hidden', k !== w); $('lt' + n).classList.toggle('on', k === w); $('lt' + n).setAttribute('aria-current', k === w ? 'page' : 'false');
+  });
+  if (w === 'feed') { $('ltFeed').classList.remove('has-new'); send({ type: 'feed' }); } // always fetch, so likes and comments are fresh
+  gpDot();
+}
+$('ltRooms').onclick = () => lobTab('rooms'); $('ltPolls').onclick = () => lobTab('polls'); $('ltFeed').onclick = () => lobTab('feed');
+
+/* ---------- analytics at the bottom of the lobby ---------- */
+function drawStats(s) {
+  $('anToday').textContent = s.today.toLocaleString(); $('anEver').textContent = s.ever.toLocaleString();
+  $('anOnline').textContent = s.online.toLocaleString(); $('anIdle').textContent = s.idle.toLocaleString();
+}
+
+/* ---------- global poll (the admin sends it, everyone votes) ---------- */
+function gpDot() { // a dot on the Polls tab while there is a poll you have not seen or voted on
+  const hidden = $('panePolls').classList.contains('hidden');
+  if (!hidden && gpoll) { gpSeen = gpoll.id; localStorage.setItem('gpSeen', gpSeen); }
+  $('ltPolls').classList.toggle('has-new', hidden && !!gpoll && !gpoll.closed && gpoll.mine === null && gpoll.id !== gpSeen);
+}
+function drawGPoll() {
+  const card = $('gpCard'); card.innerHTML = '';
+  if (!gpoll) card.append(mk('p', 'sub', isAdmin ? 'No poll is running. Publish one below.' : 'No poll right now. Check back soon.'));
+  else {
+    card.append(mk('div', 'gq', gpoll.q));
+    gpoll.opts.forEach((o, i) => {
+      const pct = gpoll.total ? Math.round(o.n / gpoll.total * 100) : 0, b = mk('button', 'popt' + (gpoll.mine === i ? ' mine' : ''));
+      b.type = 'button'; b.style.setProperty('--w', pct + '%'); b.disabled = gpoll.closed;
+      b.append(mk('span', '', o.t), mk('b', '', o.n + ' · ' + pct + '%')); b.onclick = () => send({ type: 'gvote', id: gpoll.id, opt: i }); card.append(b);
+    });
+    card.append(mk('small', '', gpoll.total + (gpoll.total === 1 ? ' vote' : ' votes') + (gpoll.closed ? ' · voting closed' : gpoll.mine === null ? ' · tap an option to vote' : ' · tap your choice again to remove your vote')));
+  }
+  $('gpAdmin').classList.toggle('hidden', !isAdmin);
+  $('gpClose').textContent = gpoll && gpoll.closed ? 'Reopen voting' : 'Close voting';
+  ['gpClose', 'gpDel', 'gpTpl'].forEach(id => $(id).disabled = !gpoll);
+  const h = $('gpHist'); h.innerHTML = ''; $('gpHistBox').classList.toggle('hidden', !gphist.length);
+  gphist.forEach(p => { const d = mk('div', 'gph'); d.append(mk('b', '', p.q), mk('span', '', p.opts.map(o => o.t + ' ' + o.n).join(' · ') + ' (' + p.total + (p.total === 1 ? ' vote)' : ' votes)'))); h.append(d); });
+}
+$('gpAdmin').onsubmit = e => {
+  e.preventDefault();
+  send({ type: 'gpoll-new', q: $('gpQ').value, opts: [...document.querySelectorAll('.gpO')].map(i => i.value) }); $('gpAdmin').reset();
+};
+$('gpClose').onclick = () => send({ type: 'gpoll-close', closed: !(gpoll && gpoll.closed) });
+$('gpDel').onclick = () => { if (confirm('Delete the current poll?')) send({ type: 'gpoll-del' }); };
+$('gpTpl').onclick = () => { // fill the form from the current poll so a small change is quick
+  if (!gpoll) return; $('gpQ').value = gpoll.q;
+  document.querySelectorAll('.gpO').forEach((i, k) => { i.value = gpoll.opts[k] ? gpoll.opts[k].t : ''; }); $('gpQ').focus();
+};
+
+/* ---------- global feed: posts show the name and friend code, with likes and comments ---------- */
+const feedEls = {};
+const when = t => { const s = (Date.now() - t) / 1000; return s < 60 ? 'just now' : s < 3600 ? Math.floor(s / 60) + 'm ago' : s < 86400 ? Math.floor(s / 3600) + 'h ago' : new Date(t).toLocaleDateString(); };
+function refreshPost(d) {
+  const p = d._p, like = d.querySelector('.plike');
+  like.textContent = (p.me ? '♥ ' : '♡ ') + p.n; like.setAttribute('aria-pressed', !!p.me); like.setAttribute('aria-label', (p.me ? 'Unlike' : 'Like') + ', ' + p.n + (p.n === 1 ? ' like' : ' likes'));
+  d.querySelector('.pcom').textContent = 'Comments (' + p.cn + ')';
+  d.querySelector('.postdel').classList.toggle('hidden', !(isAdmin || (myCode && p.code === myCode)));
+  d.querySelector('.postaf').classList.toggle('hidden', !myCode || p.code === myCode || friends.some(f => f.code === p.code));
+}
+function cmtEl(d, c) {
+  const e = mk('div', 'cmt'); e.dataset.cid = c.id;
+  e.append(mk('b', '', c.name), mk('span', 'pcode', '#' + c.code), mk('span', '', c.text));
+  if (isAdmin || (myCode && c.code === myCode)) { const x = mk('button', '', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Delete comment'); x.onclick = () => send({ type: 'comment-del', pid: d._p.id, id: c.id }); e.append(x); }
+  return e;
+}
+function drawComments(d) { const box = d.querySelector('.clist'); box.innerHTML = ''; (d._c || []).forEach(c => box.append(cmtEl(d, c))); }
+function postEl(p) {
+  const d = mk('article', 'post mod'); d._p = p; d.dataset.id = p.id;
+  d.innerHTML = '<div class="phead"><div class="pav"></div><div class="pwho"><b></b><span class="pcode"></span><time></time></div><div class="postacts"><button type="button" class="ghost postaf">Add friend</button><button type="button" class="ghost postdel">Delete</button></div></div><div class="ptext"></div><div class="postbar"><button type="button" class="ghost plike"></button><button type="button" class="ghost pcom"></button></div><div class="pcomments hidden"><div class="clist"></div><form class="cform"><input maxlength="200" placeholder="Add a comment" aria-label="Add a comment" autocomplete="off"><button class="solid">Send</button></form></div>';
+  d.querySelector('b').textContent = p.name; d.querySelector('.pcode').textContent = '#' + p.code; d.querySelector('time').textContent = when(p.t);
+  d.querySelector('.pav').textContent = (p.name[0] || '?').toUpperCase(); d.querySelector('.ptext').textContent = p.text;
+  d.querySelector('.postaf').onclick = () => addFriend(p.code, p.name);
+  d.querySelector('.postdel').onclick = () => { if (confirm('Delete this post?')) send({ type: 'post-del', id: p.id }); };
+  d.querySelector('.plike').onclick = () => send({ type: 'like', id: p.id });
+  d.querySelector('.pcom').onclick = () => {
+    const box = d.querySelector('.pcomments'), open = box.classList.toggle('hidden') === false;
+    if (open) { send({ type: 'comments', id: p.id }); box.querySelector('input').focus(); }
+  };
+  d.querySelector('.cform').onsubmit = e => { e.preventDefault(); const i = e.target.querySelector('input'); if (i.value.trim()) send({ type: 'comment', id: p.id, text: i.value }); i.value = ''; };
+  feedEls[p.id] = d; refreshPost(d); return d;
+}
+function drawFeed(posts) {
+  const list = $('feedList'); list.innerHTML = ''; Object.keys(feedEls).forEach(k => delete feedEls[k]);
+  if (!posts.length) { const e = mk('p', 'sub', 'No posts yet. Be the first.'); e.id = 'feedEmpty'; list.append(e); }
+  posts.forEach(p => list.append(postEl(p)));
+}
+function onPost(p) {
+  if (feedLoaded) { const e = $('feedEmpty'); if (e) e.remove(); $('feedList').prepend(postEl(p)); }
+  if (p.code !== myCode && $('paneFeed').classList.contains('hidden')) $('ltFeed').classList.add('has-new');
+}
+function onComment(m) {
+  const d = feedEls[m.pid]; if (!d) return; d._p.cn = m.cn;
+  if (d._c) { d._c.push(m.c); d.querySelector('.clist').append(cmtEl(d, m.c)); }
+  refreshPost(d);
+}
+function onCommentDel(m) {
+  const d = feedEls[m.pid]; if (!d) return; d._p.cn = m.cn;
+  if (d._c) { d._c = d._c.filter(c => c.id !== m.id); const e = d.querySelector('.cmt[data-cid="' + m.id + '"]'); if (e) e.remove(); }
+  refreshPost(d);
+}
+$('postText').addEventListener('input', () => { $('postCount').textContent = $('postText').value.length + ' / 300'; });
+$('postForm').onsubmit = e => {
+  e.preventDefault(); const v = $('postText').value.trim(); if (!v) return;
+  send({ type: 'post', text: v }); $('postText').value = ''; $('postCount').textContent = '0 / 300';
+};
+
 function toast(t) {
   const old = $('toast'); if (old) old.remove();
   const d = document.createElement('div'); d.id = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 4000);
