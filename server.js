@@ -1,75 +1,69 @@
-// Ten Rooms: lobby + signaling server. Video/audio go browser-to-browser (WebRTC); this only handles names, rooms, handshakes, chat, posts and polls.
+// Ten Rooms: accounts, lobby and signaling server. Video/audio go browser-to-browser (WebRTC); this handles logins, rooms, handshakes, chat, posts and the shop.
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 
-const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'], CHAT_KEEP = 100;
+const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
 // [name, max people]. Small rooms keep full video; bigger rooms get lower per-person video quality (see tune() in index.html).
 const ROOMS = [['Lounge', 6], ['Studio', 6], ['Kitchen', 6], ['Garage', 10], ['Rooftop', 10], ['Library', 15], ['Arcade', 15], ['Workshop', 15], ['Garden', 50], ['Porch', 50]];
 // GIFs come from the Klipy catalog. Set KLIPY_KEY (Render: Environment) to turn GIF search on; without it the GIF button is hidden.
 // The key stays on the server: browsers ask /gifs and the server asks Klipy. Only links on Klipy's own domain can be sent in chat.
 const KLIPY = process.env.KLIPY_KEY || '', GIFURL = /^https:\/\/([a-z0-9-]+\.)*klipy\.(com|co)\/[\w\-./%~]+$/i, gifCache = new Map();
-let gifWarned = false;
-function gifUrls(g) { // each GIF comes in sizes (hd, md, sm, xs) and formats; webp is the lightest that still animates
-  const f = g.file || g.files || {}, pick = s => f[s] && (f[s].webp || f[s].gif);
-  let big = pick('md') || pick('sm') || pick('hd'), small = pick('xs') || pick('sm') || big;
-  if (!big) { // an answer shaped differently than expected: use any picture links found inside the item
-    const found = [];
-    (function walk(o, d) { if (!o || d > 6) return; if (typeof o === 'string') { if (/\.(webp|gif)$/i.test(o)) found.push({ url: o }); } else if (typeof o === 'object') for (const k in o) walk(o[k], d + 1); })(g, 0);
-    big = found[0]; small = found[found.length - 1] || big;
-    if (!gifWarned) { gifWarned = true; console.warn('Klipy: GIF items have an unexpected shape, used a fallback. Sample:', JSON.stringify(g).slice(0, 400)); }
-  }
-  return big && small && GIFURL.test(big.url) && GIFURL.test(small.url) ? { url: big.url, thumb: small.url, title: String(g.title || '').slice(0, 60) } : null;
-}
 async function gifs(q) { // search results, or what is trending when q is empty; answers are reused for 5 minutes
   const key = q.toLowerCase(), hit = gifCache.get(key);
   if (hit && Date.now() - hit.t < 300000) return hit.list;
   const r = await fetch(`https://api.klipy.com/api/v1/${KLIPY}/gifs/${q ? 'search' : 'trending'}?per_page=24&customer_id=tenrooms&content_filter=high` + (q ? '&q=' + encodeURIComponent(q) : ''), { signal: AbortSignal.timeout(6000) });
   if (!r.ok) throw new Error('Klipy answered ' + r.status);
   const j = await r.json();
-  const raw = Array.isArray(j.data) ? j.data : (j.data && j.data.data) || j.results || [];
-  const list = raw.map(gifUrls).filter(Boolean);
-  if (!list.length) console.warn(raw.length ? 'Klipy sent ' + raw.length + ' items but none were usable. Sample: ' + JSON.stringify(raw[0]).slice(0, 400) : 'Klipy sent no items. Top-level keys: ' + Object.keys(j).join(','));
+  const list = ((j.data && j.data.data) || []).map(g => { // each GIF comes in sizes (hd, md, sm, xs) and formats; webp is the lightest that still animates
+    const f = g.file || {}, pick = s => f[s] && (f[s].webp || f[s].gif);
+    const big = pick('md') || pick('sm') || pick('hd'), small = pick('xs') || pick('sm') || big;
+    return big && small && GIFURL.test(big.url) && GIFURL.test(small.url) ? { url: big.url, thumb: small.url, title: String(g.title || '').slice(0, 60) } : null;
+  }).filter(Boolean);
   if (gifCache.size > 300) gifCache.clear();
   gifCache.set(key, { t: Date.now(), list });
   return list;
 }
 const ICE = (() => { try { return JSON.parse(process.env.ICE_SERVERS); } catch { return [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]; } })();
 
-// Saved data: global posts (with their photos), the global poll and the visitor counts go into one JSON file so they survive a restart.
-// On Render the disk is wiped on every deploy unless a persistent disk is attached; point DATA_DIR at that disk to keep the file.
-const DATA = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'tenrooms.json');
-const ADMINS = new Set((process.env.ADMIN_CODES || process.env.ADMIN_CODE || 'PVRVHHKD').split(',').map(s => s.trim().toUpperCase()).filter(Boolean)); // friend codes that can run the global poll and delete any post
-const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0 };
-try { Object.assign(store, JSON.parse(fs.readFileSync(DATA, 'utf8'))); } catch {}
-if (!Array.isArray(store.posts)) store.posts = [];
-const ever = new Set(store.ever), today = new Set(store.today); // friend codes seen ever, and seen on store.day
-let saveTimer;
-function save() { // written a moment after the last change, to a temp file first so a crash cannot leave half a file
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveNow, 2000);
+// Images people send in chat. Set OPENAI_API_KEY (Render: Environment) to turn this on; without it the image button is hidden.
+// Every image is checked by OpenAI's moderation model before anyone sees it, and one that cannot be checked is refused.
+// Images are kept in memory only (room chat is not saved either), and the oldest are dropped past 150 images or 40 MB.
+const OPENAI = process.env.OPENAI_API_KEY || '', pics = new Map(), picWait = new Map(); let picBytes = 0; // pics: id -> { buf, by, used }
+async function imageOk(dataUrl) {
+  const r = await fetch('https://api.openai.com/v1/moderations', { method: 'POST', signal: AbortSignal.timeout(15000), headers: { Authorization: 'Bearer ' + OPENAI, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'omni-moderation-latest', input: [{ type: 'image_url', image_url: { url: dataUrl } }] }) });
+  if (!r.ok) throw new Error('OpenAI answered ' + r.status);
+  const res = (await r.json()).results; if (!res || !res[0]) throw new Error('OpenAI sent no result');
+  return !res[0].flagged;
 }
-function saveNow() {
-  store.ever = [...ever]; store.today = [...today];
-  try { fs.mkdirSync(path.dirname(DATA), { recursive: true }); fs.writeFileSync(DATA + '.tmp', JSON.stringify(store)); fs.renameSync(DATA + '.tmp', DATA); } catch (e) { console.warn('save failed:', e.message); }
-}
-['SIGTERM', 'SIGINT'].forEach(s => process.on(s, () => { saveNow(); process.exit(0); })); // a redeploy still keeps the last few seconds
-const TZ = (() => { try { new Date().toLocaleDateString('en-CA', { timeZone: process.env.STATS_TZ }); return process.env.STATS_TZ; } catch { return ''; } })() || 'UTC'; // "today" rolls over at midnight in this time zone
-function newDay() { const d = new Date().toLocaleDateString('en-CA', { timeZone: TZ }); if (d !== store.day) { store.day = d; today.clear(); } }
-function seen(code) { newDay(); if (!today.has(code) || !ever.has(code)) { today.add(code); ever.add(code); save(); } } // a person is counted once per browser
-function stats() { // "menu" = people online who are not inside a room, counted once however many tabs they have open
-  newDay(); const menu = new Set();
-  wss.clients.forEach(c => { if (c.name && !c.room) menu.add(c.code || 'ws' + c.id); });
-  return { today: today.size, ever: ever.size, menu: menu.size };
+function upload(req, res) { // POST /upload: the JPEG bytes, with the login token in the Authorization header
+  const out = (code, body) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(body)); };
+  const a = accounts.get(tokens.get(sha(String(req.headers.authorization || '').replace(/^Bearer /, '')))), now = Date.now();
+  if (!OPENAI) return out(404, { error: 'Image sending is off' });
+  if (!a) return out(401, { error: 'Log in again to send images' });
+  if (now - (picWait.get(a.username) || 0) < 5000) return out(429, { error: 'Wait a few seconds between images' });
+  if (picWait.size > 5000) picWait.clear(); picWait.set(a.username, now);
+  const chunks = []; let size = 0, dead = false;
+  req.on('data', c => { if (dead) return; size += c.length; if (size > 400000) { dead = true; out(413, { error: 'That image is too big' }); req.destroy(); } else chunks.push(c); });
+  req.on('end', async () => {
+    if (dead) return; const buf = Buffer.concat(chunks);
+    if (buf.length < 100 || buf[0] !== 0xff || buf[1] !== 0xd8 || buf[2] !== 0xff) return out(400, { error: 'That is not a usable image' }); // must start like a JPEG
+    try {
+      if (!await imageOk('data:image/jpeg;base64,' + buf.toString('base64'))) { console.warn('image refused by moderation, sent by @' + a.username); return out(422, { error: 'That image is not allowed here' }); }
+    } catch (e) { console.warn('image check failed:', e.message); return out(502, { error: 'The image could not be checked. Try again' }); }
+    const id = crypto.randomBytes(12).toString('hex'); pics.set(id, { buf, by: a.username, used: false }); picBytes += buf.length;
+    for (const [k, p] of pics) { if (pics.size <= 150 && picBytes <= 40e6) break; pics.delete(k); picBytes -= p.buf.length; }
+    out(200, { id });
+  });
 }
 
 const server = http.createServer((req, res) => {
   if (req.url === '/health') { res.writeHead(200); return res.end('ok'); }
-  const im = /^\/img\/(\d+)$/.exec(req.url); // a photo from a post
-  if (im) {
-    const p = store.posts.find(x => x.id === +im[1]);
-    if (!p || !p.img) { res.writeHead(404); return res.end('No such image'); }
-    res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' });
-    return res.end(Buffer.from(p.img, 'base64'));
+  if (req.method === 'POST' && req.url === '/upload') return upload(req, res);
+  const pic = /^\/img\/([a-f0-9]{24})$/.exec(req.url);
+  if (pic) {
+    const p = pics.get(pic[1]); if (!p) { res.writeHead(404); return res.end('That image has expired'); }
+    res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff' }); return res.end(p.buf);
   }
   if (req.url === '/gifs' || req.url.startsWith('/gifs?')) {
     if (!KLIPY) { res.writeHead(404); return res.end('GIF search is off'); }
@@ -86,7 +80,7 @@ const server = http.createServer((req, res) => {
   res.writeHead(404); res.end('Not found');
 });
 
-const wss = new WebSocketServer({ server, maxPayload: 300 * 1024 }); // big enough for one compressed post photo
+const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
 const rooms = ROOMS.map(([name, max], i) => ({ id: i + 1, name, max, topic: '', board: [], members: new Map(), chat: [], bans: new Map(), vote: null }));
 let nextId = 1, msgSeq = 0;
 const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify(m));
@@ -94,35 +88,214 @@ const toRoom = (r, m, except) => r.members.forEach((p, id) => id !== except && s
 const lobby = () => rooms.map(r => ({ id: r.id, name: r.name, topic: r.topic, max: r.max, users: [...r.members.values()].map(p => p.name) }));
 const pushLobby = () => { const l = lobby(), st = stats(); wss.clients.forEach(c => { if (c.name) { send(c, { type: 'lobby', rooms: l, stats: st }); presence(c); } }); };
 
-// ---- posts ----
-const postView = (p, ws) => ({ id: p.id, code: p.code, name: p.name, text: p.text, img: !!p.img, t: p.t, likes: p.likes.length, liked: !!ws.code && p.likes.includes(ws.code), comments: p.comments });
+// Saved data. With SUPABASE_URL and SUPABASE_SECRET_KEY set (Render: Environment) it lives in Supabase and survives deploys and restarts:
+// the table app_state holds one JSON document (posts, global poll, visitor counts) and the table accounts holds one row per account.
+// Without them it falls back to local files, which Render wipes on every deploy.
+const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, ''), SB_KEY = process.env.SUPABASE_SECRET_KEY || '', useSB = !!(SB_URL && SB_KEY);
+const DATA = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'tenrooms.json'), ACC = path.join(path.dirname(DATA), 'accounts.json');
+const ADMINS = new Set((process.env.ADMIN_USERS || 'diddydespacito').split(',').map(s => s.trim().toLowerCase().replace(/^@/, '')).filter(Boolean)); // usernames that can moderate: delete posts and accounts, reset names, run the global poll
+const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0 };
+const ever = new Set(), today = new Set(); // usernames seen ever, and seen on store.day
+const accounts = new Map(), tokens = new Map(); // username -> account; hash of a login token -> username
+const dirty = new Set(), gone = new Set(); // accounts waiting to be written, and deleted ones waiting to be removed
+function adopt(d) { // take loaded data as the current state
+  if (!d || typeof d !== 'object') return;
+  Object.assign(store, d); if (!Array.isArray(store.posts)) store.posts = [];
+  ever.clear(); (store.ever || []).forEach(c => ever.add(c)); today.clear(); (store.today || []).forEach(c => today.add(c));
+}
+function adoptAccounts(list) {
+  (Array.isArray(list) ? list : []).forEach(a => {
+    if (!a || typeof a.username !== 'string' || typeof a.hash !== 'string') return;
+    ['friends', 'owned', 'sessions'].forEach(k => { if (!Array.isArray(a[k])) a[k] = []; });
+    a.coins = +a.coins || 0; a.display = String(a.display || a.username); a.bio = String(a.bio || '');
+    accounts.set(a.username, a); a.sessions.forEach(h => tokens.set(h, a.username));
+  });
+}
+const sb = (table, query, opts = {}) => fetch(SB_URL + '/rest/v1/' + table + query, { ...opts, signal: AbortSignal.timeout(8000), headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', ...opts.headers } })
+  .then(r => { if (!r.ok) throw new Error('Supabase answered ' + r.status + ' for ' + table); return r; });
+const UPSERT = { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' } };
+const writeFile = (file, data) => new Promise(done => fs.mkdir(path.dirname(file), { recursive: true }, () => fs.writeFile(file + '.tmp', JSON.stringify(data), e => { // temp file first so a crash cannot leave half a file
+  if (e) { console.warn('save failed:', e.message); done(); } else fs.rename(file + '.tmp', file, () => done());
+})));
+async function loadStore() { // runs once, before the server starts taking visitors
+  if (!useSB) {
+    try { adopt(JSON.parse(fs.readFileSync(DATA, 'utf8'))); } catch {}
+    try { adoptAccounts(JSON.parse(fs.readFileSync(ACC, 'utf8'))); } catch {}
+    return;
+  }
+  for (let n = 0; n < 8; n++) {
+    try {
+      const rows = await (await sb('app_state', '?key=eq.tenrooms&select=data')).json(), all = [];
+      for (let from = 0; ; from += 1000) { // Supabase hands back at most 1000 rows at a time
+        const page = await (await sb('accounts', '?select=data&order=username&limit=1000&offset=' + from)).json();
+        all.push(...page.map(r => r.data)); if (page.length < 1000) break;
+      }
+      if (rows[0]) adopt(rows[0].data); adoptAccounts(all);
+      return console.log('Saved data loaded from Supabase: ' + accounts.size + ' accounts');
+    } catch (e) { console.warn('Supabase load failed:', e.message); await new Promise(done => setTimeout(done, 2000)); }
+  }
+  console.error('Could not load from Supabase. Stopping, so empty data is never written over the real accounts.'); process.exit(1);
+}
+let saveTimer = null, storeDirty = false;
+function flush() { // write whatever changed
+  clearTimeout(saveTimer); saveTimer = null; const jobs = [], now = new Date().toISOString();
+  if (storeDirty) {
+    storeDirty = false; store.ever = [...ever]; store.today = [...today];
+    jobs.push(useSB ? sb('app_state', '?on_conflict=key', { ...UPSERT, body: JSON.stringify({ key: 'tenrooms', data: store, updated_at: now }) }).catch(e => { console.warn(e.message); storeDirty = true; schedule(); }) : writeFile(DATA, store));
+  }
+  if (dirty.size || gone.size) {
+    const ups = [...dirty].filter(u => accounts.has(u)), dels = [...gone]; dirty.clear(); gone.clear();
+    if (!useSB) jobs.push(writeFile(ACC, [...accounts.values()]));
+    else {
+      if (ups.length) jobs.push(sb('accounts', '?on_conflict=username', { ...UPSERT, body: JSON.stringify(ups.map(u => ({ username: u, data: accounts.get(u), updated_at: now }))) })
+        .catch(e => { console.warn(e.message); ups.forEach(u => dirty.add(u)); schedule(); })); // try again shortly
+      if (dels.length) jobs.push(sb('accounts', '?username=in.(' + dels.join(',') + ')', { method: 'DELETE' })
+        .catch(e => { console.warn(e.message); dels.forEach(u => { if (!accounts.has(u)) gone.add(u); }); schedule(); }));
+    }
+  }
+  return Promise.all(jobs);
+}
+function schedule() { if (!saveTimer) saveTimer = setTimeout(flush, 2000); } // changes are written at most every 2 seconds
+function save() { storeDirty = true; schedule(); }
+function saveAcct(a) { dirty.add(a.username); schedule(); }
+process.on('SIGTERM', () => { flush().finally(() => process.exit(0)); }); // Render sends this before a restart: save anything still waiting
+process.on('uncaughtException', e => console.error('uncaught error:', e)); // one bad message must not take the whole site down
+process.on('unhandledRejection', e => console.error('unhandled rejection:', e));
+// Images on posts are saved in the public Supabase Storage bucket post-images (posts outlive a restart, so their images must too).
+const PIC_BASE = SB_URL + '/storage/v1/object/public/post-images/', postPics = useSB; // without Supabase, posts are text only
+const picCall = (id, opts) => fetch(SB_URL + '/storage/v1/object/post-images/' + id + '.jpg', { ...opts, signal: AbortSignal.timeout(15000), headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, ...opts.headers } });
+const storePic = (id, buf) => picCall(id, { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'max-age=31536000' }, body: buf }).then(r => { if (!r.ok) throw new Error('Supabase storage answered ' + r.status); });
+const dropPic = p => { if (p.img && postPics) picCall(p.img, { method: 'DELETE' }).catch(() => {}); }; // called whenever a post goes away
+const TZ = (() => { try { new Date().toLocaleDateString('en-CA', { timeZone: process.env.STATS_TZ }); return process.env.STATS_TZ; } catch { return ''; } })() || 'UTC'; // "today" rolls over at midnight in this time zone
+function newDay() { const d = new Date().toLocaleDateString('en-CA', { timeZone: TZ }); if (d !== store.day) { store.day = d; today.clear(); } }
+function seen(code) { newDay(); if (!today.has(code) || !ever.has(code)) { today.add(code); ever.add(code); save(); } } // a person is counted once per account
+function stats() { newDay(); return { today: today.size, ever: ever.size, menu: [...wss.clients].filter(c => c.name && !c.room).length }; }
+const postView = (p, ws) => ({ id: p.id, code: p.code, name: p.name, text: p.text, img: p.img, t: p.t, likes: p.likes.length, liked: p.likes.includes(ws.code), comments: p.comments });
 const toFeed = make => wss.clients.forEach(c => c.feed && send(c, make(c))); // only people with the Posts page open get updates
-const recentView = () => store.posts.slice(-3).reverse().map(p => ({ id: p.id, name: p.name, code: p.code, text: p.text.slice(0, 90), img: !!p.img, t: p.t, likes: p.likes.length }));
-const pushRecent = () => { const r = recentView(); wss.clients.forEach(c => c.name && send(c, { type: 'recent', posts: r })); }; // the "Latest posts" box in the menu
-const pushPost = p => { toFeed(c => ({ type: 'post', post: postView(p, c) })); pushRecent(); };
-function trimImages() { const w = store.posts.filter(p => p.img); w.slice(0, Math.max(0, w.length - 30)).forEach(p => { p.img = ''; }); } // only the newest 30 photos are kept, so the save file stays small
+const pushPost = p => toFeed(c => ({ type: 'post', post: postView(p, c) }));
 const gpollView = ws => store.gpoll && { id: store.gpoll.id, q: store.gpoll.q, opts: store.gpoll.opts.map(o => ({ t: o.t, n: o.v.length })), mine: store.gpoll.opts.findIndex(o => o.v.includes(ws.code)) };
 const pushGpoll = () => wss.clients.forEach(c => c.name && send(c, { type: 'gpoll', poll: gpollView(c) }));
 
-// Friends without accounts: each browser keeps a secret id and the server turns it into a short friend code.
-// Friend lists live in the browsers. Two people count as friends once each has added the other's code.
-const online = new Map(); // friend code -> the sockets using it right now (one per open tab)
-function codeOf(key) { // the same secret always gives the same 8-character code, and the code cannot be turned back into the secret
-  const h = crypto.createHash('sha256').update('tenrooms:' + key).digest(); let s = '';
-  for (let i = 0; i < 8; i++) s += 'ABCDEFGHJKMNPQRSTVWXYZ23456789'[h[i] % 30];
-  return s;
+// Accounts: a username (the @name, fixed), a display name and bio (changeable), coins, friends and owned shop items.
+// Passwords are never stored: only a salted scrypt hash. A login hands the browser a random token so it stays logged in;
+// only the token's hash is kept, at most 5 per account.
+const USER_RE = /^[a-z0-9_]{3,16}$/, START_COINS = 50, COINS_PER_MIN = 5;
+const BLOCKED = (process.env.BLOCKED_WORDS || '').split(',').map(w => w.toLowerCase().replace(/[^a-z0-9]/g, '')).filter(Boolean); // words not allowed in usernames or display names
+const badName = t => { const l = String(t).toLowerCase().replace(/[^a-z0-9]/g, ''); return BLOCKED.some(w => l.includes(w)); };
+const sha = t => crypto.createHash('sha256').update(t).digest('hex');
+const hashPass = (pass, salt) => new Promise((ok, no) => crypto.scrypt(pass, salt, 64, (e, k) => (e ? no(e) : ok(k.toString('hex')))));
+const err = (ws, text) => send(ws, { type: 'error', text });
+const tries = new Map(); // "kind + ip" -> { n, t }: slows down password guessing and mass sign-ups
+function tooMany(key, max, ms) {
+  const now = Date.now(), f = tries.get(key); if (tries.size > 5000) tries.clear();
+  if (!f || now - f.t > ms) { tries.set(key, { n: 1, t: now }); return false; }
+  return ++f.n > max;
 }
+const online = new Map(); // username -> the sockets logged in as it right now (one per open tab)
 const socketsOf = code => [...(online.get(code) || [])];
-const isFriend = (ws, code) => !!ws.friends && ws.friends.has(code);
-const mutual = (ws, code) => isFriend(ws, code) && socketsOf(code).some(o => isFriend(o, ws.code));
+const isFriend = (a, b) => { const x = accounts.get(a); return !!x && x.friends.includes(b); }; // a has added b
+const mutual = (a, b) => isFriend(a, b) && isFriend(b, a);
+const meView = a => ({ code: a.username, display: a.display, bio: a.bio, coins: a.coins, owned: a.owned });
+const pubView = a => ({ code: a.username, name: a.display, bio: a.bio, coins: a.coins, joined: a.created, admin: ADMINS.has(a.username), online: online.has(a.username) });
+const pushCoins = a => socketsOf(a.username).forEach(o => send(o, { type: 'coins', coins: a.coins, owned: a.owned }));
 function presence(ws) { // tell one person which of their friends are online and which room they are in
-  if (!ws.code || !ws.friends) return;
-  const list = [...ws.friends].filter(c => mutual(ws, c)).map(c => {
+  if (!ws.acct) return;
+  const list = ws.acct.friends.filter(c => online.has(c) && isFriend(c, ws.code)).map(c => {
     const all = socketsOf(c), o = all.find(x => x.room) || all[0];
     return { code: c, name: o.name, room: o.room ? o.room.id : 0 };
   });
   send(ws, { type: 'presence', list });
 }
+function sendFriends(user) { // their saved list, plus the people who added them and are waiting to be added back
+  const a = accounts.get(user); if (!a) return;
+  a.friends = a.friends.filter(c => accounts.has(c));
+  const list = a.friends.map(c => ({ code: c, name: accounts.get(c).display })), reqs = [];
+  accounts.forEach(o => { if (o.friends.includes(user) && !a.friends.includes(o.username)) reqs.push({ code: o.username, name: o.display }); });
+  socketsOf(user).forEach(o => send(o, { type: 'friends', list, reqs }));
+}
+function startSession(ws, a, fresh) { // this socket is now logged in as account a
+  if (ws.readyState !== 1 || ws.acct) return;
+  let token;
+  if (fresh) { // a password login: hand out a new stay-logged-in token
+    token = crypto.randomBytes(32).toString('hex'); const h = sha(token);
+    a.sessions.push(h); tokens.set(h, a.username); while (a.sessions.length > 5) tokens.delete(a.sessions.shift());
+    saveAcct(a);
+  }
+  ws.acct = a; ws.code = a.username; ws.name = uniqueName(a.display);
+  if (!online.has(ws.code)) online.set(ws.code, new Set());
+  online.get(ws.code).add(ws); seen(ws.code);
+  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY, pics: !!OPENAI, picBase: OPENAI && postPics ? PIC_BASE : '', stats: stats(), token, me: meView(a), admin: ADMINS.has(a.username), shop: SHOP, earn: COINS_PER_MIN });
+  send(ws, { type: 'gpoll', poll: gpollView(ws) }); sendFriends(a.username); pushLobby();
+}
+async function auth(ws, m) { // the only messages a socket may send before it is logged in
+  const fail = (text, expired) => send(ws, { type: 'auth-fail', text, expired });
+  if (m.type === 'auth') { // a saved login from this browser
+    const a = typeof m.token === 'string' && accounts.get(tokens.get(sha(m.token)));
+    return a ? startSession(ws, a) : fail('', true);
+  }
+  if ((m.type !== 'login' && m.type !== 'register') || ws.busy) return;
+  const user = String(m.user || '').trim().toLowerCase().replace(/^@/, ''), pass = String(m.pass || '');
+  if (!USER_RE.test(user)) return fail('Usernames are 3 to 16 letters, numbers or _');
+  if (pass.length < 6 || pass.length > 100) return fail('Passwords need at least 6 characters');
+  ws.busy = true;
+  try {
+    if (m.type === 'register') {
+      const display = clean(m.display, 20) || user;
+      if (accounts.has(user)) return fail('That username is taken');
+      if (badName(user) || badName(display)) return fail('Pick a different name');
+      if (tooMany('reg' + ws.ip, 5, 3600000)) return fail('Too many new accounts from here. Try again later');
+      const salt = crypto.randomBytes(16).toString('hex'), hash = await hashPass(pass, salt);
+      if (accounts.has(user)) return fail('That username is taken'); // someone else may have taken it while the password was being hashed
+      const a = { username: user, display, bio: '', salt, hash, coins: START_COINS, friends: [], owned: [], sessions: [], created: Date.now() };
+      accounts.set(user, a); gone.delete(user); startSession(ws, a, true);
+    } else {
+      if (tooMany('log' + ws.ip, 10, 600000)) return fail('Too many tries. Wait a few minutes');
+      const a = accounts.get(user), hash = await hashPass(pass, a ? a.salt : 'no-such-account');
+      if (!a || !crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(a.hash))) return fail('Wrong username or password');
+      startSession(ws, a, true);
+    }
+  } catch (e) { console.warn('auth failed:', e.message); fail('Something went wrong. Try again'); } finally { ws.busy = false; }
+}
+function setProfile(a, display, bio) { // also renames them on their existing posts and comments
+  a.display = display; a.bio = bio; saveAcct(a);
+  store.posts.forEach(p => { if (p.code === a.username) p.name = display; p.comments.forEach(c => { if (c.code === a.username) c.name = display; }); });
+  save();
+}
+function deleteAccount(a) { // moderation: the account, its posts, comments and likes all go
+  const u = a.username;
+  socketsOf(u).forEach(o => { send(o, { type: 'auth-fail', text: 'This account was deleted', expired: true }); o.close(); });
+  a.sessions.forEach(h => tokens.delete(h)); accounts.delete(u); dirty.delete(u); gone.add(u);
+  accounts.forEach(o => { const i = o.friends.indexOf(u); if (i >= 0) { o.friends.splice(i, 1); saveAcct(o); sendFriends(o.username); } });
+  store.posts.filter(p => p.code === u).forEach(p => { dropPic(p); toFeed(() => ({ type: 'post-del', id: p.id })); });
+  store.posts = store.posts.filter(p => p.code !== u);
+  store.posts.forEach(p => {
+    const i = p.likes.indexOf(u); if (i >= 0) p.likes.splice(i, 1);
+    if (p.comments.some(c => c.code === u)) { p.comments = p.comments.filter(c => c.code !== u); pushPost(p); }
+  });
+  save();
+}
+
+// Shop: bought once with coins and kept on the account. The page knows how each sound, theme and ability looks and sounds; the server only knows who owns what.
+const SHOP = [
+  { id: 's_ding', kind: 'sound', name: 'Ding', price: 0 },
+  { id: 's_boing', kind: 'sound', name: 'Boing', price: 75 },
+  { id: 's_laser', kind: 'sound', name: 'Laser', price: 75 },
+  { id: 's_buzzer', kind: 'sound', name: 'Wrong answer buzzer', price: 75 },
+  { id: 's_airhorn', kind: 'sound', name: 'Airhorn', price: 100 },
+  { id: 's_trombone', kind: 'sound', name: 'Sad trombone', price: 100 },
+  { id: 's_rimshot', kind: 'sound', name: 'Ba dum tss', price: 100 },
+  { id: 's_applause', kind: 'sound', name: 'Applause', price: 150 },
+  { id: 't_neon', kind: 'theme', name: 'Neon theme', price: 250 },
+  { id: 't_ocean', kind: 'theme', name: 'Ocean theme', price: 250 },
+  { id: 't_lava', kind: 'theme', name: 'Lava theme', price: 250 },
+  { id: 't_gold', kind: 'theme', name: 'Gold theme', price: 250 },
+  { id: 'a_hearts', kind: 'ability', name: 'Send hearts', icon: '💖', price: 200 },
+  { id: 'a_snowball', kind: 'ability', name: 'Throw a snowball', icon: '⚪', price: 250 },
+  { id: 'a_tomato', kind: 'ability', name: 'Throw a tomato', icon: '🍅', price: 300 },
+  { id: 'a_pie', kind: 'ability', name: 'Throw a pie', icon: '🥧', price: 300 },
+  { id: 'a_shake', kind: 'ability', name: 'Shake their screen', icon: '🫨', price: 400 }
+];
+const ITEM = new Map(SHOP.map(it => [it.id, it])), owns = (a, it) => it.price === 0 || a.owned.includes(it.id);
 
 // Vote kicks: one vote per room at a time, 30 seconds, and more than half of the other people must say yes.
 const KICK_MS = 30000, BAN_MS = 10 * 60000;
@@ -136,9 +309,10 @@ function checkVote(r) { // called after every vote and whenever someone leaves
   if (r.members.size < 3) return endVote(r, `The vote to kick ${v.name} ended: not enough people left`);
   if (v.yes.size >= n) {
     endVote(r, `${v.name} was voted out of the room`);
-    const until = Date.now() + BAN_MS; // kept out for 10 minutes: by friend code, or by name for someone without one
+    const until = Date.now() + BAN_MS; // kept out for 10 minutes, by friend code and by name
     r.bans.forEach((t, k) => { if (t < Date.now()) r.bans.delete(k); });
-    if (target.code) r.bans.set('c:' + target.code, until); else r.bans.set('n:' + target.name.toLowerCase(), until);
+    if (target.code) r.bans.set('c:' + target.code, until);
+    r.bans.set('n:' + target.name.toLowerCase(), until);
     send(target, { type: 'kicked', text: `You were voted out of ${r.name}. You can come back in 10 minutes.` });
     leave(target);
   } else if (v.no.size > r.members.size - 1 - n) endVote(r, `The vote to kick ${v.name} failed`); // too many said no for it to pass
@@ -161,28 +335,25 @@ function addStroke(r, sid, c, w, pts) { // whiteboard strokes are kept so late j
 }
 function say(r, text) {
   const m = { system: true, text, t: Date.now() };
-  r.chat.push(m); if (r.chat.length > CHAT_KEEP) r.chat.shift();
+  r.chat.push(m); if (r.chat.length > 50) r.chat.shift();
   toRoom(r, { type: 'chat', msg: m });
 }
 const findMsg = (r, id) => r.chat.find(x => !x.system && x.id === id);
 const newMsg = (ws, extra) => ({ id: ++msgSeq, name: ws.name, text: '', t: Date.now(), reacts: {}, ...extra });
-function post(r, msg) { r.chat.push(msg); if (r.chat.length > CHAT_KEEP) r.chat.shift(); toRoom(r, { type: 'chat', msg }); }
+function post(r, msg) { r.chat.push(msg); if (r.chat.length > 50) r.chat.shift(); toRoom(r, { type: 'chat', msg }); }
 const clean = (s, n) => String(s || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, n);
 const slow = (ws, key, ms) => { const now = Date.now(); if (now - (ws[key] || 0) < ms) return true; ws[key] = now; return false; }; // true = too soon, ignore it
-const reEsc = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-function mentions(r, text) { // names in the room that the text @s; longest first so "@Sam 2" is not also read as "@Sam", and "@Sam" does not match inside "@Samantha"
+function mentions(r, text) { // names in the room that the text @s; longest first so "@Sam 2" is not also read as "@Sam"
   let low = text.toLowerCase(); const at = [];
   [...r.members.values()].map(p => p.name).sort((a, b) => b.length - a.length).forEach(n => {
-    const re = new RegExp('@' + reEsc(n.toLowerCase()) + '(?![\\w])', 'g');
-    if (re.test(low)) { at.push(n); low = low.replace(re, ' '); }
+    const k = '@' + n.toLowerCase(); if (low.includes(k)) { at.push(n); low = low.split(k).join(' '); }
   });
   return at;
 }
 // Mini-games live inside a chat message (msg.game) and the server checks every move.
-// secrets: hidden answers (rock-paper-scissors picks, the number to guess). seats: who holds each seat, by connection, not by name. draws: Quick Draw's countdown timers.
-const GAMES = ['ttt', 'c4', 'rps', 'dice', 'guess', 'draw'], RPS = ['rock', 'paper', 'scissors'], secrets = new WeakMap(), seats = new WeakMap(), draws = new WeakMap();
+const GAMES = ['ttt', 'c4', 'rps', 'num', 'react', 'hang'], OPEN = ['num', 'react', 'hang'], RPS = ['rock', 'paper', 'scissors'], secrets = new WeakMap(); // secrets: rock-paper-scissors picks, hidden until both have chosen
+const WORDS = 'planet,guitar,castle,rocket,dragon,jungle,pirate,wizard,galaxy,monkey,pencil,tornado,volcano,penguin,dolphin,library,rainbow,blanket,popcorn,sandwich,backpack,football,mountain,keyboard,dinosaur,hamburger,skeleton,treasure,elephant,lightning,pineapple,astronaut,chocolate,butterfly,spaghetti,trampoline'.split(','); // hangman
 const TTT = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
-const d6 = () => 1 + Math.floor(Math.random() * 6);
 function c4win(b, i) { // b is 7 wide and 6 tall with row 0 at the top; i is the cell that was just filled
   const x = i % 7, y = (i / 7) | 0, v = b[i];
   return [[1, 0], [0, 1], [1, 1], [1, -1]].some(([dx, dy]) => {
@@ -194,29 +365,25 @@ function c4win(b, i) { // b is 7 wide and 6 tall with row 0 at the top; i is the
     return n >= 4;
   });
 }
-function startDraw(r, msg) { // Quick Draw: after a random wait the screen says GO, and the first to press wins. Pressing early loses
-  const g = msg.game; g.phase = 'wait';
-  draws.set(msg, setTimeout(() => { if (g.win !== null) return; g.phase = 'go'; g.t0 = Date.now(); toRoom(r, { type: 'game', mid: msg.id, game: g }); }, 2000 + Math.random() * 3500));
-}
 function leave(ws) {
   const r = ws.room; if (!r) return;
-  r.members.delete(ws.id); ws.room = null;
+  r.members.delete(ws.id); ws.room = null; ws.racing = false;
   toRoom(r, { type: 'peer-left', id: ws.id });
   say(r, `${ws.name} left`);
   if (r.vote) { r.vote.yes.delete(ws.id); r.vote.no.delete(ws.id); checkVote(r); }
-  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; } // empty room resets
+  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; r.race = null; } // empty room resets
   pushLobby();
 }
 
 wss.on('connection', (ws, req) => {
-  ws.name = uniqueName(new URL(req.url, 'http://x').searchParams.get('name'));
   ws.id = nextId++; ws.room = null; ws.alive = true;
+  ws.ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim(); // Render puts the visitor's address in this header
   ws.on('pong', () => ws.alive = true);
-  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY, stats: stats(), recent: recentView() });
-  pushLobby();
 
   ws.on('message', raw => {
     let m; try { m = JSON.parse(raw); } catch { return; }
+    if (!m || typeof m !== 'object') return;
+    if (!ws.acct) return void auth(ws, m); // nothing below works until this socket has logged in
     if (m.type === 'join') {
       const r = rooms[(m.room | 0) - 1]; if (!r) return;
       if (r.members.size >= r.max) return send(ws, { type: 'error', text: `${r.name} is full` });
@@ -224,8 +391,8 @@ wss.on('connection', (ws, req) => {
       if (banned > 0) return send(ws, { type: 'error', text: `You were voted out of ${r.name}. Try again in ${Math.ceil(banned / 60000)} min.` });
       leave(ws); ws.st = {};
       const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, avatar: p.avatar, code: p.code, ...p.st }));
-      r.members.set(ws.id, ws); ws.room = r;
-      send(ws, { type: 'joined', room: r.id, name: r.name, max: r.max, topic: r.topic, board: r.board, peers, chat: r.chat, vote: voteInfo(r) });
+      r.members.set(ws.id, ws); ws.room = r; ws.joinedAt = Date.now();
+      send(ws, { type: 'joined', room: r.id, name: r.name, max: r.max, topic: r.topic, board: r.board, peers, chat: r.chat, vote: voteInfo(r), race: r.race ? r.race.seed : 0 });
       toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, avatar: ws.avatar, code: ws.code, ...ws.st }, ws.id);
       say(r, `${ws.name} joined`); pushLobby();
     } else if (m.type === 'leave') leave(ws);
@@ -264,11 +431,12 @@ wss.on('connection', (ws, req) => {
       if (to) send(to, { type: 'signal', from: ws.id, data: m.data });
     } else if (m.type === 'chat' && ws.room) {
       const gif = KLIPY && typeof m.gif === 'string' && m.gif.length < 300 && GIFURL.test(m.gif) ? m.gif : null; // a GIF instead of text
-      const text = gif ? '' : String(m.text || '').trim().slice(0, 500); if (!text && !gif) return;
+      const up = !gif && typeof m.pic === 'string' && pics.get(m.pic), pic = up && up.by === ws.code && !up.used ? m.pic : null; // an image they uploaded and that passed the check
+      const text = gif || pic ? '' : String(m.text || '').trim().slice(0, 500); if (!text && !gif && !pic) return;
       if (gif && slow(ws, 'lastGif', 1000)) return;
-      const msg = newMsg(ws, { text }); if (gif) msg.gif = gif;
+      const msg = newMsg(ws, { text }); if (gif) msg.gif = gif; if (pic) { up.used = true; msg.pic = pic; }
       const src = findMsg(ws.room, m.re); // the message this one replies to, if any
-      if (src) msg.re = { id: src.id, name: src.name, text: src.text ? src.text.slice(0, 80) : src.gif ? 'GIF' : src.poll ? 'Poll' : 'Game' };
+      if (src) msg.re = { id: src.id, name: src.name, text: src.text ? src.text.slice(0, 80) : src.gif ? 'GIF' : src.pic ? 'Image' : src.poll ? 'Poll' : 'Game' };
       const at = mentions(ws.room, text); if (at.length) msg.at = at;
       post(ws.room, msg);
     } else if (m.type === 'poll' && ws.room) { // a poll is a chat message with options people vote on
@@ -283,34 +451,44 @@ wss.on('connection', (ws, req) => {
       toRoom(ws.room, { type: 'poll', mid: msg.id, poll: p });
     } else if (m.type === 'luck' && ws.room) {
       if (slow(ws, 'lastLuck', 1000)) return;
-      if (m.kind === 'roll') say(ws.room, `${ws.name} rolled a ${d6()}`);
+      if (m.kind === 'roll') say(ws.room, `${ws.name} rolled a ${1 + Math.floor(Math.random() * 6)}`);
       else if (m.kind === 'flip') say(ws.room, `${ws.name} flipped a coin: ${Math.random() < .5 ? 'heads' : 'tails'}`);
-    } else if (m.type === 'game' && ws.room && GAMES.includes(m.kind)) { // start a game; most wait for a second player
+    } else if (m.type === 'game' && ws.room && GAMES.includes(m.kind)) { // start a game; it waits for a second player
       if (slow(ws, 'lastGame', 3000)) return;
       const g = { kind: m.kind, p: [ws.name], turn: 0, win: null };
-      if (m.kind === 'ttt') g.b = Array(9).fill(null); else if (m.kind === 'c4') g.b = Array(42).fill(null);
-      else if (m.kind === 'rps') g.done = [false, false]; else if (m.kind === 'dice') g.rolls = [null, null];
-      else if (m.kind === 'guess') { g.lo = 1; g.hi = 50; g.log = []; } else g.phase = 'ready'; // Quick Draw starts once someone joins
-      const msg = newMsg(ws, { game: g }); seats.set(msg, [ws.id]); if (m.kind === 'guess') secrets.set(msg, 1 + Math.floor(Math.random() * 50));
-      post(ws.room, msg);
+      if (m.kind === 'ttt') g.b = Array(9).fill(null); else if (m.kind === 'c4') g.b = Array(42).fill(null); else g.done = [false, false];
+      const msg = newMsg(ws, { game: g }), r = ws.room;
+      if (m.kind === 'num') { g.lo = 1; g.hi = 100; g.tries = 0; secrets.set(msg, 1 + Math.floor(Math.random() * 100)); } // the number and the word stay on the server
+      else if (m.kind === 'hang') { const w = WORDS[Math.floor(Math.random() * WORDS.length)]; secrets.set(msg, w); g.mask = w.replace(/./g, '_'); g.used = ''; g.left = 6; }
+      else if (m.kind === 'react') { // turns to "go" after a random wait; clicking before that puts you out
+        g.go = false; g.out = [];
+        setTimeout(() => { if (g.win === null && r.chat.includes(msg)) { g.go = true; toRoom(r, { type: 'game', mid: msg.id, game: g }); } }, 2000 + Math.random() * 4000);
+      }
+      post(r, msg);
     } else if (m.type === 'gjoin' && ws.room) {
-      const msg = findMsg(ws.room, m.mid), g = msg && msg.game, ids = (msg && seats.get(msg)) || [];
-      if (!g || g.kind === 'guess' || g.p.length > 1 || ids[0] === ws.id) return;
-      g.p.push(ws.name); ids.push(ws.id); seats.set(msg, ids);
-      if (g.kind === 'draw') startDraw(ws.room, msg);
-      toRoom(ws.room, { type: 'game', mid: msg.id, game: g });
+      const msg = findMsg(ws.room, m.mid), g = msg && msg.game;
+      if (!g || g.p.length > 1 || g.p[0] === ws.name) return;
+      g.p.push(ws.name); toRoom(ws.room, { type: 'game', mid: msg.id, game: g });
     } else if (m.type === 'gmove' && ws.room) {
-      const msg = findMsg(ws.room, m.mid), g = msg && msg.game; if (!g) return;
-      if (g.kind === 'guess') { // anyone in the room can guess; each wrong guess narrows the range
-        if (g.win !== null || slow(ws, 'lastGuess', 400)) return;
-        const n = m.n | 0, s = secrets.get(msg); if (n < g.lo || n > g.hi) return;
-        const hint = n === s ? 'correct' : n < s ? 'higher' : 'lower';
-        if (n === s) { g.win = 0; g.by = ws.name; g.answer = s; } else if (n < s) g.lo = n + 1; else g.hi = n - 1;
-        g.log.push({ name: ws.name, n, hint }); if (g.log.length > 6) g.log.shift();
+      const msg = findMsg(ws.room, m.mid), g = msg && msg.game, me = g ? g.p.indexOf(ws.name) : -1;
+      if (g && OPEN.includes(g.kind)) {
+        if (g.win !== null) return;
+        if (g.kind === 'num') {
+          const guess = m.n | 0, secret = secrets.get(msg); if (guess < g.lo || guess > g.hi) return;
+          g.tries++; g.last = ws.name + ' guessed ' + guess;
+          if (guess === secret) g.win = ws.name; else if (guess < secret) g.lo = guess + 1; else g.hi = guess - 1;
+        } else if (g.kind === 'react') {
+          if (g.out.includes(ws.name)) return;
+          if (g.go) g.win = ws.name; else g.out.push(ws.name);
+        } else {
+          const l = String(m.l || '').toLowerCase(), w = secrets.get(msg); if (!/^[a-z]$/.test(l) || g.used.includes(l)) return;
+          g.used += l; if (!w.includes(l)) g.left--;
+          g.mask = [...w].map(c => (g.used.includes(c) ? c : '_')).join('');
+          if (g.mask === w) g.win = ws.name; else if (g.left <= 0) { g.win = ''; g.lost = true; g.mask = w; }
+        }
         return toRoom(ws.room, { type: 'game', mid: msg.id, game: g });
       }
-      const me = (seats.get(msg) || []).indexOf(ws.id);
-      if (g.p.length < 2 || g.win !== null || me < 0) return;
+      if (!g || g.p.length < 2 || g.win !== null || me < 0) return;
       if (g.kind === 'rps') {
         if (!RPS.includes(m.pick) || g.done[me]) return;
         const s = secrets.get(msg) || []; s[me] = m.pick; secrets.set(msg, s); g.done[me] = true;
@@ -318,14 +496,6 @@ wss.on('connection', (ws, req) => {
           const d = (RPS.indexOf(s[0]) - RPS.indexOf(s[1]) + 3) % 3;
           g.picks = s; g.win = d === 0 ? 'draw' : d === 1 ? 0 : 1;
         }
-      } else if (g.kind === 'dice') { // each player rolls two dice once; the bigger total wins
-        if (g.rolls[me]) return;
-        g.rolls[me] = [d6(), d6()];
-        if (g.rolls[0] && g.rolls[1]) { const a = g.rolls[0][0] + g.rolls[0][1], b = g.rolls[1][0] + g.rolls[1][1]; g.win = a === b ? 'draw' : a > b ? 0 : 1; }
-      } else if (g.kind === 'draw') {
-        if (g.phase === 'wait') { clearTimeout(draws.get(msg)); g.win = 1 - me; g.early = true; } // jumped the gun
-        else if (g.phase === 'go') { g.win = me; g.ms = Date.now() - g.t0; }
-        else return;
       } else {
         if (me !== g.turn) return;
         let i = m.i | 0;
@@ -339,6 +509,23 @@ wss.on('connection', (ws, req) => {
         g.win = won ? me : g.b.every(c => c !== null) ? 'draw' : null;
       }
       toRoom(ws.room, { type: 'game', mid: msg.id, game: g });
+    } else if (m.type === 'race' && ws.room) {
+      const r = ws.room;
+      if (m.act === 'pos') { // where this player is, passed on to the others about 12 times a second
+        const x = +m.x, y = +m.y; if (!isFinite(x) || !isFinite(y) || slow(ws, 'lastPos', 60)) return;
+        r.members.forEach((p, id) => { if (id !== ws.id && p.racing) send(p, { type: 'race-pos', id: ws.id, x: Math.round(x), y: Math.round(y) }); }); // only people with the race open
+      } else if (m.act === 'open') ws.racing = !!m.on; // they opened or closed the race panel
+      else if (m.act === 'start') {
+        if (slow(ws, 'lastRace', 8000)) return err(ws, 'Wait a few seconds before starting another race');
+        r.race = { seed: 1 + Math.floor(Math.random() * 1e9), at: Date.now() + 3500, done: new Set() }; // the seed builds the same course for everyone
+        toRoom(r, { type: 'race-start', seed: r.race.seed, wait: 3500 });
+        say(r, ws.name + ' started a platformer race. Open Games, then Platformer race, to join');
+      } else if (m.act === 'finish' && r.race && !r.race.done.has(ws.id)) {
+        const ms = Date.now() - r.race.at; if (ms < 4000) return; // nobody finishes that fast
+        r.race.done.add(ws.id); const secs = (ms / 1000).toFixed(1);
+        say(r, r.race.done.size === 1 ? ws.name + ' won the platformer race in ' + secs + 's' : ws.name + ' finished the race in ' + secs + 's');
+        toRoom(r, { type: 'race-end', id: ws.id, name: ws.name, place: r.race.done.size, secs });
+      }
     } else if (m.type === 'kick' && ws.room) { // start a vote to kick someone; the starter counts as a yes
       const r = ws.room, t = r.members.get(m.id);
       if (!t || t === ws) return;
@@ -351,26 +538,52 @@ wss.on('connection', (ws, req) => {
     } else if (m.type === 'kickv' && ws.room && ws.room.vote) {
       const v = ws.room.vote; if (ws.id === v.target) return;
       v.yes.delete(ws.id); v.no.delete(ws.id); (m.yes ? v.yes : v.no).add(ws.id); checkVote(ws.room);
-    } else if (m.type === 'id') { // the browser's secret id, sent once after connecting
-      if (ws.code || typeof m.key !== 'string' || !/^[a-f0-9]{32,64}$/.test(m.key)) return;
-      ws.code = codeOf(m.key);
-      if (!online.has(ws.code)) online.set(ws.code, new Set());
-      online.get(ws.code).add(ws); seen(ws.code);
-      send(ws, { type: 'me', code: ws.code, admin: ADMINS.has(ws.code) }); send(ws, { type: 'gpoll', poll: gpollView(ws) }); pushLobby();
-    } else if (m.type === 'friends' && ws.code && Array.isArray(m.codes)) { // this browser's whole friend list, sent again whenever it changes
-      ws.friends = new Set(m.codes.slice(0, 100).filter(c => typeof c === 'string' && /^[A-Z2-9]{8}$/.test(c) && c !== ws.code));
-      wss.clients.forEach(o => { // anyone who has added one side but not the other gets asked to add them back
-        if (!o.code || o === ws || o.code === ws.code) return;
-        if (isFriend(ws, o.code) && !isFriend(o, ws.code)) send(o, { type: 'friend-req', code: ws.code, name: ws.name });
-        if (isFriend(o, ws.code) && !isFriend(ws, o.code)) send(ws, { type: 'friend-req', code: o.code, name: o.name });
-      });
-      pushLobby();
-    } else if (m.type === 'dm' && ws.code) { // direct message: passed straight on, never stored here
+    } else if (m.type === 'logout') { // forget this browser's stay-logged-in token
+      const h = typeof m.token === 'string' && sha(m.token), i = ws.acct.sessions.indexOf(h);
+      if (i >= 0) { ws.acct.sessions.splice(i, 1); tokens.delete(h); saveAcct(ws.acct); }
+      ws.close();
+    } else if (m.type === 'friend-add') {
+      const a = ws.acct, c = String(m.code || '').trim().toLowerCase().replace(/^@/, '');
+      if (c === a.username) return err(ws, 'That is you');
+      if (!accounts.has(c)) return err(ws, 'There is no account called @' + c.slice(0, 16));
+      if (a.friends.includes(c)) return; if (a.friends.length >= 200) return err(ws, 'Your friends list is full');
+      a.friends.push(c); saveAcct(a); sendFriends(a.username); sendFriends(c); pushLobby();
+    } else if (m.type === 'friend-del') {
+      const a = ws.acct, i = a.friends.indexOf(m.code); if (i < 0) return;
+      a.friends.splice(i, 1); saveAcct(a); sendFriends(a.username); sendFriends(m.code); pushLobby();
+    } else if (m.type === 'dm') { // direct message: passed straight on, never stored here
       const text = String(m.text || '').trim().slice(0, 500); if (!text || slow(ws, 'lastDm', 300)) return;
-      if (!mutual(ws, m.to)) return send(ws, { type: 'dm-fail', text: 'Not sent: they are offline or have not added you back' });
+      if (!mutual(ws.code, m.to) || !online.has(m.to)) return send(ws, { type: 'dm-fail', text: 'Not sent: they are offline or have not added you back' });
       const t = Date.now();
-      socketsOf(m.to).forEach(o => { if (isFriend(o, ws.code)) send(o, { type: 'dm', from: ws.code, name: ws.name, text, t }); });
+      socketsOf(m.to).forEach(o => send(o, { type: 'dm', from: ws.code, name: ws.name, text, t }));
       socketsOf(ws.code).forEach(o => send(o, { type: 'dm', to: m.to, text, t }));
+    } else if (m.type === 'profile') { // someone's profile page: who they are and their posts
+      const a = accounts.get(String(m.user || '').toLowerCase()); if (!a) return err(ws, 'That account no longer exists');
+      send(ws, { type: 'profile', user: pubView(a), posts: store.posts.filter(p => p.code === a.username).slice(-50).map(p => postView(p, ws)) });
+    } else if (m.type === 'profile-set') { // your own display name and bio
+      const display = clean(m.display, 20) || ws.code, bio = String(m.bio || '').replace(/[\u0000-\u0009\u000b-\u001f]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 200);
+      if (badName(display)) return err(ws, 'Pick a different display name');
+      if (slow(ws, 'lastProf', 3000)) return err(ws, 'Wait a few seconds before saving again');
+      setProfile(ws.acct, display, bio); socketsOf(ws.code).forEach(o => send(o, { type: 'me', me: meView(ws.acct), saved: o === ws }));
+    } else if (m.type === 'mod' && ADMINS.has(ws.code)) { // moderators only
+      const a = accounts.get(String(m.user || '').toLowerCase()); if (!a) return;
+      if (m.act === 'reset-name') setProfile(a, a.username, a.bio);
+      else if (m.act === 'clear-bio') setProfile(a, a.display, '');
+      else if (m.act === 'delete') { if (ADMINS.has(a.username)) return err(ws, 'Moderator accounts cannot be deleted from here'); deleteAccount(a); }
+      else return;
+      if (m.act !== 'delete') socketsOf(a.username).forEach(o => send(o, { type: 'me', me: meView(a), saved: true, mod: true }));
+      send(ws, { type: 'mod-done', act: m.act, user: a.username });
+    } else if (m.type === 'buy') {
+      const it = ITEM.get(m.id), a = ws.acct; if (!it || owns(a, it)) return;
+      if (a.coins < it.price) return err(ws, 'You need ' + (it.price - a.coins) + ' more coins for that');
+      a.coins -= it.price; a.owned.push(it.id); saveAcct(a); pushCoins(a);
+    } else if (m.type === 'sound' && ws.room) { // soundboard: everyone in the room hears it
+      const it = ITEM.get(m.id); if (!it || it.kind !== 'sound' || !owns(ws.acct, it) || slow(ws, 'lastSound', 3000)) return;
+      toRoom(ws.room, { type: 'sound', id: it.id, from: ws.id });
+    } else if (m.type === 'ability' && ws.room) { // an ability used on someone in the room, e.g. a thrown tomato
+      const it = ITEM.get(m.id), t = ws.room.members.get(m.to); if (!it || it.kind !== 'ability' || !owns(ws.acct, it) || !t || t === ws) return;
+      if (slow(ws, 'lastAbil', 10000)) return err(ws, 'Abilities take 10 seconds to recharge');
+      toRoom(ws.room, { type: 'ability', id: it.id, from: ws.id, to: t.id });
     } else if (m.type === 'gpoll-set' && ADMINS.has(ws.code)) { // admin only: start, edit or remove the global poll
       if (m.remove) store.gpoll = null;
       else {
@@ -390,20 +603,17 @@ wss.on('connection', (ws, req) => {
       ws.feed = !!m.on;
       if (ws.feed) send(ws, { type: 'feed', posts: store.posts.slice(-50).map(p => postView(p, ws)) });
     } else if (m.type === 'post-new' && ws.code) {
-      const text = String(m.text || '').replace(/[\u0000-\u0009\u000b-\u001f]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 500);
-      let img = ''; // an optional photo: a JPEG the browser already shrank, checked here before it is kept
-      if (typeof m.img === 'string' && m.img) {
-        const mm = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(m.img);
-        const buf = mm && mm[1].length <= 220000 ? Buffer.from(mm[1], 'base64') : null;
-        if (!buf || buf[0] !== 0xff || buf[1] !== 0xd8) return send(ws, { type: 'error', text: 'That photo could not be used. Try a smaller one' });
-        img = mm[1];
-      }
-      if (!text && !img) return;
-      if (slow(ws, 'lastPost', 10000)) return send(ws, { type: 'error', text: 'Wait a few seconds before posting again' });
-      const p = { id: ++store.seq, code: ws.code, name: ws.name, text, img, t: Date.now(), likes: [], comments: [] };
-      store.posts.push(p); if (store.posts.length > 200) store.posts.shift(); trimImages();
-      save(); pushPost(p);
-      wss.clients.forEach(c => { if (c !== ws && c.name && c.code !== ws.code && isFriend(c, ws.code)) send(c, { type: 'post-note', name: ws.name, code: ws.code, text: text.slice(0, 80) || 'shared a photo' }); }); // friends of the poster get a pop-up
+      const up = postPics && typeof m.pic === 'string' && pics.get(m.pic), pic = up && up.by === ws.code && !up.used ? m.pic : null; // an uploaded image that passed the check
+      const text = String(m.text || '').replace(/[\u0000-\u0009\u000b-\u001f]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 500); if (!text && !pic) return;
+      if (slow(ws, 'lastPost', 10000)) return err(ws, 'Wait a few seconds before posting again');
+      const p = { id: ++store.seq, code: ws.code, name: ws.acct.display, text, t: Date.now(), likes: [], comments: [] };
+      const publish = () => {
+        store.posts.push(p); if (store.posts.length > 200) dropPic(store.posts.shift());
+        save(); pushPost(p);
+        ws.acct.friends.forEach(c => { if (isFriend(c, ws.code)) socketsOf(c).forEach(o => send(o, { type: 'friend-post', name: p.name, code: p.code })); }); // friends get a notification
+      };
+      if (!pic) return publish();
+      up.used = true; storePic(pic, up.buf).then(() => { p.img = pic; publish(); }, e => { console.warn(e.message); err(ws, 'The image could not be saved. Try again'); });
     } else if (m.type === 'post-like' && ws.code) {
       const p = store.posts.find(x => x.id === m.id); if (!p || slow(ws, 'lastLike', 150)) return;
       const i = p.likes.indexOf(ws.code); if (i >= 0) p.likes.splice(i, 1); else p.likes.push(ws.code);
@@ -411,22 +621,26 @@ wss.on('connection', (ws, req) => {
     } else if (m.type === 'post-comment' && ws.code) {
       const p = store.posts.find(x => x.id === m.id), text = clean(m.text, 300); if (!p || !text || p.comments.length >= 100) return;
       if (slow(ws, 'lastCom', 3000)) return send(ws, { type: 'error', text: 'Wait a few seconds before commenting again' });
-      p.comments.push({ id: ++store.seq, code: ws.code, name: ws.name, text, t: Date.now() });
+      p.comments.push({ id: ++store.seq, code: ws.code, name: ws.acct.display, text, t: Date.now() });
       save(); pushPost(p);
     } else if (m.type === 'post-del' && ws.code) { // your own post or comment, a comment on your post, or anything if you are an admin
       const p = store.posts.find(x => x.id === m.id), boss = ADMINS.has(ws.code); if (!p) return;
       if (m.cid) {
         const c = p.comments.find(x => x.id === m.cid); if (!c || !(boss || c.code === ws.code || p.code === ws.code)) return;
         p.comments.splice(p.comments.indexOf(c), 1); save(); pushPost(p);
-      } else if (boss || p.code === ws.code) { store.posts.splice(store.posts.indexOf(p), 1); save(); toFeed(() => ({ type: 'post-del', id: p.id })); pushRecent(); }
+      } else if (boss || p.code === ws.code) { store.posts.splice(store.posts.indexOf(p), 1); dropPic(p); save(); toFeed(() => ({ type: 'post-del', id: p.id })); }
     }
   });
   ws.on('close', () => {
     leave(ws); ws.name = null;
     const set = online.get(ws.code);
-    if (set) { set.delete(ws); if (!set.size) online.delete(ws.code); }
-    pushLobby(); // friends see them go offline, and the menu count drops
+    if (set) { set.delete(ws); if (!set.size) online.delete(ws.code); pushLobby(); } // friends see them go offline
   });
 });
 setInterval(() => wss.clients.forEach(c => { if (!c.alive) return c.terminate(); c.alive = false; c.ping(); }), 30000);
-server.listen(PORT, () => console.log(`Ten Rooms running on port ${PORT}`));
+setInterval(() => { // paid once per account however many tabs it has open; you must have been in the room for the whole minute
+  const paid = new Set(), now = Date.now();
+  wss.clients.forEach(c => { if (c.acct && c.room && now - c.joinedAt >= 55000 && !paid.has(c.code)) { paid.add(c.code); c.acct.coins += COINS_PER_MIN; saveAcct(c.acct); } });
+  paid.forEach(u => pushCoins(accounts.get(u)));
+}, 60000);
+loadStore().finally(() => server.listen(PORT, () => console.log(`Ten Rooms running on port ${PORT}`)));
