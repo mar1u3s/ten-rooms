@@ -48,7 +48,33 @@ let nextId = 1, msgSeq = 0;
 const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify(m));
 const toRoom = (r, m, except) => r.members.forEach((p, id) => id !== except && send(p, m));
 const lobby = () => rooms.map(r => ({ id: r.id, name: r.name, topic: r.topic, max: r.max, users: [...r.members.values()].map(p => p.name) }));
-const pushLobby = () => { const l = lobby(); wss.clients.forEach(c => { if (c.name) { send(c, { type: 'lobby', rooms: l }); presence(c); } }); };
+const pushLobby = () => { const l = lobby(), st = stats(); wss.clients.forEach(c => { if (c.name) { send(c, { type: 'lobby', rooms: l, stats: st }); presence(c); } }); };
+
+// Saved data: global posts, the global poll and the visitor counts go into one JSON file so they survive a restart.
+// On Render the disk is wiped on every deploy unless a persistent disk is attached; point DATA_DIR at that disk to keep the file.
+const DATA = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'tenrooms.json');
+const ADMINS = new Set((process.env.ADMIN_CODES || 'PVRVHHKD').split(',').map(s => s.trim().toUpperCase()).filter(Boolean)); // friend codes that can run the global poll and delete any post
+const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0 };
+try { Object.assign(store, JSON.parse(fs.readFileSync(DATA, 'utf8'))); } catch {}
+if (!Array.isArray(store.posts)) store.posts = [];
+const ever = new Set(store.ever), today = new Set(store.today); // friend codes seen ever, and seen on store.day
+let saveTimer;
+function save() { // written a moment after the last change, to a temp file first so a crash cannot leave half a file
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    store.ever = [...ever]; store.today = [...today];
+    fs.mkdir(path.dirname(DATA), { recursive: true }, () => fs.writeFile(DATA + '.tmp', JSON.stringify(store), e => { if (e) console.warn('save failed:', e.message); else fs.rename(DATA + '.tmp', DATA, () => {}); }));
+  }, 2000);
+}
+const TZ = (() => { try { new Date().toLocaleDateString('en-CA', { timeZone: process.env.STATS_TZ }); return process.env.STATS_TZ; } catch { return ''; } })() || 'UTC'; // "today" rolls over at midnight in this time zone
+function newDay() { const d = new Date().toLocaleDateString('en-CA', { timeZone: TZ }); if (d !== store.day) { store.day = d; today.clear(); } }
+function seen(code) { newDay(); if (!today.has(code) || !ever.has(code)) { today.add(code); ever.add(code); save(); } } // a person is counted once per browser
+function stats() { newDay(); return { today: today.size, ever: ever.size, menu: [...wss.clients].filter(c => c.name && !c.room).length }; }
+const postView = (p, ws) => ({ id: p.id, code: p.code, name: p.name, text: p.text, t: p.t, likes: p.likes.length, liked: p.likes.includes(ws.code), comments: p.comments });
+const toFeed = make => wss.clients.forEach(c => c.feed && send(c, make(c))); // only people with the Posts page open get updates
+const pushPost = p => toFeed(c => ({ type: 'post', post: postView(p, c) }));
+const gpollView = ws => store.gpoll && { id: store.gpoll.id, q: store.gpoll.q, opts: store.gpoll.opts.map(o => ({ t: o.t, n: o.v.length })), mine: store.gpoll.opts.findIndex(o => o.v.includes(ws.code)) };
+const pushGpoll = () => wss.clients.forEach(c => c.name && send(c, { type: 'gpoll', poll: gpollView(c) }));
 
 // Friends without accounts: each browser keeps a secret id and the server turns it into a short friend code.
 // Nothing here is saved; friend lists live in the browsers. Two people count as friends once each has added the other's code.
@@ -151,7 +177,7 @@ wss.on('connection', (ws, req) => {
   ws.name = uniqueName(new URL(req.url, 'http://x').searchParams.get('name'));
   ws.id = nextId++; ws.room = null; ws.alive = true;
   ws.on('pong', () => ws.alive = true);
-  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY });
+  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY, stats: stats() });
   pushLobby();
 
   ws.on('message', raw => {
@@ -272,7 +298,8 @@ wss.on('connection', (ws, req) => {
       if (ws.code || typeof m.key !== 'string' || !/^[a-f0-9]{32,64}$/.test(m.key)) return;
       ws.code = codeOf(m.key);
       if (!online.has(ws.code)) online.set(ws.code, new Set());
-      online.get(ws.code).add(ws); send(ws, { type: 'me', code: ws.code });
+      online.get(ws.code).add(ws); seen(ws.code);
+      send(ws, { type: 'me', code: ws.code, admin: ADMINS.has(ws.code) }); send(ws, { type: 'gpoll', poll: gpollView(ws) });
     } else if (m.type === 'friends' && ws.code && Array.isArray(m.codes)) { // this browser's whole friend list, sent again whenever it changes
       ws.friends = new Set(m.codes.slice(0, 100).filter(c => typeof c === 'string' && /^[A-Z2-9]{8}$/.test(c) && c !== ws.code));
       wss.clients.forEach(o => { // anyone who has added one side but not the other gets asked to add them back
@@ -287,6 +314,45 @@ wss.on('connection', (ws, req) => {
       const t = Date.now();
       socketsOf(m.to).forEach(o => { if (isFriend(o, ws.code)) send(o, { type: 'dm', from: ws.code, name: ws.name, text, t }); });
       socketsOf(ws.code).forEach(o => send(o, { type: 'dm', to: m.to, text, t }));
+    } else if (m.type === 'gpoll-set' && ADMINS.has(ws.code)) { // admin only: start, edit or remove the global poll
+      if (m.remove) store.gpoll = null;
+      else {
+        const q = clean(m.q, 120), opts = (Array.isArray(m.opts) ? m.opts.slice(0, 6) : []).map(o => clean(o, 60)).filter(Boolean);
+        if (!q || opts.length < 2) return send(ws, { type: 'error', text: 'A poll needs a question and at least 2 options' });
+        const old = m.keep && store.gpoll ? store.gpoll : null; // keep: an edit, so each option keeps the votes it had in that position
+        store.gpoll = { id: old ? old.id : ++store.seq, q, opts: opts.map((t, i) => ({ t, v: old && old.opts[i] ? old.opts[i].v : [] })) };
+      }
+      save(); pushGpoll();
+    } else if (m.type === 'gpoll-vote' && ws.code && store.gpoll) { // one vote per browser, counted by friend code
+      const o = store.gpoll.opts[m.opt | 0]; if (!o || slow(ws, 'lastGv', 200)) return;
+      const had = o.v.includes(ws.code);
+      store.gpoll.opts.forEach(x => { const i = x.v.indexOf(ws.code); if (i >= 0) x.v.splice(i, 1); });
+      if (!had) o.v.push(ws.code);
+      save(); pushGpoll();
+    } else if (m.type === 'feed') { // the Posts page was opened or closed
+      ws.feed = !!m.on;
+      if (ws.feed) send(ws, { type: 'feed', posts: store.posts.slice(-50).map(p => postView(p, ws)) });
+    } else if (m.type === 'post-new' && ws.code) {
+      const text = String(m.text || '').replace(/[\u0000-\u0009\u000b-\u001f]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 500); if (!text) return;
+      if (slow(ws, 'lastPost', 10000)) return send(ws, { type: 'error', text: 'Wait a few seconds before posting again' });
+      const p = { id: ++store.seq, code: ws.code, name: ws.name, text, t: Date.now(), likes: [], comments: [] };
+      store.posts.push(p); if (store.posts.length > 200) store.posts.shift();
+      save(); pushPost(p);
+    } else if (m.type === 'post-like' && ws.code) {
+      const p = store.posts.find(x => x.id === m.id); if (!p || slow(ws, 'lastLike', 150)) return;
+      const i = p.likes.indexOf(ws.code); if (i >= 0) p.likes.splice(i, 1); else p.likes.push(ws.code);
+      save(); pushPost(p);
+    } else if (m.type === 'post-comment' && ws.code) {
+      const p = store.posts.find(x => x.id === m.id), text = clean(m.text, 300); if (!p || !text || p.comments.length >= 100) return;
+      if (slow(ws, 'lastCom', 3000)) return send(ws, { type: 'error', text: 'Wait a few seconds before commenting again' });
+      p.comments.push({ id: ++store.seq, code: ws.code, name: ws.name, text, t: Date.now() });
+      save(); pushPost(p);
+    } else if (m.type === 'post-del' && ws.code) { // your own post or comment, a comment on your post, or anything if you are an admin
+      const p = store.posts.find(x => x.id === m.id), boss = ADMINS.has(ws.code); if (!p) return;
+      if (m.cid) {
+        const c = p.comments.find(x => x.id === m.cid); if (!c || !(boss || c.code === ws.code || p.code === ws.code)) return;
+        p.comments.splice(p.comments.indexOf(c), 1); save(); pushPost(p);
+      } else if (boss || p.code === ws.code) { store.posts.splice(store.posts.indexOf(p), 1); save(); toFeed(() => ({ type: 'post-del', id: p.id })); }
     }
   });
   ws.on('close', () => {
