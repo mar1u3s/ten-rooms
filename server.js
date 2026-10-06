@@ -1,32 +1,76 @@
-// Ten Rooms: lobby + signaling server. Video/audio go browser-to-browser (WebRTC); this only handles names, rooms, handshakes and chat.
+// Ten Rooms: lobby + signaling server. Video/audio go browser-to-browser (WebRTC); this only handles names, rooms, handshakes, chat, posts and polls.
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 
-const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
+const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'], CHAT_KEEP = 100;
 // [name, max people]. Small rooms keep full video; bigger rooms get lower per-person video quality (see tune() in index.html).
 const ROOMS = [['Lounge', 6], ['Studio', 6], ['Kitchen', 6], ['Garage', 10], ['Rooftop', 10], ['Library', 15], ['Arcade', 15], ['Workshop', 15], ['Garden', 50], ['Porch', 50]];
 // GIFs come from the Klipy catalog. Set KLIPY_KEY (Render: Environment) to turn GIF search on; without it the GIF button is hidden.
 // The key stays on the server: browsers ask /gifs and the server asks Klipy. Only links on Klipy's own domain can be sent in chat.
 const KLIPY = process.env.KLIPY_KEY || '', GIFURL = /^https:\/\/([a-z0-9-]+\.)*klipy\.(com|co)\/[\w\-./%~]+$/i, gifCache = new Map();
+let gifWarned = false;
+function gifUrls(g) { // each GIF comes in sizes (hd, md, sm, xs) and formats; webp is the lightest that still animates
+  const f = g.file || g.files || {}, pick = s => f[s] && (f[s].webp || f[s].gif);
+  let big = pick('md') || pick('sm') || pick('hd'), small = pick('xs') || pick('sm') || big;
+  if (!big) { // an answer shaped differently than expected: use any picture links found inside the item
+    const found = [];
+    (function walk(o, d) { if (!o || d > 6) return; if (typeof o === 'string') { if (/\.(webp|gif)$/i.test(o)) found.push({ url: o }); } else if (typeof o === 'object') for (const k in o) walk(o[k], d + 1); })(g, 0);
+    big = found[0]; small = found[found.length - 1] || big;
+    if (!gifWarned) { gifWarned = true; console.warn('Klipy: GIF items have an unexpected shape, used a fallback. Sample:', JSON.stringify(g).slice(0, 400)); }
+  }
+  return big && small && GIFURL.test(big.url) && GIFURL.test(small.url) ? { url: big.url, thumb: small.url, title: String(g.title || '').slice(0, 60) } : null;
+}
 async function gifs(q) { // search results, or what is trending when q is empty; answers are reused for 5 minutes
   const key = q.toLowerCase(), hit = gifCache.get(key);
   if (hit && Date.now() - hit.t < 300000) return hit.list;
   const r = await fetch(`https://api.klipy.com/api/v1/${KLIPY}/gifs/${q ? 'search' : 'trending'}?per_page=24&customer_id=tenrooms&content_filter=high` + (q ? '&q=' + encodeURIComponent(q) : ''), { signal: AbortSignal.timeout(6000) });
   if (!r.ok) throw new Error('Klipy answered ' + r.status);
   const j = await r.json();
-  const list = ((j.data && j.data.data) || []).map(g => { // each GIF comes in sizes (hd, md, sm, xs) and formats; webp is the lightest that still animates
-    const f = g.file || {}, pick = s => f[s] && (f[s].webp || f[s].gif);
-    const big = pick('md') || pick('sm') || pick('hd'), small = pick('xs') || pick('sm') || big;
-    return big && small && GIFURL.test(big.url) && GIFURL.test(small.url) ? { url: big.url, thumb: small.url, title: String(g.title || '').slice(0, 60) } : null;
-  }).filter(Boolean);
+  const raw = Array.isArray(j.data) ? j.data : (j.data && j.data.data) || j.results || [];
+  const list = raw.map(gifUrls).filter(Boolean);
+  if (!list.length) console.warn(raw.length ? 'Klipy sent ' + raw.length + ' items but none were usable. Sample: ' + JSON.stringify(raw[0]).slice(0, 400) : 'Klipy sent no items. Top-level keys: ' + Object.keys(j).join(','));
   if (gifCache.size > 300) gifCache.clear();
   gifCache.set(key, { t: Date.now(), list });
   return list;
 }
 const ICE = (() => { try { return JSON.parse(process.env.ICE_SERVERS); } catch { return [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]; } })();
 
+// Saved data: global posts (with their photos), the global poll and the visitor counts go into one JSON file so they survive a restart.
+// On Render the disk is wiped on every deploy unless a persistent disk is attached; point DATA_DIR at that disk to keep the file.
+const DATA = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'tenrooms.json');
+const ADMINS = new Set((process.env.ADMIN_CODES || process.env.ADMIN_CODE || 'PVRVHHKD').split(',').map(s => s.trim().toUpperCase()).filter(Boolean)); // friend codes that can run the global poll and delete any post
+const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0 };
+try { Object.assign(store, JSON.parse(fs.readFileSync(DATA, 'utf8'))); } catch {}
+if (!Array.isArray(store.posts)) store.posts = [];
+const ever = new Set(store.ever), today = new Set(store.today); // friend codes seen ever, and seen on store.day
+let saveTimer;
+function save() { // written a moment after the last change, to a temp file first so a crash cannot leave half a file
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 2000);
+}
+function saveNow() {
+  store.ever = [...ever]; store.today = [...today];
+  try { fs.mkdirSync(path.dirname(DATA), { recursive: true }); fs.writeFileSync(DATA + '.tmp', JSON.stringify(store)); fs.renameSync(DATA + '.tmp', DATA); } catch (e) { console.warn('save failed:', e.message); }
+}
+['SIGTERM', 'SIGINT'].forEach(s => process.on(s, () => { saveNow(); process.exit(0); })); // a redeploy still keeps the last few seconds
+const TZ = (() => { try { new Date().toLocaleDateString('en-CA', { timeZone: process.env.STATS_TZ }); return process.env.STATS_TZ; } catch { return ''; } })() || 'UTC'; // "today" rolls over at midnight in this time zone
+function newDay() { const d = new Date().toLocaleDateString('en-CA', { timeZone: TZ }); if (d !== store.day) { store.day = d; today.clear(); } }
+function seen(code) { newDay(); if (!today.has(code) || !ever.has(code)) { today.add(code); ever.add(code); save(); } } // a person is counted once per browser
+function stats() { // "menu" = people online who are not inside a room, counted once however many tabs they have open
+  newDay(); const menu = new Set();
+  wss.clients.forEach(c => { if (c.name && !c.room) menu.add(c.code || 'ws' + c.id); });
+  return { today: today.size, ever: ever.size, menu: menu.size };
+}
+
 const server = http.createServer((req, res) => {
   if (req.url === '/health') { res.writeHead(200); return res.end('ok'); }
+  const im = /^\/img\/(\d+)$/.exec(req.url); // a photo from a post
+  if (im) {
+    const p = store.posts.find(x => x.id === +im[1]);
+    if (!p || !p.img) { res.writeHead(404); return res.end('No such image'); }
+    res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' });
+    return res.end(Buffer.from(p.img, 'base64'));
+  }
   if (req.url === '/gifs' || req.url.startsWith('/gifs?')) {
     if (!KLIPY) { res.writeHead(404); return res.end('GIF search is off'); }
     const q = String(new URL(req.url, 'http://x').searchParams.get('q') || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 50);
@@ -42,7 +86,7 @@ const server = http.createServer((req, res) => {
   res.writeHead(404); res.end('Not found');
 });
 
-const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
+const wss = new WebSocketServer({ server, maxPayload: 300 * 1024 }); // big enough for one compressed post photo
 const rooms = ROOMS.map(([name, max], i) => ({ id: i + 1, name, max, topic: '', board: [], members: new Map(), chat: [], bans: new Map(), vote: null }));
 let nextId = 1, msgSeq = 0;
 const send = (ws, m) => ws.readyState === 1 && ws.send(JSON.stringify(m));
@@ -50,34 +94,18 @@ const toRoom = (r, m, except) => r.members.forEach((p, id) => id !== except && s
 const lobby = () => rooms.map(r => ({ id: r.id, name: r.name, topic: r.topic, max: r.max, users: [...r.members.values()].map(p => p.name) }));
 const pushLobby = () => { const l = lobby(), st = stats(); wss.clients.forEach(c => { if (c.name) { send(c, { type: 'lobby', rooms: l, stats: st }); presence(c); } }); };
 
-// Saved data: global posts, the global poll and the visitor counts go into one JSON file so they survive a restart.
-// On Render the disk is wiped on every deploy unless a persistent disk is attached; point DATA_DIR at that disk to keep the file.
-const DATA = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'tenrooms.json');
-const ADMINS = new Set((process.env.ADMIN_CODES || 'PVRVHHKD').split(',').map(s => s.trim().toUpperCase()).filter(Boolean)); // friend codes that can run the global poll and delete any post
-const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0 };
-try { Object.assign(store, JSON.parse(fs.readFileSync(DATA, 'utf8'))); } catch {}
-if (!Array.isArray(store.posts)) store.posts = [];
-const ever = new Set(store.ever), today = new Set(store.today); // friend codes seen ever, and seen on store.day
-let saveTimer;
-function save() { // written a moment after the last change, to a temp file first so a crash cannot leave half a file
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    store.ever = [...ever]; store.today = [...today];
-    fs.mkdir(path.dirname(DATA), { recursive: true }, () => fs.writeFile(DATA + '.tmp', JSON.stringify(store), e => { if (e) console.warn('save failed:', e.message); else fs.rename(DATA + '.tmp', DATA, () => {}); }));
-  }, 2000);
-}
-const TZ = (() => { try { new Date().toLocaleDateString('en-CA', { timeZone: process.env.STATS_TZ }); return process.env.STATS_TZ; } catch { return ''; } })() || 'UTC'; // "today" rolls over at midnight in this time zone
-function newDay() { const d = new Date().toLocaleDateString('en-CA', { timeZone: TZ }); if (d !== store.day) { store.day = d; today.clear(); } }
-function seen(code) { newDay(); if (!today.has(code) || !ever.has(code)) { today.add(code); ever.add(code); save(); } } // a person is counted once per browser
-function stats() { newDay(); return { today: today.size, ever: ever.size, menu: [...wss.clients].filter(c => c.name && !c.room).length }; }
-const postView = (p, ws) => ({ id: p.id, code: p.code, name: p.name, text: p.text, t: p.t, likes: p.likes.length, liked: p.likes.includes(ws.code), comments: p.comments });
+// ---- posts ----
+const postView = (p, ws) => ({ id: p.id, code: p.code, name: p.name, text: p.text, img: !!p.img, t: p.t, likes: p.likes.length, liked: !!ws.code && p.likes.includes(ws.code), comments: p.comments });
 const toFeed = make => wss.clients.forEach(c => c.feed && send(c, make(c))); // only people with the Posts page open get updates
-const pushPost = p => toFeed(c => ({ type: 'post', post: postView(p, c) }));
+const recentView = () => store.posts.slice(-3).reverse().map(p => ({ id: p.id, name: p.name, code: p.code, text: p.text.slice(0, 90), img: !!p.img, t: p.t, likes: p.likes.length }));
+const pushRecent = () => { const r = recentView(); wss.clients.forEach(c => c.name && send(c, { type: 'recent', posts: r })); }; // the "Latest posts" box in the menu
+const pushPost = p => { toFeed(c => ({ type: 'post', post: postView(p, c) })); pushRecent(); };
+function trimImages() { const w = store.posts.filter(p => p.img); w.slice(0, Math.max(0, w.length - 30)).forEach(p => { p.img = ''; }); } // only the newest 30 photos are kept, so the save file stays small
 const gpollView = ws => store.gpoll && { id: store.gpoll.id, q: store.gpoll.q, opts: store.gpoll.opts.map(o => ({ t: o.t, n: o.v.length })), mine: store.gpoll.opts.findIndex(o => o.v.includes(ws.code)) };
 const pushGpoll = () => wss.clients.forEach(c => c.name && send(c, { type: 'gpoll', poll: gpollView(c) }));
 
 // Friends without accounts: each browser keeps a secret id and the server turns it into a short friend code.
-// Nothing here is saved; friend lists live in the browsers. Two people count as friends once each has added the other's code.
+// Friend lists live in the browsers. Two people count as friends once each has added the other's code.
 const online = new Map(); // friend code -> the sockets using it right now (one per open tab)
 function codeOf(key) { // the same secret always gives the same 8-character code, and the code cannot be turned back into the secret
   const h = crypto.createHash('sha256').update('tenrooms:' + key).digest(); let s = '';
@@ -108,10 +136,9 @@ function checkVote(r) { // called after every vote and whenever someone leaves
   if (r.members.size < 3) return endVote(r, `The vote to kick ${v.name} ended: not enough people left`);
   if (v.yes.size >= n) {
     endVote(r, `${v.name} was voted out of the room`);
-    const until = Date.now() + BAN_MS; // kept out for 10 minutes, by friend code and by name
+    const until = Date.now() + BAN_MS; // kept out for 10 minutes: by friend code, or by name for someone without one
     r.bans.forEach((t, k) => { if (t < Date.now()) r.bans.delete(k); });
-    if (target.code) r.bans.set('c:' + target.code, until);
-    r.bans.set('n:' + target.name.toLowerCase(), until);
+    if (target.code) r.bans.set('c:' + target.code, until); else r.bans.set('n:' + target.name.toLowerCase(), until);
     send(target, { type: 'kicked', text: `You were voted out of ${r.name}. You can come back in 10 minutes.` });
     leave(target);
   } else if (v.no.size > r.members.size - 1 - n) endVote(r, `The vote to kick ${v.name} failed`); // too many said no for it to pass
@@ -134,24 +161,28 @@ function addStroke(r, sid, c, w, pts) { // whiteboard strokes are kept so late j
 }
 function say(r, text) {
   const m = { system: true, text, t: Date.now() };
-  r.chat.push(m); if (r.chat.length > 50) r.chat.shift();
+  r.chat.push(m); if (r.chat.length > CHAT_KEEP) r.chat.shift();
   toRoom(r, { type: 'chat', msg: m });
 }
 const findMsg = (r, id) => r.chat.find(x => !x.system && x.id === id);
 const newMsg = (ws, extra) => ({ id: ++msgSeq, name: ws.name, text: '', t: Date.now(), reacts: {}, ...extra });
-function post(r, msg) { r.chat.push(msg); if (r.chat.length > 50) r.chat.shift(); toRoom(r, { type: 'chat', msg }); }
+function post(r, msg) { r.chat.push(msg); if (r.chat.length > CHAT_KEEP) r.chat.shift(); toRoom(r, { type: 'chat', msg }); }
 const clean = (s, n) => String(s || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, n);
 const slow = (ws, key, ms) => { const now = Date.now(); if (now - (ws[key] || 0) < ms) return true; ws[key] = now; return false; }; // true = too soon, ignore it
-function mentions(r, text) { // names in the room that the text @s; longest first so "@Sam 2" is not also read as "@Sam"
+const reEsc = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function mentions(r, text) { // names in the room that the text @s; longest first so "@Sam 2" is not also read as "@Sam", and "@Sam" does not match inside "@Samantha"
   let low = text.toLowerCase(); const at = [];
   [...r.members.values()].map(p => p.name).sort((a, b) => b.length - a.length).forEach(n => {
-    const k = '@' + n.toLowerCase(); if (low.includes(k)) { at.push(n); low = low.split(k).join(' '); }
+    const re = new RegExp('@' + reEsc(n.toLowerCase()) + '(?![\\w])', 'g');
+    if (re.test(low)) { at.push(n); low = low.replace(re, ' '); }
   });
   return at;
 }
 // Mini-games live inside a chat message (msg.game) and the server checks every move.
-const GAMES = ['ttt', 'c4', 'rps'], RPS = ['rock', 'paper', 'scissors'], secrets = new WeakMap(); // secrets: rock-paper-scissors picks, hidden until both have chosen
+// secrets: hidden answers (rock-paper-scissors picks, the number to guess). seats: who holds each seat, by connection, not by name. draws: Quick Draw's countdown timers.
+const GAMES = ['ttt', 'c4', 'rps', 'dice', 'guess', 'draw'], RPS = ['rock', 'paper', 'scissors'], secrets = new WeakMap(), seats = new WeakMap(), draws = new WeakMap();
 const TTT = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+const d6 = () => 1 + Math.floor(Math.random() * 6);
 function c4win(b, i) { // b is 7 wide and 6 tall with row 0 at the top; i is the cell that was just filled
   const x = i % 7, y = (i / 7) | 0, v = b[i];
   return [[1, 0], [0, 1], [1, 1], [1, -1]].some(([dx, dy]) => {
@@ -162,6 +193,10 @@ function c4win(b, i) { // b is 7 wide and 6 tall with row 0 at the top; i is the
     }
     return n >= 4;
   });
+}
+function startDraw(r, msg) { // Quick Draw: after a random wait the screen says GO, and the first to press wins. Pressing early loses
+  const g = msg.game; g.phase = 'wait';
+  draws.set(msg, setTimeout(() => { if (g.win !== null) return; g.phase = 'go'; g.t0 = Date.now(); toRoom(r, { type: 'game', mid: msg.id, game: g }); }, 2000 + Math.random() * 3500));
 }
 function leave(ws) {
   const r = ws.room; if (!r) return;
@@ -177,7 +212,7 @@ wss.on('connection', (ws, req) => {
   ws.name = uniqueName(new URL(req.url, 'http://x').searchParams.get('name'));
   ws.id = nextId++; ws.room = null; ws.alive = true;
   ws.on('pong', () => ws.alive = true);
-  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY, stats: stats() });
+  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY, stats: stats(), recent: recentView() });
   pushLobby();
 
   ws.on('message', raw => {
@@ -248,20 +283,34 @@ wss.on('connection', (ws, req) => {
       toRoom(ws.room, { type: 'poll', mid: msg.id, poll: p });
     } else if (m.type === 'luck' && ws.room) {
       if (slow(ws, 'lastLuck', 1000)) return;
-      if (m.kind === 'roll') say(ws.room, `${ws.name} rolled a ${1 + Math.floor(Math.random() * 6)}`);
+      if (m.kind === 'roll') say(ws.room, `${ws.name} rolled a ${d6()}`);
       else if (m.kind === 'flip') say(ws.room, `${ws.name} flipped a coin: ${Math.random() < .5 ? 'heads' : 'tails'}`);
-    } else if (m.type === 'game' && ws.room && GAMES.includes(m.kind)) { // start a game; it waits for a second player
+    } else if (m.type === 'game' && ws.room && GAMES.includes(m.kind)) { // start a game; most wait for a second player
       if (slow(ws, 'lastGame', 3000)) return;
       const g = { kind: m.kind, p: [ws.name], turn: 0, win: null };
-      if (m.kind === 'ttt') g.b = Array(9).fill(null); else if (m.kind === 'c4') g.b = Array(42).fill(null); else g.done = [false, false];
-      post(ws.room, newMsg(ws, { game: g }));
+      if (m.kind === 'ttt') g.b = Array(9).fill(null); else if (m.kind === 'c4') g.b = Array(42).fill(null);
+      else if (m.kind === 'rps') g.done = [false, false]; else if (m.kind === 'dice') g.rolls = [null, null];
+      else if (m.kind === 'guess') { g.lo = 1; g.hi = 50; g.log = []; } else g.phase = 'ready'; // Quick Draw starts once someone joins
+      const msg = newMsg(ws, { game: g }); seats.set(msg, [ws.id]); if (m.kind === 'guess') secrets.set(msg, 1 + Math.floor(Math.random() * 50));
+      post(ws.room, msg);
     } else if (m.type === 'gjoin' && ws.room) {
-      const msg = findMsg(ws.room, m.mid), g = msg && msg.game;
-      if (!g || g.p.length > 1 || g.p[0] === ws.name) return;
-      g.p.push(ws.name); toRoom(ws.room, { type: 'game', mid: msg.id, game: g });
+      const msg = findMsg(ws.room, m.mid), g = msg && msg.game, ids = (msg && seats.get(msg)) || [];
+      if (!g || g.kind === 'guess' || g.p.length > 1 || ids[0] === ws.id) return;
+      g.p.push(ws.name); ids.push(ws.id); seats.set(msg, ids);
+      if (g.kind === 'draw') startDraw(ws.room, msg);
+      toRoom(ws.room, { type: 'game', mid: msg.id, game: g });
     } else if (m.type === 'gmove' && ws.room) {
-      const msg = findMsg(ws.room, m.mid), g = msg && msg.game, me = g ? g.p.indexOf(ws.name) : -1;
-      if (!g || g.p.length < 2 || g.win !== null || me < 0) return;
+      const msg = findMsg(ws.room, m.mid), g = msg && msg.game; if (!g) return;
+      if (g.kind === 'guess') { // anyone in the room can guess; each wrong guess narrows the range
+        if (g.win !== null || slow(ws, 'lastGuess', 400)) return;
+        const n = m.n | 0, s = secrets.get(msg); if (n < g.lo || n > g.hi) return;
+        const hint = n === s ? 'correct' : n < s ? 'higher' : 'lower';
+        if (n === s) { g.win = 0; g.by = ws.name; g.answer = s; } else if (n < s) g.lo = n + 1; else g.hi = n - 1;
+        g.log.push({ name: ws.name, n, hint }); if (g.log.length > 6) g.log.shift();
+        return toRoom(ws.room, { type: 'game', mid: msg.id, game: g });
+      }
+      const me = (seats.get(msg) || []).indexOf(ws.id);
+      if (g.p.length < 2 || g.win !== null || me < 0) return;
       if (g.kind === 'rps') {
         if (!RPS.includes(m.pick) || g.done[me]) return;
         const s = secrets.get(msg) || []; s[me] = m.pick; secrets.set(msg, s); g.done[me] = true;
@@ -269,6 +318,14 @@ wss.on('connection', (ws, req) => {
           const d = (RPS.indexOf(s[0]) - RPS.indexOf(s[1]) + 3) % 3;
           g.picks = s; g.win = d === 0 ? 'draw' : d === 1 ? 0 : 1;
         }
+      } else if (g.kind === 'dice') { // each player rolls two dice once; the bigger total wins
+        if (g.rolls[me]) return;
+        g.rolls[me] = [d6(), d6()];
+        if (g.rolls[0] && g.rolls[1]) { const a = g.rolls[0][0] + g.rolls[0][1], b = g.rolls[1][0] + g.rolls[1][1]; g.win = a === b ? 'draw' : a > b ? 0 : 1; }
+      } else if (g.kind === 'draw') {
+        if (g.phase === 'wait') { clearTimeout(draws.get(msg)); g.win = 1 - me; g.early = true; } // jumped the gun
+        else if (g.phase === 'go') { g.win = me; g.ms = Date.now() - g.t0; }
+        else return;
       } else {
         if (me !== g.turn) return;
         let i = m.i | 0;
@@ -299,7 +356,7 @@ wss.on('connection', (ws, req) => {
       ws.code = codeOf(m.key);
       if (!online.has(ws.code)) online.set(ws.code, new Set());
       online.get(ws.code).add(ws); seen(ws.code);
-      send(ws, { type: 'me', code: ws.code, admin: ADMINS.has(ws.code) }); send(ws, { type: 'gpoll', poll: gpollView(ws) });
+      send(ws, { type: 'me', code: ws.code, admin: ADMINS.has(ws.code) }); send(ws, { type: 'gpoll', poll: gpollView(ws) }); pushLobby();
     } else if (m.type === 'friends' && ws.code && Array.isArray(m.codes)) { // this browser's whole friend list, sent again whenever it changes
       ws.friends = new Set(m.codes.slice(0, 100).filter(c => typeof c === 'string' && /^[A-Z2-9]{8}$/.test(c) && c !== ws.code));
       wss.clients.forEach(o => { // anyone who has added one side but not the other gets asked to add them back
@@ -333,11 +390,20 @@ wss.on('connection', (ws, req) => {
       ws.feed = !!m.on;
       if (ws.feed) send(ws, { type: 'feed', posts: store.posts.slice(-50).map(p => postView(p, ws)) });
     } else if (m.type === 'post-new' && ws.code) {
-      const text = String(m.text || '').replace(/[\u0000-\u0009\u000b-\u001f]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 500); if (!text) return;
+      const text = String(m.text || '').replace(/[\u0000-\u0009\u000b-\u001f]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 500);
+      let img = ''; // an optional photo: a JPEG the browser already shrank, checked here before it is kept
+      if (typeof m.img === 'string' && m.img) {
+        const mm = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(m.img);
+        const buf = mm && mm[1].length <= 220000 ? Buffer.from(mm[1], 'base64') : null;
+        if (!buf || buf[0] !== 0xff || buf[1] !== 0xd8) return send(ws, { type: 'error', text: 'That photo could not be used. Try a smaller one' });
+        img = mm[1];
+      }
+      if (!text && !img) return;
       if (slow(ws, 'lastPost', 10000)) return send(ws, { type: 'error', text: 'Wait a few seconds before posting again' });
-      const p = { id: ++store.seq, code: ws.code, name: ws.name, text, t: Date.now(), likes: [], comments: [] };
-      store.posts.push(p); if (store.posts.length > 200) store.posts.shift();
+      const p = { id: ++store.seq, code: ws.code, name: ws.name, text, img, t: Date.now(), likes: [], comments: [] };
+      store.posts.push(p); if (store.posts.length > 200) store.posts.shift(); trimImages();
       save(); pushPost(p);
+      wss.clients.forEach(c => { if (c !== ws && c.name && c.code !== ws.code && isFriend(c, ws.code)) send(c, { type: 'post-note', name: ws.name, code: ws.code, text: text.slice(0, 80) || 'shared a photo' }); }); // friends of the poster get a pop-up
     } else if (m.type === 'post-like' && ws.code) {
       const p = store.posts.find(x => x.id === m.id); if (!p || slow(ws, 'lastLike', 150)) return;
       const i = p.likes.indexOf(ws.code); if (i >= 0) p.likes.splice(i, 1); else p.likes.push(ws.code);
@@ -352,13 +418,14 @@ wss.on('connection', (ws, req) => {
       if (m.cid) {
         const c = p.comments.find(x => x.id === m.cid); if (!c || !(boss || c.code === ws.code || p.code === ws.code)) return;
         p.comments.splice(p.comments.indexOf(c), 1); save(); pushPost(p);
-      } else if (boss || p.code === ws.code) { store.posts.splice(store.posts.indexOf(p), 1); save(); toFeed(() => ({ type: 'post-del', id: p.id })); }
+      } else if (boss || p.code === ws.code) { store.posts.splice(store.posts.indexOf(p), 1); save(); toFeed(() => ({ type: 'post-del', id: p.id })); pushRecent(); }
     }
   });
   ws.on('close', () => {
     leave(ws); ws.name = null;
     const set = online.get(ws.code);
-    if (set) { set.delete(ws); if (!set.size) online.delete(ws.code); pushLobby(); } // friends see them go offline
+    if (set) { set.delete(ws); if (!set.size) online.delete(ws.code); }
+    pushLobby(); // friends see them go offline, and the menu count drops
   });
 });
 setInterval(() => wss.clients.forEach(c => { if (!c.alive) return c.terminate(); c.alive = false; c.ping(); }), 30000);
