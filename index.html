@@ -40,7 +40,7 @@ h1,h2{font-family:Unbounded,Manrope,sans-serif;font-weight:700;letter-spacing:-.
 .bar .pav{width:34px;height:34px;font-size:.9rem}
 .bar span{color:var(--dim)}
 #lobby h1{font-size:clamp(2.6rem,9vw,6rem);line-height:.95;margin-bottom:16px}
-#lobby .sub{max-width:46ch;margin-bottom:28px}
+#lobby .sub{max-width:46ch;margin-bottom:44px}
 .rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
 .room{text-align:left;display:flex;flex-direction:column;gap:14px;min-height:200px;padding:22px;background:var(--glass);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:18px;transition:background .25s,color .25s,border-color .25s,transform .1s}
 .room .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -143,7 +143,7 @@ button:active:not(:disabled){transform:scale(.95)}
 .stat{padding:14px 18px;border:1px solid var(--line);border-radius:16px;background:var(--glass);backdrop-filter:blur(8px);box-shadow:inset 0 1px 0 rgb(var(--fgc)/.07)}
 .stat b{display:block;font:700 1.8rem Unbounded,sans-serif;letter-spacing:-.03em}
 .stat span{font-size:.8rem;color:var(--dim)}
-.credits{margin-top:20px;flex-wrap:wrap;max-width:100%;display:flex;align-items:center;gap:12px;width:fit-content;padding:9px 20px 9px 10px;border-radius:999px}
+.credits{margin-top:44px;flex-wrap:wrap;max-width:100%;display:flex;align-items:center;gap:12px;width:fit-content;padding:9px 20px 9px 10px;border-radius:999px}
 .credits b{font-family:Unbounded,sans-serif;font-size:.95rem;font-weight:500}
 .room{position:relative}
 .room::before,.room::after{content:"";position:absolute;width:12px;height:12px;border:1px solid currentColor;opacity:.5;pointer-events:none}
@@ -252,6 +252,115 @@ button:active:not(:disabled){transform:scale(.95)}
 .pacts button{padding:4px 10px;font-size:.75rem}
 #kickBar{position:fixed;top:74px;left:50%;transform:translateX(-50%);z-index:8;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:10px 14px;width:max-content;max-width:92vw;background:var(--bg)}
 #kickBar button{padding:6px 16px}
+/* global poll, visitor counts and the Posts page */
+.gp{padding:16px 18px;margin-bottom:22px;max-width:560px}
+.gp .ghost{margin-top:12px;padding:6px 14px;font-size:.85rem}
+.gp small{display:block;margin-top:6px;color:var(--dim);font-size:.78rem}
+#gpExtra{display:grid;gap:12px}
+.stats.low{margin-top:44px;margin-bottom:0}
+.stats.low + .credits{margin-top:16px}
+#feed{max-width:760px;margin:0 auto;padding:28px 22px 70px}
+#feed h1{font-size:clamp(2.2rem,7vw,4rem);line-height:.95;margin-bottom:16px}
+#feed .sub{margin-bottom:22px}
+.postbox{display:grid;gap:10px;padding:14px;margin-bottom:18px}
+.postbox textarea,.pcform input{width:100%;min-width:0;background:var(--bg);color:inherit;font:inherit;border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical}
+.postbox .solid{justify-self:end;padding:9px 22px}
+#posts{display:grid;gap:12px}
+.post{display:grid;gap:10px;padding:16px}
+.phead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.phead time{font-size:.75rem;color:var(--dim)}
+.pcode{font-size:.72rem;border:1px solid var(--line);border-radius:999px;padding:2px 9px;background:transparent;color:var(--dim)}
+.ptext{white-space:pre-wrap;overflow-wrap:anywhere}
+.pbtns{display:flex;gap:8px;flex-wrap:wrap}
+.pbtns button{padding:5px 12px;font-size:.82rem}
+.pbtns .on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.pcoms{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.pcom{font-size:.9rem;overflow-wrap:anywhere}
+.pcom b,.pcom small{margin-right:6px}
+.pcom small{color:var(--dim);font-size:.72rem}
+.pcom button{border:0;background:transparent;color:var(--dim);padding:0 6px}
+.pcform{display:flex;gap:8px}
+.pcform .solid{flex:none;border-radius:10px;padding:0 14px}
+/* accounts, profile page, shop, soundboard, abilities, start screen */
+.bar{flex-wrap:wrap;justify-content:flex-end;max-width:100%;border-radius:26px}
+#cloak{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:20px}
+#prof{max-width:760px;margin:0 auto;padding:28px 22px 70px}
+.profcard{display:grid;gap:12px;padding:18px;margin-bottom:22px}
+.profcard h2{font-size:1.5rem}
+#profForm{display:grid;gap:10px}
+#profForm label{font-size:.9rem;color:var(--dim)}
+#profForm input,#profForm textarea{width:100%;background:var(--bg);color:inherit;font:inherit;border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical}
+#profForm .solid{justify-self:start}
+.profh{font-size:1.2rem;margin-bottom:12px}
+#profPosts{display:grid;gap:12px}
+#shopDlg{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgb(var(--bgc)/.65);padding:20px}
+#shopDlg h2{font-size:1.5rem}
+#shopDlg .panel{width:min(440px,100%);max-height:100%;overflow:auto}
+#shopList{display:grid;gap:8px}
+.shoph{font:700 .95rem Unbounded,sans-serif;margin-top:8px}
+#soundBar{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);display:grid;gap:2px;padding:8px;width:max-content;max-width:92vw;z-index:5}
+#soundBar button{background:transparent;border:0;border-radius:10px;padding:8px 12px;text-align:left}
+#soundBar button:hover{background:rgb(var(--fgc)/.15)}
+#imgBtn{font-size:.78rem;font-weight:600}
+.proj{position:fixed;left:0;top:0;margin:-22px 0 0 -22px;font-size:2.6rem;line-height:1;z-index:15;pointer-events:none}
+.splat{position:absolute;inset:0;display:grid;place-items:center;font-size:5rem;pointer-events:none;animation:splat 2.6s ease-out forwards}
+@keyframes splat{0%{transform:scale(.3);opacity:0}8%{transform:scale(1.15);opacity:1}70%{opacity:1}100%{transform:translateY(30px);opacity:0}}
+.tile.shake{animation:shake .9s}
+@keyframes shake{0%,100%{transform:none}10%,30%,50%,70%,90%{transform:translate(-8px,3px) rotate(-1.5deg)}20%,40%,60%,80%{transform:translate(8px,-3px) rotate(1.5deg)}}
+/* notice, notifications, hints */
+.notice{max-width:560px;margin:0 0 22px;padding:10px 14px;font-size:.82rem;color:var(--dim);border:1px solid var(--line);border-radius:12px;background:var(--glass)}
+.panel .notice{margin:0}
+#notes{position:fixed;top:14px;right:14px;z-index:35;display:grid;gap:8px;width:min(300px,calc(100vw - 28px));pointer-events:none}
+.note{pointer-events:auto;padding:11px 14px;font-size:.9rem;border-left:3px solid var(--acc);background:var(--bg);animation:notein .25s ease-out;cursor:pointer;overflow-wrap:anywhere}
+@keyframes notein{from{transform:translateX(30px);opacity:0}}
+#hint{position:fixed;z-index:36;width:min(280px,calc(100vw - 24px));padding:14px;display:grid;gap:10px;background:var(--bg);border-color:var(--acc);box-shadow:0 0 0 2px var(--acc),0 10px 40px rgb(0 0 0/.5)}
+#hint b{font-family:Unbounded,sans-serif;font-size:.95rem}
+#hint div{display:flex;gap:8px;justify-content:flex-end}
+#hint button{padding:6px 14px;font-size:.85rem}
+.hinted{outline:3px solid var(--acc);outline-offset:4px;border-radius:14px}
+/* nicer posts, feed tabs, post images */
+.post{border-radius:20px;padding:18px;transition:transform .15s,border-color .15s}
+.post:hover{border-color:rgb(var(--fgc)/.45);transform:translateY(-2px)}
+.post .pav{width:46px;height:46px;border-color:var(--acc)}
+.phead b{font-size:1.02rem}
+.ptext{font-size:1.02rem;line-height:1.5}
+.pimg{display:block;width:100%;max-height:520px;object-fit:contain;border-radius:14px;border:1px solid var(--line);background:rgb(var(--bgc)/.5)}
+.pbtns .ghost{border-radius:999px}
+.pbtns .on{background:var(--acc);border-color:var(--acc);color:#000}
+.postbox{border-radius:20px}
+.postbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.postbar .ghost{padding:7px 14px;font-size:.85rem}
+#feed .postbar .sub{margin:0 0 0 auto;font-size:.8rem}
+.pprev{position:relative;width:fit-content}
+.pprev img{display:block;max-width:100%;max-height:160px;border-radius:12px;border:1px solid var(--line)}
+.pprev button{position:absolute;top:6px;right:6px;width:26px;height:26px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--bg)}
+.ftabs{display:flex;gap:6px;width:fit-content;max-width:100%;margin-bottom:14px;padding:6px;border:1px solid var(--line);border-radius:999px;background:var(--glass)}
+.ftabs button{border:0;background:transparent;color:var(--dim);border-radius:999px;padding:7px 16px}
+.ftabs .on{background:var(--fg);color:var(--bg);font-weight:600}
+/* room-wide chat games */
+.gbig{font:700 1.3rem Unbounded,sans-serif;margin-top:6px}
+.gword{letter-spacing:.12em;overflow-wrap:anywhere}
+.grow input{flex:1;min-width:0;background:var(--bg);color:inherit;border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+.gkeys{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;margin-top:8px}
+.gkeys button{padding:5px 0;border:1px solid var(--line);border-radius:6px;background:transparent;font-size:.8rem}
+.gkeys button:disabled{opacity:.3}
+.gbtn{width:100%;margin-top:8px;padding:18px;border:1px solid var(--line);border-radius:12px;background:transparent;font-weight:700}
+.gbtn.go{background:var(--acc);border-color:var(--acc);color:#000}
+/* platformer race and the arcade */
+#rcv{width:min(100cqw,177.7cqh);height:auto;aspect-ratio:16/9;border:1px solid var(--line);border-radius:12px;background:rgb(var(--bgc)/.6);touch-action:none}
+#race .bwrap{position:relative}
+.rtouch{position:absolute;left:18px;right:18px;bottom:18px;display:none;justify-content:space-between;pointer-events:none}
+.rtouch span{display:flex;gap:10px}
+.rtouch button{pointer-events:auto;width:58px;height:58px;padding:0;border-radius:50%;border:1px solid var(--line);background:rgb(var(--bgc)/.6);font-size:1.3rem;touch-action:none}
+@media(hover:none){.rtouch{display:flex}}
+#arcDlg{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgb(var(--bgc)/.65);padding:20px}
+#arcDlg h2{font-size:1.5rem}
+#arcDlg .panel{width:min(440px,100%);max-height:100%;overflow:auto}
+#arcDlg .ftabs{margin:0}
+#acv{width:100%;aspect-ratio:1;border:1px solid var(--line);border-radius:12px;background:rgb(var(--bgc)/.6);touch-action:none}
+.amem{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mcard{aspect-ratio:1;padding:0;font-size:1.8rem;border:1px solid var(--line);border-radius:12px;background:rgb(var(--fgc)/.1)}
+.mcard.up{background:transparent;border-color:var(--acc)}
 /* themes */
 #settings .panel{max-height:100%;overflow:auto}
 .themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -273,109 +382,11 @@ button:active:not(:disabled){transform:scale(.95)}
 .stage,.chat{position:relative}
 .grip{position:absolute;z-index:4;touch-action:none}
 .grip::after{content:"";position:absolute;inset:0;margin:auto;border-radius:9px;background:var(--fg);opacity:.25;transition:opacity .15s}
-.grip:hover::after,.grip.on::after,.grip:focus-visible::after{opacity:.8}
+.grip:hover::after,.grip.on::after{opacity:.8}
 #chatGrip{left:0;top:0;bottom:0;width:9px;cursor:col-resize}
 #sideGrip{top:0;bottom:0;right:min(var(--sidew,200px),60%);width:12px;cursor:col-resize}
 #chatGrip::after,#sideGrip::after{width:3px;height:44px}
 .mimg{display:block;max-width:100%;max-height:180px;border-radius:10px;margin-top:4px}
-/* menu notice, global poll, latest posts, visitor counts */
-.warn{padding:12px 16px;margin-bottom:22px;max-width:640px;font-size:.88rem;border-left:4px solid #ffb84d}
-.warn b{color:#ffb84d}
-.gp{padding:16px 18px;margin-bottom:22px;max-width:560px}
-.gp .ghost{margin-top:12px;padding:6px 14px;font-size:.85rem}
-.gp small{display:block;margin-top:6px;color:var(--dim);font-size:.78rem}
-#gpExtra{display:grid;gap:12px}
-.recent{padding:16px 18px;margin-top:26px;max-width:640px}
-.rhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
-.rhead b{font:700 1rem Unbounded,sans-serif}
-.rhead .ghost{padding:5px 14px;font-size:.82rem}
-.rrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px;border:1px solid transparent;border-radius:12px;background:transparent}
-.rrow:hover{border-color:var(--line);background:rgb(var(--fgc)/.06)}
-.rrow .pav{width:36px;height:36px;font-size:.9rem}
-.rtxt{flex:1;min-width:0}
-.rtxt b{display:block;font-size:.88rem}
-.rtxt span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dim);font-size:.85rem}
-.rrow time{font-size:.72rem;color:var(--dim);flex:none}
-.stats.low{margin-top:44px;margin-bottom:0}
-.stats.low + .credits{margin-top:16px}
-/* the Posts page */
-#feed{max-width:820px;margin:0 auto;padding:28px 22px 80px}
-#feed h1{font-size:clamp(2.2rem,7vw,4rem);line-height:.95;margin-bottom:12px}
-#feed .sub{margin-bottom:24px}
-.postbox{display:grid;gap:12px;padding:16px;margin-bottom:22px}
-.pbtop{display:flex;gap:12px;align-items:flex-start}
-.pbtop textarea{flex:1;min-width:0;background:var(--bg);color:inherit;font:inherit;border:1px solid var(--line);border-radius:12px;padding:12px;resize:vertical;min-height:84px}
-.pbtop textarea:focus{border-color:var(--fg);outline:0}
-.pbtools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.pbtools .ghost{padding:7px 16px;font-size:.88rem}
-.pbtools .count{margin-left:auto;font-size:.78rem;color:var(--dim)}
-.pbtools .solid{padding:9px 24px}
-.pbprev{position:relative;width:fit-content;max-width:100%}
-.pbprev img{display:block;max-width:100%;max-height:260px;border-radius:14px;border:1px solid var(--line)}
-.pbprev button{position:absolute;top:8px;right:8px;width:30px;height:30px;padding:0;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
-.ffilter{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
-.ffilter .sub{margin:0!important;font-size:.85rem}
-.seg{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:var(--glass)}
-.seg button{border:0;background:transparent;color:var(--dim);border-radius:999px;padding:6px 16px;font-size:.88rem}
-.seg .on{background:var(--fg);color:var(--bg);font-weight:600}
-#posts{display:grid;gap:16px}
-#posts .empty{padding:30px 0;text-align:center;margin:0}
-.post{display:grid;gap:12px;padding:18px;transition:border-color .2s}
-.post:hover{border-color:rgb(var(--fgc)/.4)}
-.post.new{animation:postin .4s ease-out}
-@keyframes postin{from{opacity:0;transform:translateY(-12px) scale(.98)}}
-.phead{display:flex;align-items:center;gap:12px}
-.pwho{flex:1;min-width:0;display:grid}
-.pwho b{overflow-wrap:anywhere}
-.pwho time{font-size:.76rem;color:var(--dim)}
-.pcode{font:700 .68rem Unbounded,sans-serif;letter-spacing:.06em;color:var(--acc);border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:transparent}
-.pcode:hover{border-color:var(--acc)}
-.ptext{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
-.pimg{display:block;width:100%;max-height:520px;object-fit:cover;border-radius:14px;border:1px solid var(--line);cursor:zoom-in;background:rgb(var(--fgc)/.05)}
-.pbtns{display:flex;gap:8px;flex-wrap:wrap}
-.pbtns button{padding:6px 14px;font-size:.85rem;display:inline-flex;align-items:center;gap:7px}
-.plike.on{border-color:var(--acc);color:var(--acc)}
-.plike.on svg{fill:currentColor}
-.plike:active svg{transform:scale(1.4)}
-.plike svg{transition:transform .15s}
-.pcoms{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:12px}
-.pcom{font-size:.9rem;overflow-wrap:anywhere}
-.pcom b,.pcom small{margin-right:6px}
-.pcom small{color:var(--dim);font-size:.7rem}
-.pcom button{border:0;background:transparent;color:var(--dim);padding:0 6px}
-.pcform{display:flex;gap:8px}
-.pcform input{flex:1;min-width:0;background:var(--bg);color:inherit;font:inherit;border:1px solid var(--line);border-radius:10px;padding:10px}
-.pcform .solid{flex:none;border-radius:10px;padding:0 16px}
-/* pop-up notifications, tips, camera */
-#notifs{position:fixed;right:16px;top:16px;z-index:40;display:grid;gap:8px;width:min(330px,calc(100vw - 32px));pointer-events:none}
-.notif{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:14px;background:var(--bg);border:1px solid var(--line);box-shadow:0 8px 28px rgb(0 0 0/.35);font-size:.9rem;cursor:pointer;animation:notin .3s ease-out;transition:opacity .3s,transform .3s}
-.notif.out{opacity:0;transform:translateX(24px)}
-.notif .nd{flex:none;width:9px;height:9px;border-radius:50%;background:var(--dim)}
-.notif.join .nd,.notif.post .nd{background:var(--acc);box-shadow:0 0 10px var(--acc)}
-.notif.leave .nd{background:#ff6b6b}
-.notif span{overflow-wrap:anywhere}
-@keyframes notin{from{opacity:0;transform:translateX(30px)}}
-#tip{position:fixed;z-index:50;width:min(270px,calc(100vw - 24px));padding:14px 16px;display:grid;gap:12px;background:var(--bg);box-shadow:0 10px 34px rgb(0 0 0/.4)}
-#tip::before{content:"";position:absolute;top:-7px;left:var(--ax,40px);width:12px;height:12px;background:var(--bg);border-left:1px solid var(--line);border-top:1px solid var(--line);transform:rotate(45deg)}
-#tipText{font-weight:600}
-.tipfoot{display:flex;align-items:center;gap:8px}
-.tipfoot small{flex:1;color:var(--dim)}
-.tipfoot button{padding:6px 14px;font-size:.85rem}
-.tiphl{outline:2px solid var(--acc);outline-offset:4px;animation:tippulse 1.4s ease-in-out infinite}
-@keyframes tippulse{50%{outline-color:transparent}}
-#camDlg{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgb(var(--bgc)/.65);padding:20px}
-#camDlg h2{font-size:1.5rem}
-#camDlg video{width:100%;border-radius:12px;background:#000;transform:scaleX(-1)}
-/* more game boards */
-.dicerow{display:flex;gap:18px;margin-top:8px}
-.dicebox{display:grid;justify-items:center;gap:2px}
-.dicebox span{font-size:2.4rem;line-height:1.1}
-.qd{width:100%;padding:18px;margin-top:8px;border:1px solid var(--line);border-radius:14px;background:transparent;font:700 1.05rem Unbounded,sans-serif}
-.qd.wait{background:rgb(255 90 90/.22);border-color:#ff6b6b}
-.qd.go{background:var(--acc);color:#000;border-color:var(--acc)}
-.gguess{display:flex;gap:6px;margin-top:8px}
-.gguess input{width:96px;min-width:0;background:var(--bg);color:inherit;font:inherit;border:1px solid var(--line);border-radius:10px;padding:7px 10px}
-.gguess .gjoin{margin-top:0}
 @media(max-width:760px){
  #call{grid-template-columns:1fr;grid-template-rows:auto 1fr auto min(var(--chath,36%),70%)}
  #call header{grid-column:1}.chat{grid-row:4;grid-column:1}
@@ -389,20 +400,33 @@ button:active:not(:disabled){transform:scale(.95)}
 <body>
 <canvas id="bg"></canvas>
 
+<div id="cloak" class="hidden">
+  <div class="panel">
+    <h1>Ten rooms</h1>
+    <p class="sub" id="cloakMsg">Open Ten Rooms in a blank tab, or use it right here.</p>
+    <button type="button" class="solid" id="cloakGo">Open in a blank tab</button>
+    <button type="button" class="ghost" id="cloakStay">Stay in this tab</button>
+  </div>
+</div>
+
 <section id="auth" class="view hidden">
   <form id="authForm" class="panel">
     <h1>Ten rooms</h1>
-    <p class="sub">Pick a name and walk into any open room.</p>
-    <label for="u">Your name</label><input id="u" maxlength="20" autocomplete="nickname" placeholder="e.g. Sam" required>
-    <button class="solid" id="authGo">Enter</button>
+    <p class="sub" id="authSub">Log in to walk into any open room.</p>
+    <p class="notice">This site is only for entertainment purposes. If requested by important figures, we will take the website down.</p>
+    <label for="u">Username</label><input id="u" maxlength="17" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="letters, numbers or _" required>
+    <div id="dnRow" class="hidden" style="display:grid;gap:12px"><label for="dn">Display name</label><input id="dn" maxlength="20" autocomplete="nickname" placeholder="What people see. You can change it later"></div>
+    <label for="pw">Password</label><input id="pw" type="password" minlength="6" maxlength="100" autocomplete="current-password" required>
+    <button class="solid" id="authGo">Log in</button>
+    <button type="button" class="ghost" id="authSwap">Create an account</button>
   </form>
 </section>
 
 <main id="lobby" class="view hidden">
-  <div class="bar mod"><div id="meAv" class="pav"></div><span id="me"></span><button class="ghost" id="openFeed">Posts</button><button class="ghost" id="openFr">Friends</button><button class="ghost" id="openSet">Settings</button><button class="ghost" id="logout">Change name</button></div>
+  <div class="bar mod"><div id="meAv" class="pav"></div><span id="me"></span><button class="ghost" id="openProf">Profile</button><button class="ghost" id="openShop">Shop · <b id="coinsA">0</b> coins</button><button class="ghost" id="openFeed">Posts</button><button class="ghost" id="openFr">Friends</button><button class="ghost" id="openArc">Arcade</button><button class="ghost" id="openSet">Settings</button><button class="ghost" id="logout">Log out</button></div>
   <h1>Ten rooms</h1>
   <p class="sub">Walk into any open room to talk on video. Every room has its own chat.</p>
-  <div class="warn mod" role="note"><b>Warning:</b> Data like global polls, posts, and more may suddenly delete because we do not yet have a permanent database. Have fun students</div>
+  <p class="notice">Notice: this site is only for entertainment purposes. If requested by important figures, we will take the website down.</p>
   <div class="stats">
     <div class="stat"><b id="stLive">0</b><span>live rooms</span></div>
     <div class="stat"><b id="stOnline">0</b><span>people online</span></div>
@@ -411,7 +435,6 @@ button:active:not(:disabled){transform:scale(.95)}
   <div id="gpoll" class="gp mod hidden"></div>
   <button class="solid" id="quick">Quick join</button>
   <div class="rooms" id="rooms"></div>
-  <section id="recent" class="recent mod"><div class="rhead"><b>Latest posts</b><button class="ghost" id="recentAll">See all posts</button></div><div id="recentList"></div></section>
   <div class="stats low">
     <div class="stat"><b id="stToday">0</b><span>logged on today</span></div>
     <div class="stat"><b id="stEver">0</b><span>ever logged on</span></div>
@@ -423,22 +446,36 @@ button:active:not(:disabled){transform:scale(.95)}
 <main id="feed" class="view hidden">
   <div class="bar mod"><span>Posts</span><button class="ghost" id="feedBack">Back to rooms</button></div>
   <h1>Posts</h1>
-  <p class="sub">Post something for everyone on Ten Rooms. Your name and friend code show on it. Add a photo from a file or your camera.</p>
+  <p class="sub">Post something for everyone on Ten Rooms. Your display name and @username show on it.</p>
   <form id="postForm" class="postbox mod">
-    <div class="pbtop"><div id="pbAv" class="pav"></div><textarea id="postText" maxlength="500" rows="3" placeholder="What's happening?" aria-label="Write a post"></textarea></div>
-    <div id="pbPrev" class="pbprev hidden"><img id="pbPrevImg" alt="Photo to post"><button type="button" id="pbPrevX" aria-label="Remove photo">×</button></div>
-    <div class="pbtools"><button type="button" class="ghost" id="pbFile">Photo</button><button type="button" class="ghost" id="pbCam">Camera</button><input type="file" id="pbFileIn" accept="image/*" hidden><span class="count" id="postCount">0 / 500</span><button class="solid">Post</button></div>
+    <textarea id="postText" maxlength="500" rows="3" placeholder="What's going on?" aria-label="Write a post"></textarea>
+    <div id="postPrev" class="pprev hidden"><img alt="Image for this post"><button type="button" id="postPicX" aria-label="Remove image">×</button></div>
+    <div class="postbar"><button type="button" class="ghost hidden" id="postPic">Add image</button><button type="button" class="ghost hidden" id="postCam">Camera</button><span class="sub" id="postCount">0 / 500</span><button class="solid">Post</button></div>
+    <input type="file" id="postFile" accept="image/*" hidden><input type="file" id="postCamFile" accept="image/*" capture="environment" hidden>
   </form>
-  <div class="ffilter"><div class="seg" role="group" aria-label="Show posts from"><button type="button" id="ffAll" class="on">Everyone</button><button type="button" id="ffFr">Friends</button></div><span id="feedCount" class="sub"></span></div>
+  <div class="ftabs" id="feedTabs"><button type="button" class="on" data-f="all">Everyone</button><button type="button" data-f="friends">Friends</button><button type="button" data-f="mine">Yours</button></div>
   <div id="posts"></div>
 </main>
 
-<div id="notifs" aria-live="polite"></div>
-<div id="tip" class="mod hidden" role="dialog" aria-label="Tip"><div id="tipText"></div><div class="tipfoot"><small id="tipStep"></small><button type="button" class="ghost" id="tipSkip">Skip</button><button type="button" class="solid" id="tipNext">Next</button></div></div>
-<div id="camDlg" class="hidden"><div class="panel" role="dialog" aria-label="Take a photo"><h2>Take a photo</h2><video id="camVid" autoplay playsinline muted></video><button type="button" class="solid" id="camSnap">Take photo</button><button type="button" class="ghost" id="camCancel">Cancel</button></div></div>
+<main id="prof" class="view hidden">
+  <div class="bar mod"><span>Profile</span><button class="ghost" id="profBack">Back</button></div>
+  <div class="profcard mod">
+    <div class="phead"><div id="profAv" class="pav"></div><div><h2 id="profName"></h2><span id="profUser" class="sub"></span></div></div>
+    <p id="profBio" class="ptext"></p>
+    <p id="profMeta" class="sub"></p>
+    <div id="profBtns" class="pbtns"></div>
+    <form id="profForm" class="hidden">
+      <label for="profDn">Display name</label><input id="profDn" maxlength="20" autocomplete="off">
+      <label for="profBioIn">Bio</label><textarea id="profBioIn" maxlength="200" rows="3" placeholder="Say something about yourself"></textarea>
+      <button class="solid">Save profile</button>
+    </form>
+  </div>
+  <h2 class="profh">Posts</h2>
+  <div id="profPosts"></div>
+</main>
 
 <section id="call" class="hidden">
-  <header class="mod"><h2 id="roomTitle"></h2><input id="topicIn" maxlength="40" placeholder="Add a topic" aria-label="Room topic" autocomplete="off"><span class="chip"><i class="dot"></i>Live</span><span id="roomCount" class="chip"></span></header>
+  <header class="mod"><h2 id="roomTitle"></h2><input id="topicIn" maxlength="40" placeholder="Add a topic" aria-label="Room topic" autocomplete="off"><span class="chip"><i class="dot"></i>Live</span><span id="roomCount" class="chip"></span><span class="chip" title="You earn coins for every minute in a call"><b id="coinsB">0</b> coins</span></header>
   <div class="stage" id="stage"></div>
   <div class="controls mod">
     <button class="ghost" id="mic" data-sfx="none">Mute mic</button>
@@ -449,12 +486,14 @@ button:active:not(:disabled){transform:scale(.95)}
     <button class="ghost" id="react">React</button>
     <button class="ghost" id="pollBtn">Poll</button>
     <button class="ghost" id="gamesBtn">Games</button>
+    <button class="ghost" id="soundsBtn">Sounds</button>
     <span class="sep"></span>
     <button class="ghost" id="openFr2">Friends</button>
     <button class="ghost" id="openSet2">Settings</button>
     <button class="solid" id="leave">Leave room</button>
     <div id="reactBar" class="mod hidden" role="group" aria-label="Reactions"></div>
     <div id="gameBar" class="mod hidden" role="group" aria-label="Games"></div>
+    <div id="soundBar" class="mod hidden" role="group" aria-label="Soundboard"></div>
   </div>
   <aside class="chat mod">
     <div id="chatGrip" class="grip" role="separator" aria-label="Resize chat" title="Drag to resize. Double-click to reset"></div>
@@ -463,7 +502,7 @@ button:active:not(:disabled){transform:scale(.95)}
     <div id="log" aria-live="polite"></div>
     <div id="typing" class="typing" aria-live="polite"></div>
     <div id="replyBar" class="replybar hidden"><span></span><button type="button" id="replyX" aria-label="Cancel reply" title="Cancel reply">×</button></div>
-    <form id="chatForm"><div id="atPick" class="mod hidden" role="group" aria-label="Mention someone"></div><div id="imgPick" class="mod hidden" role="group" aria-label="GIFs"><input id="gifQ" maxlength="50" placeholder="Search KLIPY" aria-label="Search GIFs" autocomplete="off"><div id="gifGrid"></div><small>Powered by KLIPY</small></div><button type="button" class="ghost hidden" id="imgBtn" aria-label="Send a GIF" title="Send a GIF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 9"/></svg></button><input id="chatText" maxlength="500" placeholder="Message this room" autocomplete="off"><button class="solid">Send</button></form>
+    <form id="chatForm"><div id="atPick" class="mod hidden" role="group" aria-label="Mention someone"></div><div id="imgPick" class="mod hidden" role="group" aria-label="GIFs"><input id="gifQ" maxlength="50" placeholder="Search KLIPY" aria-label="Search GIFs" autocomplete="off"><div id="gifGrid"></div><small>Powered by KLIPY</small></div><button type="button" class="ghost hidden" id="picBtn" aria-label="Send an image" title="Send an image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 9"/></svg></button><input type="file" id="picFile" accept="image/*" hidden><button type="button" class="ghost hidden" id="imgBtn" aria-label="Send a GIF" title="Send a GIF">GIF</button><input id="chatText" maxlength="500" placeholder="Message this room" autocomplete="off"><button class="solid">Send</button></form>
     </div>
     <div id="peoplePane" class="pane hidden"><div id="peopleList"></div></div>
   </aside>
@@ -481,7 +520,8 @@ button:active:not(:disabled){transform:scale(.95)}
     <label id="thLbl">Theme</label>
     <div id="themes" class="themes" role="group" aria-labelledby="thLbl"></div>
     <label class="chk"><input type="checkbox" id="selSfx"> Interface sounds</label>
-    <button type="button" class="ghost" id="tipsAgain">Show the tips again</button>
+    <label class="chk"><input type="checkbox" id="selSb"> Soundboard and ability sounds</label>
+    <label class="chk"><input type="checkbox" id="selFx"> Animated background effects</label>
     <button class="solid" id="setDone">Done</button>
   </div>
 </div>
@@ -492,9 +532,9 @@ button:active:not(:disabled){transform:scale(.95)}
   <div class="panel" role="dialog" aria-label="Friends">
     <div id="frHome">
       <h2>Friends</h2>
-      <p class="sub">Your friend code. Share it so people can add you.</p>
+      <p class="sub">Your username. Share it so people can add you.</p>
       <div class="frme"><b id="frCode">…</b><button type="button" class="ghost" id="frCopy">Copy</button></div>
-      <form id="frAdd"><input id="frIn" maxlength="12" placeholder="Enter a friend's code" aria-label="Friend code" autocomplete="off"><button class="solid">Add</button></form>
+      <form id="frAdd"><input id="frIn" maxlength="17" placeholder="Enter a username" aria-label="Username to add" autocomplete="off"><button class="solid">Add</button></form>
       <div id="frList"></div>
       <button type="button" class="solid" id="frDone">Done</button>
     </div>
@@ -503,6 +543,42 @@ button:active:not(:disabled){transform:scale(.95)}
       <div id="frLog" aria-live="polite"></div>
       <form id="frSend"><input id="frText" maxlength="500" placeholder="Message" aria-label="Message" autocomplete="off"><button class="solid">Send</button></form>
     </div>
+  </div>
+</div>
+
+<div id="shopDlg" class="hidden">
+  <div class="panel" role="dialog" aria-label="Shop">
+    <h2>Shop</h2>
+    <p class="sub">You have <b id="coinsS">0</b> coins. You earn <span id="earnS">5</span> for every minute you spend in a call.</p>
+    <div id="shopList"></div>
+    <button type="button" class="solid" id="shopDone">Done</button>
+  </div>
+</div>
+
+<div id="notes" aria-live="polite"></div>
+<div id="hint" class="mod hidden" role="dialog" aria-label="Tip"><b id="hintText"></b><div><button type="button" class="ghost" id="hintSkip">Skip tips</button><button type="button" class="solid" id="hintNext">Next</button></div></div>
+
+<div id="arcDlg" class="hidden">
+  <div class="panel" role="dialog" aria-label="Arcade">
+    <h2>Arcade</h2>
+    <div class="ftabs" id="arcTabs"><button type="button" data-g="snake">Snake</button><button type="button" data-g="g48">2048</button><button type="button" data-g="mem">Memory</button></div>
+    <canvas id="acv" width="400" height="400"></canvas>
+    <div id="amem" class="amem hidden"></div>
+    <p class="sub" id="aInfo"></p>
+    <div class="avbtns"><button type="button" class="ghost" id="arcNew">New game</button><button type="button" class="solid" id="arcDone">Done</button></div>
+  </div>
+</div>
+
+<div id="race" class="boardmod mod hidden" role="region" aria-label="Platformer race">
+  <div class="bh">
+    <h3>Platformer race</h3>
+    <span class="bsz">A / D or arrows to run, W or Space to jump</span>
+    <span style="flex:1"></span>
+    <button type="button" class="ghost" id="raceGo">Start race</button>
+    <button type="button" class="ghost" id="raceX">Close</button>
+  </div>
+  <div class="bwrap"><canvas id="rcv" width="1600" height="900"></canvas>
+    <div class="rtouch"><span><button type="button" data-k="left" aria-label="Left">◀</button><button type="button" data-k="right" aria-label="Right">▶</button></span><button type="button" data-k="up" aria-label="Jump">▲</button></div>
   </div>
 </div>
 
@@ -535,40 +611,41 @@ button:active:not(:disabled){transform:scale(.95)}
 
 <script>
 const $ = id => document.getElementById(id);
-let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, dotRGB = '255,255,255', accRGB = '45,255,136', isAdmin = false;
+let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, dotRGB = '255,255,255', accRGB = '45,255,136', accHex = '#2dff88', fxOn = localStorage.getItem('fx') !== 'off', raceOpen = false;
 
-/* ---------- background: dot web, glowing orbs, drifting shapes, comets, click ripples (always running; slower if reduced motion is on) ---------- */
+/* ---------- floating dot web (always running; slower if reduced motion is on) ---------- */
 (() => {
   const cv = $('bg'), cx = cv.getContext('2d'), D = 150, mouse = { x: -999, y: -999 };
   const speed = matchMedia('(prefers-reduced-motion: reduce)').matches ? .25 : 1;
-  let W, H, dots = [], orbs = [], shapes = [], comets = [], ripples = [];
-  const rnd = (a, b) => a + Math.random() * (b - a);
+  let W, H, dots = [], time = 0, stars = [], rings = [];
   function size() {
     const r = devicePixelRatio || 1; W = innerWidth; H = innerHeight;
     cv.width = W * r; cv.height = H * r; cx.setTransform(r, 0, 0, r, 0, 0);
     const n = Math.min(150, Math.floor(W * H / 11000));
-    while (dots.length < n) dots.push({ x: rnd(0, W), y: rnd(0, H), vx: rnd(-.2, .2), vy: rnd(-.2, .2), r: rnd(.7, 2.1) });
+    while (dots.length < n) dots.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .4, vy: (Math.random() - .5) * .4, r: Math.random() * 1.4 + .7 });
     dots.length = n;
-    while (orbs.length < 5) orbs.push({ x: rnd(0, W), y: rnd(0, H), r: rnd(220, 460), vx: rnd(-.25, .25), vy: rnd(-.2, .2), a: rnd(.1, .2), k: orbs.length % 2 });
-    while (shapes.length < 14) shapes.push({ x: rnd(0, W), y: rnd(0, H), s: rnd(16, 52), n: 3 + shapes.length % 4, rot: rnd(0, 6.28), vr: rnd(-.006, .006), vx: rnd(-.3, .3), vy: rnd(-.3, .3) });
   }
   addEventListener('resize', size); addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
   addEventListener('mouseout', () => mouse.x = -999);
-  addEventListener('pointerdown', e => ripples.push({ x: e.clientX, y: e.clientY, r: 4, a: .6 })); // a ring spreads out wherever you click
+  addEventListener('pointerdown', e => { if (fxOn && rings.length < 6) rings.push({ x: e.clientX, y: e.clientY, r: 6 }); }); // every click sends out a ring
   size();
-  const wrap = (o, m) => { if (o.x < -m) o.x = W + m; if (o.x > W + m) o.x = -m; if (o.y < -m) o.y = H + m; if (o.y > H + m) o.y = -m; };
   (function tick() {
     cx.clearRect(0, 0, W, H);
-    for (const o of orbs) { // big soft glows that drift behind everything
-      o.x += o.vx * speed; o.y += o.vy * speed; wrap(o, o.r);
-      const c = o.k ? accRGB : dotRGB, g = cx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
-      g.addColorStop(0, `rgba(${c},${o.a * (o.k ? 1 : .3)})`); g.addColorStop(1, `rgba(${c},0)`); cx.fillStyle = g; cx.fillRect(o.x - o.r, o.y - o.r, o.r * 2, o.r * 2);
-    }
-    if (mouse.x > -900) { const g = cx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 190); g.addColorStop(0, `rgba(${accRGB},.15)`); g.addColorStop(1, `rgba(${accRGB},0)`); cx.fillStyle = g; cx.fillRect(mouse.x - 190, mouse.y - 190, 380, 380); }
-    cx.lineWidth = 1.3; cx.strokeStyle = `rgba(${dotRGB},.2)`;
-    for (const s of shapes) { // slowly spinning outlines
-      s.x += s.vx * speed; s.y += s.vy * speed; s.rot += s.vr * speed; wrap(s, s.s);
-      cx.beginPath(); for (let k = 0; k < s.n; k++) { const a = s.rot + k * 6.283 / s.n, x = s.x + Math.cos(a) * s.s, y = s.y + Math.sin(a) * s.s; k ? cx.lineTo(x, y) : cx.moveTo(x, y); } cx.closePath(); cx.stroke();
+    if (fxOn) { // the loud part: drifting glows in the theme colours, shooting stars and click rings
+      time += .004 * speed;
+      for (let i = 0; i < 5; i++) {
+        const bx = W * (.5 + .45 * Math.sin(time * (1 + i * .37) + i * 2.1)), by = H * (.5 + .42 * Math.cos(time * (.8 + i * .29) + i * 1.3)), rad = Math.max(W, H) * (.3 + .08 * Math.sin(time * 2 + i));
+        const col = i % 2 ? dotRGB : accRGB, g = cx.createRadialGradient(bx, by, 0, bx, by, rad);
+        g.addColorStop(0, 'rgba(' + col + ',' + (i % 2 ? .06 : .2) + ')'); g.addColorStop(1, 'rgba(' + col + ',0)'); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+      }
+      if (Math.random() < .012 * speed && stars.length < 4) stars.push({ x: Math.random() * W, y: -20, vx: (5 + Math.random() * 6) * (Math.random() < .5 ? -1 : 1), vy: 5 + Math.random() * 4, life: 1 });
+      stars = stars.filter(st => {
+        st.x += st.vx; st.y += st.vy; st.life -= .012;
+        const g = cx.createLinearGradient(st.x, st.y, st.x - st.vx * 14, st.y - st.vy * 14); g.addColorStop(0, 'rgba(' + accRGB + ',' + st.life + ')'); g.addColorStop(1, 'rgba(' + accRGB + ',0)');
+        cx.strokeStyle = g; cx.lineWidth = 2.5; cx.beginPath(); cx.moveTo(st.x, st.y); cx.lineTo(st.x - st.vx * 14, st.y - st.vy * 14); cx.stroke();
+        return st.life > 0 && st.y < H + 60;
+      });
+      rings = rings.filter(rg => { rg.r += 5; const al = 1 - rg.r / 220; if (al <= 0) return false; cx.strokeStyle = 'rgba(' + accRGB + ',' + al * .8 + ')'; cx.lineWidth = 2; cx.beginPath(); cx.arc(rg.x, rg.y, rg.r, 0, 6.283); cx.stroke(); return true; });
     }
     for (const p of dots) {
       p.x += p.vx * speed; p.y += p.vy * speed;
@@ -582,50 +659,56 @@ let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, 
         if (d < D) { cx.strokeStyle = `rgba(${dotRGB},${(1 - d / D) * .38})`; cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); }
       }
       const m = Math.hypot(a.x - mouse.x, a.y - mouse.y);
-      if (m < 190) { cx.strokeStyle = `rgba(${accRGB},${(1 - m / 190) * .7})`; cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(mouse.x, mouse.y); cx.stroke(); }
-      cx.fillStyle = `rgba(${dotRGB},.85)`; cx.beginPath(); cx.arc(a.x, a.y, a.r, 0, 6.283); cx.fill();
+      if (m < 190) { cx.strokeStyle = `rgba(${dotRGB},${(1 - m / 190) * .6})`; cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(mouse.x, mouse.y); cx.stroke(); }
+      cx.fillStyle = `rgba(${dotRGB},.85)`; cx.beginPath(); cx.arc(a.x, a.y, a.r * (fxOn ? 1.3 + .6 * Math.sin(time * 14 + i) : 1), 0, 6.283); cx.fill();
     }
-    if (comets.length < 2 && Math.random() < .004 * speed) comets.push({ x: rnd(-100, W * .7), y: rnd(-60, H * .3), vx: rnd(7, 11), vy: rnd(3, 6) });
-    comets = comets.filter(c => { // shooting stars with a glowing tail
-      c.x += c.vx * speed; c.y += c.vy * speed;
-      const g = cx.createLinearGradient(c.x - c.vx * 16, c.y - c.vy * 16, c.x, c.y); g.addColorStop(0, `rgba(${accRGB},0)`); g.addColorStop(1, `rgba(${accRGB},.95)`);
-      cx.strokeStyle = g; cx.lineWidth = 2.2; cx.beginPath(); cx.moveTo(c.x - c.vx * 16, c.y - c.vy * 16); cx.lineTo(c.x, c.y); cx.stroke();
-      cx.fillStyle = `rgba(${accRGB},1)`; cx.beginPath(); cx.arc(c.x, c.y, 2.6, 0, 6.283); cx.fill();
-      return c.x < W + 60 && c.y < H + 60;
-    });
-    ripples = ripples.filter(r => { r.r += 3.4; r.a -= .012; if (r.a <= 0) return false; cx.strokeStyle = `rgba(${accRGB},${r.a})`; cx.lineWidth = 2; cx.beginPath(); cx.arc(r.x, r.y, r.r, 0, 6.283); cx.stroke(); return true; });
     requestAnimationFrame(tick);
   })();
 })();
 
 /* ---------- views + name ---------- */
-function show(v) { ['auth', 'lobby', 'feed', 'call'].forEach(x => $(x).classList.toggle('hidden', x !== v)); }
+function show(v) { ['auth', 'lobby', 'feed', 'prof', 'call'].forEach(x => $(x).classList.toggle('hidden', x !== v)); if (v !== 'lobby' && hintAt >= 0) showHint(-1); } // leaving the menu ends the tips
+// Accounts: you log in with a username and password. The server answers with a token that keeps this browser logged in.
+let acct = null, token = localStorage.getItem('token') || '', authMode = 'login', SHOP = [], EARN = 5; // acct: { code (your @username), display, bio, coins, owned }
+const owns = it => !!acct && (it.price === 0 || acct.owned.includes(it.id));
+function setAuthMode(mode) {
+  authMode = mode; const reg = mode === 'register';
+  $('dnRow').classList.toggle('hidden', !reg); $('authGo').textContent = reg ? 'Create account' : 'Log in'; $('authSwap').textContent = reg ? 'I already have an account' : 'Create an account';
+  $('pw').autocomplete = reg ? 'new-password' : 'current-password';
+  $('authSub').textContent = reg ? 'Pick a username and a password. There is no password reset, so remember it.' : 'Log in to walk into any open room.';
+}
+$('authSwap').onclick = () => setAuthMode(authMode === 'login' ? 'register' : 'login');
 $('authForm').onsubmit = e => {
   e.preventDefault();
-  const n = $('u').value.trim(); if (!n) return;
-  localStorage.setItem('name', n); connect();
+  if (!ws || ws.readyState !== 1) return toast('Still connecting. Try again in a moment');
+  send({ type: authMode, user: $('u').value, pass: $('pw').value, display: $('dn').value });
 };
-$('logout').onclick = () => { if (ws) ws.close(1000); exitRoom(); $('u').value = localStorage.getItem('name') || ''; show('auth'); };
+$('logout').onclick = () => { send({ type: 'logout', token }); token = ''; localStorage.removeItem('token'); exitRoom(); show('auth'); ws.close(4001); };
 
 function connect() {
-  const n = localStorage.getItem('name'); if (!n) return show('auth');
-  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/?name=' + encodeURIComponent(n));
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/');
+  ws.onopen = () => { if (token) send({ type: 'auth', token }); else show('auth'); };
   ws.onmessage = e => handle(JSON.parse(e.data));
-  ws.onclose = e => {
+  ws.onclose = e => { // 4001: we closed it on purpose (log out, or a profile change that needs a fresh connection)
     if (inRoom) exitRoom();
-    if (e.code === 1000) return;
-    toast('Connection lost. Reconnecting…'); setTimeout(connect, 2000);
+    if (e.code !== 4001) toast('Connection lost. Reconnecting…');
+    setTimeout(connect, e.code === 4001 ? 150 : 2000);
   };
 }
+function drawMe() { $('me').textContent = acct.display + ' @' + acct.code; ['coinsA', 'coinsB', 'coinsS'].forEach(id => { $(id).textContent = acct.coins; }); }
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); send({ type: 'id', key: uid }); sendFriends(); $('me').textContent = 'You are ' + myName; drawStats(m.stats); drawRecent(m.recent); drawLobby(); if ($('feed').classList.contains('hidden')) show('lobby'); else send({ type: 'feed', on: true }); setAv($('meAv'), myName, myAvatar); if (myAvatar) send({ type: 'avatar', data: myAvatar }); startTips(); }
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; SHOP = m.shop || []; EARN = m.earn || EARN; $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); picBase = m.picBase || ''; $('postPic').classList.toggle('hidden', !picBase); $('postCam').classList.toggle('hidden', !picBase); loadDms(); drawMe(); lockThemes(); drawSounds(); drawShop(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar) send({ type: 'avatar', data: myAvatar }); }
   else if (m.type === 'lobby') { rooms = m.rooms; drawStats(m.stats); drawLobby(); }
   else if (m.type === 'error') { toast(m.text); if (!inRoom && local) { local.getTracks().forEach(t => t.stop()); local = null; } } // a refused join must not leave the camera on
   else if (m.type === 'joined') onJoined(m);
-  else if (m.type === 'peer-joined') { addTile(m.id, m.name, null, false, m); updateCount(); sfx.join(); notify(m.name + ' joined the room', 'join'); }
-  else if (m.type === 'peer-left') { const nm = people[m.id] && people[m.id].name; dropPeer(m.id); sfx.leave(); if (nm) notify(nm + ' left the room', 'leave'); }
+  else if (m.type === 'peer-joined') { addTile(m.id, m.name, null, false, m); updateCount(); sfx.join(); notify(m.name + ' joined the room'); }
+  else if (m.type === 'peer-left') { if (people[m.id]) notify(people[m.id].name + ' left the room'); dropPeer(m.id); sfx.leave(); }
+  else if (m.type === 'friend-post') { sfx.ping(); notify(m.name + ' posted something new', () => { if (!inRoom) $('openFeed').click(); }); }
+  else if (m.type === 'race-pos') { const o = racers[m.id] || (racers[m.id] = { dx: m.x, dy: m.y }); o.x = m.x; o.y = m.y; o.t = Date.now(); }
+  else if (m.type === 'race-start') onRaceStart(m);
+  else if (m.type === 'race-end') { raceMsg = (m.place === 1 ? m.name + ' wins in ' : m.name + ' finished in ') + m.secs + 's'; if (m.id === myId) raceState = 'done'; }
   else if (m.type === 'state') setState(m.id, m);
   else if (m.type === 'avatar') { if (people[m.id]) upsert(m.id, { avatar: safeAv(m.data) }); }
   else if (m.type === 'stroke') onStroke(m);
@@ -635,15 +718,19 @@ function handle(m) {
   else if (m.type === 'typing') setTyper(m.id, m.name, m.on);
   else if (m.type === 'topic') { if (document.activeElement !== $('topicIn')) $('topicIn').value = m.text; }
   else if (m.type === 'signal') onSignal(m.from, m.data);
-  else if (m.type === 'me') { myCode = m.code; isAdmin = !!m.admin; drawFriends(); renderPeople(); drawGpoll(); }
+  else if (m.type === 'auth-fail') { if (m.expired) { token = ''; localStorage.removeItem('token'); } if (m.text) toast(m.text); if (inRoom) exitRoom(); show('auth'); }
+  else if (m.type === 'me') { acct = m.me; drawMe(); if (m.saved) { toast(m.mod ? 'A moderator changed your profile' : 'Profile saved'); ws.close(4001); } } // reconnect so the new name is used everywhere
+  else if (m.type === 'coins') { acct.coins = m.coins; acct.owned = m.owned; drawMe(); drawShop(); drawSounds(); lockThemes(); renderPeople(); }
+  else if (m.type === 'friends') onFriends(m);
+  else if (m.type === 'profile') drawProfile(m);
+  else if (m.type === 'mod-done') { toast('Done'); if (m.act === 'delete') $('profBack').click(); else send({ type: 'profile', user: profUser }); }
+  else if (m.type === 'sound') playSound(m.id, m.from);
+  else if (m.type === 'ability') onAbility(m);
   else if (m.type === 'gpoll') { gpoll = m.poll; drawGpoll(); }
   else if (m.type === 'feed') { posts = m.posts; drawPosts(); }
   else if (m.type === 'post') onPost(m.post);
   else if (m.type === 'post-del') { posts = posts.filter(p => p.id !== m.id); drawPosts(); }
-  else if (m.type === 'recent') drawRecent(m.posts);
-  else if (m.type === 'post-note') notify(m.name + ' posted: ' + m.text, 'post', () => { if (!inRoom) openFeed(); }); // a friend posted
   else if (m.type === 'presence') onPresence(m.list);
-  else if (m.type === 'friend-req') onFriendReq(m);
   else if (m.type === 'dm') onDm(m);
   else if (m.type === 'dm-fail') toast(m.text);
   else if (m.type === 'kickvote') drawKick(m);
@@ -696,7 +783,7 @@ async function joinRoom(id) {
 }
 function onJoined(m) {
   inRoom = true; roomMax = m.max || 6; show('call');
-  $('roomTitle').textContent = m.name; $('stage').innerHTML = ''; $('log').innerHTML = ''; setReply(null); drawKick(m.vote || { over: true });
+  $('roomTitle').textContent = m.name; raceSeed = m.race || 1; $('stage').innerHTML = ''; $('log').innerHTML = ''; setReply(null); drawKick(m.vote || { over: true });
   m.chat.forEach(x => addMsg(x));
   addTile('me', myName, local, true, { avatar: myAvatar });
   updateBtns(); pin(null); $('topicIn').value = m.topic || '';
@@ -769,7 +856,7 @@ function dropPeer(id) {
   updateCount();
 }
 function exitRoom() {
-  drawKick({ over: true }); inRoom = false; Object.keys(peers).forEach(dropPeer); unmeter('me'); boardOpen = false; boardEl.classList.add('hidden'); strokes = []; cur = null; pend = []; redraw();
+  drawKick({ over: true }); raceQuit(); inRoom = false; Object.keys(peers).forEach(dropPeer); unmeter('me'); boardOpen = false; boardEl.classList.add('hidden'); strokes = []; cur = null; pend = []; redraw();
   sharing = null; screenAudio = null; $('share').textContent = 'Share screen'; pin(null); Object.keys(people).forEach(k => delete people[k]); renderPeople(); Object.keys(typers).forEach(k => setTyper(k, '', false));
   if (local) local.getTracks().forEach(t => t.stop());
   local = null; $('mic').textContent = 'Mute mic'; $('cam').textContent = 'Stop camera';
@@ -853,30 +940,37 @@ const THEMES = {
   forest: { name: 'Forest', bg: '6 20 14', fg: '226 247 232', acc: '#7dff6a' },
   candy: { name: 'Candy', bg: '30 8 34', fg: '255 228 248', acc: '#ff5fd2' },
   paper: { name: 'Paper', bg: '244 240 232', fg: '24 22 20', acc: '#0a8f4e' },
-  ocean: { name: 'Ocean', bg: '4 22 36', fg: '214 244 255', acc: '#27d3ff' },
-  lava: { name: 'Lava', bg: '24 4 4', fg: '255 226 214', acc: '#ff4d2e' },
-  neon: { name: 'Neon', bg: '10 4 24', fg: '240 232 255', acc: '#b14dff' },
-  terminal: { name: 'Terminal', bg: '0 10 2', fg: '160 255 176', acc: '#33ff66' },
-  vapor: { name: 'Vapor', bg: '20 8 40', fg: '255 220 250', acc: '#00f0d0' },
-  gold: { name: 'Gold', bg: '18 14 4', fg: '255 244 214', acc: '#ffc533' },
-  rose: { name: 'Rose', bg: '255 238 243', fg: '58 14 32', acc: '#d81b60' },
-  ice: { name: 'Ice', bg: '234 246 255', fg: '12 30 52', acc: '#0b7bd6' }
+  neon: { name: 'Neon', bg: '6 2 20', fg: '240 230 255', acc: '#39ff14', shop: 't_neon' }, // shop: bought with coins, hidden in Settings until owned
+  ocean: { name: 'Ocean', bg: '2 18 30', fg: '220 244 255', acc: '#19d3da', shop: 't_ocean' },
+  lava: { name: 'Lava', bg: '24 4 2', fg: '255 232 214', acc: '#ff3b1f', shop: 't_lava' },
+  gold: { name: 'Gold', bg: '18 14 4', fg: '255 244 204', acc: '#ffc93c', shop: 't_gold' },
+  slate: { name: 'Slate', bg: '18 22 28', fg: '225 232 240', acc: '#7cc4ff' },
+  rose: { name: 'Rose', bg: '26 6 14', fg: '255 226 234', acc: '#ff4d7e' },
+  arcade: { name: 'Arcade', bg: '14 4 36', fg: '238 230 255', acc: '#ffe45c' },
+  toxic: { name: 'Toxic', bg: '8 16 4', fg: '230 255 210', acc: '#b6ff00' },
+  mint: { name: 'Mint', bg: '232 248 240', fg: '14 40 30', acc: '#00a86b' },
+  sky: { name: 'Sky', bg: '230 242 255', fg: '12 30 60', acc: '#1f7ae0' }
 };
 function setTheme(k) {
-  if (!THEMES[k]) k = 'mono';
+  if (!THEMES[k] || (THEMES[k].shop && acct && !acct.owned.includes(THEMES[k].shop))) k = 'mono';
   const t = THEMES[k], s = document.documentElement.style;
   s.setProperty('--bgc', t.bg); s.setProperty('--fgc', t.fg); s.setProperty('--acc', t.acc); s.setProperty('--vid', t.vid || 'none');
-  dotRGB = t.fg.replace(/ /g, ','); accRGB = [1, 3, 5].map(i => parseInt(t.acc.slice(i, i + 2), 16)).join(',');
+  dotRGB = t.fg.replace(/ /g, ',');
+  accHex = t.acc; accRGB = [1, 3, 5].map(i => parseInt(t.acc.slice(i, i + 2), 16)).join(',');
   localStorage.setItem('theme', k);
   document.querySelectorAll('.th').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
 }
 Object.entries(THEMES).forEach(([k, t]) => {
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'th'; b.dataset.k = k;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'th'; b.dataset.k = k; b.dataset.shop = t.shop || '';
   const sw = document.createElement('i'); sw.style.background = `linear-gradient(135deg,rgb(${t.bg}) 50%,${t.acc} 50%)`;
   b.append(sw, t.name); b.onclick = () => setTheme(k);
   $('themes').appendChild(b);
 });
 setTheme(localStorage.getItem('theme'));
+function lockThemes() { // after logging in: show only the shop themes this account owns
+  document.querySelectorAll('.th').forEach(b => b.classList.toggle('hidden', !!b.dataset.shop && !acct.owned.includes(b.dataset.shop)));
+  setTheme(localStorage.getItem('theme'));
+}
 
 /* ---------- mic icons, talking outline ---------- */
 const IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
@@ -1103,6 +1197,7 @@ function makeRow(id) {
     fb.type = kb.type = 'button'; fb.className = 'ghost addfr hidden'; kb.className = 'ghost'; fb.textContent = 'Add friend'; kb.textContent = 'Vote kick';
     fb.onclick = () => addFriend(people[id].code, people[id].name); kb.onclick = () => send({ type: 'kick', id: +id });
     acts.append(fb, kb); r.querySelector('.pmeta').appendChild(acts);
+    const ab = document.createElement('div'); ab.className = 'pacts abils'; r.querySelector('.pmeta').appendChild(ab);
   }
   return r;
 }
@@ -1116,6 +1211,8 @@ function renderPeople() {
     r.classList.toggle('muted', !!p.muted); r.querySelector('.pic').innerHTML = p.muted ? MICOFF : MIC;
     r.querySelector('.badge').classList.toggle('hidden', !p.sharing);
     const fb = r.querySelector('.addfr'); if (fb) fb.classList.toggle('hidden', !p.code || p.code === myCode || friends.some(f => f.code === p.code));
+    const ab = r.querySelector('.abils'); // one button per ability you own, to use it on this person
+    if (ab) { ab.innerHTML = ''; SHOP.filter(it => it.kind === 'ability' && owns(it)).forEach(it => { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = it.icon; b.title = it.name; b.setAttribute('aria-label', it.name); b.onclick = () => send({ type: 'ability', id: it.id, to: +id }); ab.appendChild(b); }); }
     const sv = r.querySelector('.vol.screen'); if (sv) sv.classList.toggle('hidden', !(p.sharing && p.screenAudio));
   });
   $('peopleCount').textContent = Object.keys(people).length;
@@ -1150,38 +1247,31 @@ let boardOpen = false, strokes = [], brush = '#ffffff', mySeq = 0, cur = null, p
 const boardEl = $('board'), bcv = $('bcv'), bx = bcv.getContext('2d');
 const SW = ['#ffffff', '#2dff88', '#ffd23f', '#ff5fa2', '#3fd0ff', '#0b0b0b']; // last one is the eraser
 function layout() {
-  const st = $('stage'); st.classList.toggle('pinned', !!pinId || boardOpen); st.classList.toggle('boardopen', boardOpen);
+  const st = $('stage'); st.classList.toggle('pinned', !!pinId || boardOpen || raceOpen); st.classList.toggle('boardopen', boardOpen || raceOpen);
   if (sideGrip.parentNode !== st) st.appendChild(sideGrip); // the stage is emptied on every join, so put the handle back
-  sideGrip.classList.toggle('hidden', !pinId && !boardOpen);
+  sideGrip.classList.toggle('hidden', !pinId && !boardOpen && !raceOpen);
 }
 
-/* ---------- resizable panels: drag the chat's edge, or the gap beside the pinned tile or board. Arrow keys work too. Sizes are saved in this browser ---------- */
+/* ---------- resizable panels: drag the chat's edge, or the gap beside the pinned tile or board. Sizes are saved in this browser ---------- */
 const sizes = (() => { try { return JSON.parse(localStorage.getItem('sizes')) || {}; } catch { return {}; } })();
 const sideGrip = document.createElement('div'); sideGrip.id = 'sideGrip'; sideGrip.className = 'grip hidden'; sideGrip.title = 'Drag to resize. Double-click to reset';
-sideGrip.setAttribute('role', 'separator'); sideGrip.setAttribute('aria-label', 'Resize the side tiles');
 const clamp = (v, lo, hi) => Math.round(Math.max(lo, Math.min(hi, v)));
 function applySizes() {
   const s = document.documentElement.style;
   ['chatw', 'chath', 'sidew'].forEach(k => { if (sizes[k]) s.setProperty('--' + k, sizes[k] + 'px'); else s.removeProperty('--' + k); });
 }
-function grip(el, onMove, keys, onKey) { // keys: the saved sizes a double-click puts back to normal. onKey(d): d is 1 to make the panel bigger, -1 smaller
+function grip(el, onMove, keys) { // keys: the saved sizes a double-click puts back to normal
   const save = () => { applySizes(); localStorage.setItem('sizes', JSON.stringify(sizes)); };
-  el.tabIndex = 0;
   el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('on'); });
   el.addEventListener('pointermove', e => { if (el.hasPointerCapture(e.pointerId)) { onMove(e); applySizes(); } });
   ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, () => { el.classList.remove('on'); save(); }));
   el.addEventListener('dblclick', () => { keys.forEach(k => delete sizes[k]); save(); });
-  el.addEventListener('keydown', e => { const d = { ArrowLeft: 1, ArrowUp: 1, ArrowRight: -1, ArrowDown: -1 }[e.key]; if (d) { e.preventDefault(); onKey(d); save(); } });
 }
 grip($('chatGrip'), e => {
   if (matchMedia('(max-width:760px)').matches) sizes.chath = clamp(innerHeight - 14 - e.clientY, 140, innerHeight * .7); // phones: the chat sits under the video, so the drag changes its height
   else sizes.chatw = clamp(innerWidth - 14 - e.clientX, 240, innerWidth * .6);
-}, ['chatw', 'chath'], d => {
-  if (matchMedia('(max-width:760px)').matches) sizes.chath = clamp((sizes.chath || innerHeight * .36) + d * 24, 140, innerHeight * .7);
-  else sizes.chatw = clamp((sizes.chatw || 340) + d * 24, 240, innerWidth * .6);
-});
-grip(sideGrip, e => { const r = $('stage').getBoundingClientRect(); sizes.sidew = clamp(r.right - e.clientX - 6, 110, r.width * .6); }, ['sidew'],
-  d => { sizes.sidew = clamp((sizes.sidew || 200) + d * 24, 110, $('stage').getBoundingClientRect().width * .6); });
+}, ['chatw', 'chath']);
+grip(sideGrip, e => { const r = $('stage').getBoundingClientRect(); sizes.sidew = clamp(r.right - e.clientX - 6, 110, r.width * .6); }, ['sidew']);
 applySizes();
 SW.forEach((c, i) => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.style.setProperty('--c', c);
@@ -1210,7 +1300,7 @@ function setBoard(open) {
   else boardEl.classList.add('hidden');
   layout();
 }
-$('boardBtn').onclick = () => setBoard(!boardOpen); $('bclose').onclick = () => setBoard(false);
+$('boardBtn').onclick = () => { if (!boardOpen) setRace(false); setBoard(!boardOpen); }; $('bclose').onclick = () => setBoard(false);
 $('bclear').onclick = () => { strokes = []; redraw(); send({ type: 'board-clear' }); };
 const bpt = e => { const r = bcv.getBoundingClientRect(); return [Math.max(0, Math.min(1000, Math.round((e.clientX - r.left) / r.width * 1000))), Math.max(0, Math.min(625, Math.round((e.clientY - r.top) / r.height * 625)))]; };
 function extend(x, y) { const from = cur.pts.length; cur.pts.push(x, y); pend.push(x, y); drawStroke(cur, from); }
@@ -1254,9 +1344,9 @@ document.addEventListener('click', e => { if (!mpick.contains(e.target) && !e.ta
 
 /* ---------- chat ---------- */
 const msgEl = mid => document.querySelector('.msg[data-mid="' + mid + '"]');
-function fillText(el, m) { // message text, with the @names the server found picked out (not when the name is just the start of a longer word)
+function fillText(el, m) { // message text, with the @names the server found picked out
   if (!m.at || !m.at.length) { el.textContent = m.text; return; }
-  const re = new RegExp('@(' + m.at.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?![\\w])', 'gi');
+  const re = new RegExp('@(' + m.at.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
   m.text.split(re).forEach((part, i) => {
     if (i % 2) { const s = document.createElement('span'); s.className = 'at'; s.textContent = '@' + part; el.appendChild(s); }
     else if (part) el.appendChild(document.createTextNode(part));
@@ -1317,14 +1407,13 @@ $('pollForm').onsubmit = e => {
 };
 
 /* ---------- mini-games (the server checks every move and sends back the new state) ---------- */
-const GAMES = { ttt: 'Tic-Tac-Toe', c4: 'Connect Four', rps: 'Rock Paper Scissors', dice: 'Dice Duel', guess: 'Number Guess', draw: 'Quick Draw' }, RPS = { rock: '✊', paper: '✋', scissors: '✌️' }, FACE = '⚀⚁⚂⚃⚄⚅';
+const GAMES = { ttt: 'Tic-Tac-Toe', c4: 'Connect Four', rps: 'Rock Paper Scissors', num: 'Guess the number', react: 'Reaction race', hang: 'Hangman' }, RPS = { rock: '✊', paper: '✋', scissors: '✌️' };
 function drawGame(d, g) {
   const box = d.querySelector('.mextra'), me = g.p.indexOf(myName), mid = +d.dataset.mid; box.innerHTML = '';
   const el = (tag, cls, text) => { const x = document.createElement(tag); x.className = cls; if (text !== undefined) x.textContent = text; box.appendChild(x); return x; };
   let status = '';
-  el('div', 'pq', GAMES[g.kind]);
-  if (g.kind === 'guess') return drawGuess(el, g, mid);
-  el('div', 'gwho', g.p[0] + ' vs ' + (g.p[1] || '…'));
+  if (g.kind === 'num' || g.kind === 'react' || g.kind === 'hang') return drawOpenGame(el, g, mid);
+  el('div', 'pq', GAMES[g.kind]); el('div', 'gwho', g.p[0] + ' vs ' + (g.p[1] || '…'));
   if (g.p.length < 2) {
     if (me === 0) status = 'Waiting for someone to join';
     else { const b = el('button', 'solid gjoin', 'Join game'); b.type = 'button'; b.onclick = () => send({ type: 'gjoin', mid }); }
@@ -1337,20 +1426,6 @@ function drawGame(d, g) {
         b.onclick = () => send({ type: 'gmove', mid, pick: k }); row.appendChild(b);
       });
     } else status = 'Waiting for ' + g.p.filter((_, i) => !g.done[i]).join(' and ');
-  } else if (g.kind === 'dice') { // each player rolls two dice once; the bigger total wins
-    const row = el('div', 'dicerow');
-    g.p.forEach((n, i) => {
-      const b = document.createElement('div'), f = document.createElement('span'), t = document.createElement('small'); b.className = 'dicebox';
-      f.textContent = g.rolls[i] ? FACE[g.rolls[i][0] - 1] + FACE[g.rolls[i][1] - 1] : '…'; t.textContent = n + (g.rolls[i] ? ' · ' + (g.rolls[i][0] + g.rolls[i][1]) : '');
-      b.append(f, t); row.appendChild(b);
-    });
-    if (g.win === null && me >= 0 && !g.rolls[me]) { const b = el('button', 'solid gjoin', 'Roll the dice'); b.type = 'button'; b.onclick = () => send({ type: 'gmove', mid }); status = 'Your roll'; }
-    else if (g.win === null) status = 'Waiting for ' + g.p.filter((_, i) => !g.rolls[i]).join(' and ');
-  } else if (g.kind === 'draw') { // Quick Draw: press when it says GO, not before
-    if (g.win === null) {
-      if (me >= 0) { const go = g.phase === 'go', b = el('button', 'qd ' + (go ? 'go' : 'wait'), go ? 'GO!' : 'Wait for it…'); b.type = 'button'; b.dataset.sfx = 'none'; b.onclick = () => send({ type: 'gmove', mid }); status = go ? 'Press now!' : 'Do not press yet'; }
-      else status = g.phase === 'go' ? 'Go!' : 'The players are getting ready…';
-    }
   } else { // tic-tac-toe and connect four share a grid of cells; in connect four a click picks the column
     const c4 = g.kind === 'c4', grid = el('div', 'ggrid ' + g.kind), mine = g.win === null && me === g.turn;
     g.b.forEach((v, i) => {
@@ -1364,25 +1439,36 @@ function drawGame(d, g) {
     if (g.win === null) status = mine ? 'Your turn' : g.p[g.turn] + "'s turn";
   }
   if (g.win !== null) status = g.win === 'draw' ? 'Draw' : g.p[g.win] + ' wins';
-  if (g.kind === 'draw' && g.win !== null && g.p.length > 1) status += g.early ? ' (the other player pressed too early)' : ' in ' + g.ms + ' ms';
   if (status) el('small', '', status);
 }
-function drawGuess(el, g, mid) { // Number Guess: anyone in the room can guess, and each wrong guess narrows the range
-  el('div', 'gwho', 'Started by ' + g.p[0] + '. Anyone can guess.');
-  if (g.win !== null) el('div', 'gshow', g.by + ' found it: ' + g.answer);
-  else {
-    el('small', '', 'The number is between ' + g.lo + ' and ' + g.hi);
-    const f = el('form', 'gguess'), i = document.createElement('input'), b = document.createElement('button');
-    i.type = 'number'; i.min = g.lo; i.max = g.hi; i.required = true; i.placeholder = g.lo + ' to ' + g.hi; i.setAttribute('aria-label', 'Your guess');
-    b.className = 'solid gjoin'; b.textContent = 'Guess'; f.append(i, b);
-    f.onsubmit = e => { e.preventDefault(); if (i.value !== '') send({ type: 'gmove', mid, n: +i.value }); i.value = ''; };
+function drawOpenGame(el, g, mid) { // games the whole room plays at once: no second player to wait for
+  const over = g.win !== null;
+  el('div', 'pq', GAMES[g.kind]); el('div', 'gwho', 'Started by ' + g.p[0] + ' · everyone here can play');
+  if (g.kind === 'num') {
+    el('div', 'gbig', g.lo + ' to ' + g.hi);
+    if (!over) {
+      const form = el('form', 'grow'), inp = document.createElement('input'), b = document.createElement('button');
+      inp.type = 'number'; inp.min = g.lo; inp.max = g.hi; inp.placeholder = 'Your guess'; inp.setAttribute('aria-label', 'Your guess'); b.className = 'solid gjoin'; b.style.margin = 0; b.textContent = 'Guess'; form.append(inp, b);
+      form.onsubmit = e => { e.preventDefault(); if (inp.value) send({ type: 'gmove', mid, n: +inp.value }); };
+    }
+    el('small', '', over ? g.win + ' got it in ' + g.tries + (g.tries === 1 ? ' guess' : ' guesses') : g.last ? g.last + (/(\d+)$/.exec(g.last)[1] < g.lo ? ': too low' : ': too high') : 'Guess the secret number');
+  } else if (g.kind === 'react') {
+    const b = el('button', 'gbtn' + (g.go && !over ? ' go' : ''), over ? g.win + ' wins' : g.go ? 'CLICK!' : 'Wait for it…');
+    b.type = 'button'; b.dataset.sfx = 'none'; b.disabled = over || g.out.includes(myName); b.onclick = () => send({ type: 'gmove', mid });
+    el('small', '', over ? 'Fastest click wins' : g.out.length ? 'Too early, out: ' + g.out.join(', ') : 'Click the moment it says CLICK. Too early and you are out');
+  } else {
+    el('div', 'gbig gword', [...g.mask].join(' '));
+    if (!over) {
+      const row = el('div', 'gkeys');
+      'abcdefghijklmnopqrstuvwxyz'.split('').forEach(l => { const b = document.createElement('button'); b.type = 'button'; b.textContent = l; b.dataset.sfx = 'none'; b.disabled = g.used.includes(l); b.onclick = () => send({ type: 'gmove', mid, l }); row.appendChild(b); });
+    }
+    el('small', '', g.lost ? 'Out of guesses. That was the word' : over ? g.win + ' finished the word' : g.left + ' wrong guesses left');
   }
-  g.log.forEach(l => el('small', '', l.name + ' guessed ' + l.n + ': ' + l.hint));
 }
 const gameBar = $('gameBar');
-[['ttt', 'Tic-Tac-Toe'], ['c4', 'Connect Four'], ['rps', 'Rock Paper Scissors'], ['dice', 'Dice Duel'], ['guess', 'Number Guess'], ['draw', 'Quick Draw'], ['roll', 'Roll a dice'], ['flip', 'Flip a coin']].forEach(([k, label]) => {
+[['race', 'Platformer race'], ['ttt', 'Tic-Tac-Toe'], ['c4', 'Connect Four'], ['rps', 'Rock Paper Scissors'], ['num', 'Guess the number'], ['react', 'Reaction race'], ['hang', 'Hangman'], ['roll', 'Roll a dice'], ['flip', 'Flip a coin']].forEach(([k, label]) => {
   const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
-  b.onclick = () => { send(GAMES[k] ? { type: 'game', kind: k } : { type: 'luck', kind: k }); gameBar.classList.add('hidden'); tab('chat'); };
+  b.onclick = () => { gameBar.classList.add('hidden'); if (k === 'race') return setRace(true); send(GAMES[k] ? { type: 'game', kind: k } : { type: 'luck', kind: k }); tab('chat'); };
   gameBar.appendChild(b);
 });
 $('gamesBtn').onclick = () => gameBar.classList.toggle('hidden');
@@ -1399,7 +1485,7 @@ function addMsg(m, live) {
       const q = d.querySelector('.mquote'); q.classList.remove('hidden'); q.textContent = m.re.name + ': ' + m.re.text;
       q.onclick = () => { const o = msgEl(m.re.id); if (o) { o.scrollIntoView({ block: 'center' }); o.classList.add('flash'); setTimeout(() => o.classList.remove('flash'), 1200); } };
     }
-    d.querySelector('.mrep').onclick = () => setReply({ id: m.id, name: m.name, text: m.text || (m.gif ? 'GIF' : m.poll ? 'Poll' : 'Game') });
+    d.querySelector('.mrep').onclick = () => setReply({ id: m.id, name: m.name, text: m.text || (m.gif ? 'GIF' : m.pic ? 'Image' : m.poll ? 'Poll' : 'Game') });
     if (m.poll) drawPoll(d, m.poll);
     if (m.game) drawGame(d, m.game);
     if (m.name !== myName && ((m.at || []).includes(myName) || (m.re && m.re.name === myName))) { // someone @'d you or replied to you
@@ -1407,6 +1493,10 @@ function addMsg(m, live) {
       if (live) { sfx.ping(); if ($('chatPane').classList.contains('hidden')) toast(m.name + (m.re && m.re.name === myName ? ' replied to you' : ' mentioned you')); }
     }
     d.querySelector('time').textContent = new Date(m.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (/^[a-f0-9]{24}$/.test(m.pic || '')) { // an uploaded image; it passed the server's check before it got an id
+      const im = document.createElement('img'); im.className = 'mimg'; im.alt = 'Image'; im.onload = () => { log.scrollTop = log.scrollHeight; };
+      im.onerror = () => { im.replaceWith(document.createTextNode('(this image has expired)')); }; im.src = '/img/' + m.pic; d.querySelector('.mtext').appendChild(im);
+    }
     if (m.gif && GIFRE.test(m.gif)) {
       const im = document.createElement('img'); im.className = 'mimg'; im.alt = 'GIF'; im.referrerPolicy = 'no-referrer';
       im.onload = () => { log.scrollTop = log.scrollHeight; }; im.src = m.gif; d.querySelector('.mtext').appendChild(im);
@@ -1454,48 +1544,34 @@ function drawKick(m) {
 $('kickYes').onclick = () => send({ type: 'kickv', yes: true }); $('kickNo').onclick = () => send({ type: 'kickv', yes: false });
 
 /* ---------- friends and direct messages ---------- */
-// No accounts: this browser keeps a secret id, and the server turns it into the friend code that other people add.
-// The friends list and the message history are saved in this browser only. A friend shows as online once you have both added each other.
+// Friends are saved on your account, so they follow you to any device. A friend shows as online once you have both added each other.
+// Direct message history is kept in this browser only, separately for each account.
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch { return d; } };
 const keep = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
-const uid = (() => {
-  let k = localStorage.getItem('uid');
-  if (!/^[a-f0-9]{32}$/.test(k || '')) { k = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem('uid', k); }
-  return k;
-})();
-const friends = load('friends', []), ignored = load('ignored', []), dms = load('dms', {}), unread = {};
-{ // older versions saved friends as plain names; drop anything that is not a { code, name } entry so the Friends window can not break
-  const ok = friends.filter(f => f && typeof f.code === 'string' && /^[A-Z2-9]{8}$/.test(f.code) && typeof f.name === 'string');
-  if (ok.length !== friends.length) { friends.splice(0, friends.length, ...ok); keep('friends', friends); }
-}
-let myCode = '', pres = {}, reqs = load('reqs', []).filter(r => r && typeof r.code === 'string' && typeof r.name === 'string'), dmOpen = null; // requests are kept too, so a reconnect does not announce them again
-const sendFriends = () => send({ type: 'friends', codes: friends.map(f => f.code) });
-const saveFriends = () => { keep('friends', friends); sendFriends(); drawFriends(); renderPeople(); if (!$('feed').classList.contains('hidden')) drawPosts(); };
+const friends = [], ignored = load('ignored', []), unread = {};
+let myCode = '', pres = {}, reqs = [], dmOpen = null, dms = {};
+const loadDms = () => { dms = load('dms:' + myCode, {}); };
 const nameOf = code => (friends.find(f => f.code === code) || {}).name || 'Friend';
-function addFriend(raw, name) {
-  const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (!/^[A-Z2-9]{8}$/.test(code)) return toast('Friend codes are 8 letters and numbers');
-  if (code === myCode) return toast('That is your own code');
+function addFriend(raw) {
+  const code = String(raw || '').trim().toLowerCase().replace(/^@/, '');
+  if (!/^[a-z0-9_]{3,16}$/.test(code)) return toast('Type their username, like @sam_01');
+  if (code === myCode) return toast('That is you');
   if (friends.some(f => f.code === code)) return toast('Already on your list');
-  friends.push({ code, name: name || 'Friend ' + code.slice(0, 4) }); reqs = reqs.filter(r => r.code !== code); keep('reqs', reqs);
-  saveFriends(); toast('Added. They show as online once they add you back');
+  send({ type: 'friend-add', code });
 }
-function onPresence(list) {
-  pres = {}; let renamed = false;
-  list.forEach(p => { pres[p.code] = p; const f = friends.find(x => x.code === p.code); if (f && f.name !== p.name) { f.name = p.name; renamed = true; } });
-  if (renamed) keep('friends', friends);
-  drawFriends();
+function onFriends(m) { // the saved list from the server, plus people waiting to be added back
+  const had = reqs.length; friends.length = 0; friends.push(...m.list);
+  reqs = m.reqs.filter(r => !ignored.includes(r.code));
+  if (reqs.length > had) toast(reqs[reqs.length - 1].name + ' added you as a friend');
+  drawFriends(); renderPeople();
 }
-function onFriendReq(m) {
-  if (ignored.includes(m.code) || friends.some(f => f.code === m.code) || reqs.some(r => r.code === m.code)) return;
-  reqs.push({ code: m.code, name: m.name }); keep('reqs', reqs); drawFriends(); toast(m.name + ' added you as a friend');
-}
+function onPresence(list) { pres = {}; list.forEach(p => { pres[p.code] = p; }); drawFriends(); }
 function frBadge() { // the dot on the Friends buttons: a request or an unread message is waiting
   const on = reqs.length > 0 || Object.keys(unread).length > 0;
   $('openFr').classList.toggle('has-new', on); $('openFr2').classList.toggle('has-new', on);
 }
 function drawFriends() {
-  $('frCode').textContent = myCode || '…'; const box = $('frList'); box.innerHTML = '';
+  $('frCode').textContent = myCode ? '@' + myCode : '…'; const box = $('frList'); box.innerHTML = '';
   const row = (name, sub, on) => {
     const r = document.createElement('div'); r.className = 'frow' + (on ? ' on' : '');
     r.innerHTML = '<div class="pav"></div><div class="frn"><b></b><small></small></div>';
@@ -1506,18 +1582,18 @@ function drawFriends() {
   reqs.forEach(q => {
     const r = row(q.name, 'Added you. Add them back?');
     btn(r, 'solid', 'Add', () => addFriend(q.code, q.name));
-    btn(r, 'ghost', 'Ignore', () => { ignored.push(q.code); keep('ignored', ignored); reqs = reqs.filter(x => x !== q); keep('reqs', reqs); drawFriends(); });
+    btn(r, 'ghost', 'Ignore', () => { ignored.push(q.code); keep('ignored', ignored); reqs = reqs.filter(x => x !== q); drawFriends(); });
   });
-  if (!friends.length && !reqs.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'No friends yet. Share your code, or press Add friend on someone in a room\'s People tab, or on their post in the Feed.'; box.appendChild(p); }
+  if (!friends.length && !reqs.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'No friends yet. Share your username, or press Add friend on someone in a room\'s People tab.'; box.appendChild(p); }
   [...friends].sort((a, b) => !!pres[b.code] - !!pres[a.code]).forEach(f => {
     const p = pres[f.code], room = p && rooms.find(x => x.id === p.room);
-    const r = row(f.name, p ? (room ? 'In ' + room.name : 'Online') : 'Offline, or has not added you back', !!p);
+    const r = row(f.name, '@' + f.code + ' · ' + (p ? (room ? 'In ' + room.name : 'Online') : 'Offline, or has not added you back'), !!p);
     if (room && !(inRoom && $('roomTitle').textContent === room.name)) btn(r, 'solid', 'Join', () => {
       closeFr(); if (inRoom) { send({ type: 'leave' }); exitRoom(); }
       joinRoom(room.id);
     });
     btn(r, 'ghost', 'Message' + (unread[f.code] ? ' (' + unread[f.code] + ')' : ''), () => openDm(f.code));
-    btn(r, 'ghost', '×', () => { if (confirm('Remove ' + f.name + ' from your friends?')) { friends.splice(friends.indexOf(f), 1); saveFriends(); } }).setAttribute('aria-label', 'Remove ' + f.name);
+    btn(r, 'ghost', '×', () => { if (confirm('Remove ' + f.name + ' from your friends?')) send({ type: 'friend-del', code: f.code }); }).setAttribute('aria-label', 'Remove ' + f.name);
   });
   frBadge();
 }
@@ -1532,9 +1608,9 @@ function openDm(code) {
 function onDm(m) { // m.from is set on messages to you; your own come back with m.to so every open tab shows them
   const code = m.from || m.to; if (!friends.some(f => f.code === code)) return;
   const list = dms[code] = dms[code] || [], d = { me: !m.from, text: m.text, t: m.t };
-  list.push(d); if (list.length > 100) list.shift(); keep('dms', dms);
+  list.push(d); if (list.length > 100) list.shift(); keep('dms:' + myCode, dms);
   if (dmOpen === code && !$('frDlg').classList.contains('hidden')) dmLine(d);
-  else if (m.from) { unread[code] = (unread[code] || 0) + 1; sfx.ping(); toast(m.name + ': ' + m.text.slice(0, 60)); tabNote(m.name + ': ' + m.text.slice(0, 40)); drawFriends(); }
+  else if (m.from) { unread[code] = (unread[code] || 0) + 1; sfx.ping(); toast(m.name + ': ' + m.text.slice(0, 60)); drawFriends(); }
 }
 const closeFr = () => $('frDlg').classList.add('hidden');
 const frHome = () => { dmOpen = null; $('frChat').classList.add('hidden'); $('frHome').classList.remove('hidden'); drawFriends(); };
@@ -1542,15 +1618,14 @@ $('openFr').onclick = $('openFr2').onclick = () => { frHome(); $('frDlg').classL
 $('frDone').onclick = closeFr; $('frBack').onclick = frHome;
 $('frDlg').onclick = e => { if (e.target === $('frDlg')) closeFr(); };
 addEventListener('keydown', e => { if (e.key === 'Escape') closeFr(); });
-$('frCopy').onclick = () => { if (myCode) navigator.clipboard.writeText(myCode).then(() => toast('Code copied'), () => toast('Your code is ' + myCode)); };
+$('frCopy').onclick = () => { if (myCode) navigator.clipboard.writeText(myCode).then(() => toast('Username copied'), () => toast('Your username is @' + myCode)); };
 $('frAdd').onsubmit = e => { e.preventDefault(); addFriend($('frIn').value); $('frIn').value = ''; };
 $('frSend').onsubmit = e => { e.preventDefault(); const v = $('frText').value.trim(); if (v && dmOpen) send({ type: 'dm', to: dmOpen, text: v }); $('frText').value = ''; };
-
 /* ---------- visitor counts at the bottom of the lobby ---------- */
 function drawStats(st) { if (st) { $('stToday').textContent = st.today; $('stEver').textContent = st.ever; $('stMenu').textContent = st.menu; } }
 
 /* ---------- global poll: shown in the lobby to everyone; only an admin friend code can start, edit or remove it ---------- */
-let gpoll = null, pollMode = 'room'; // pollMode: the poll form is shared with room polls
+let isAdmin = false, gpoll = null, pollMode = 'room'; // pollMode: the poll form is shared with room polls
 function drawGpoll() {
   const box = $('gpoll'); box.innerHTML = ''; box.classList.toggle('hidden', !gpoll && !isAdmin);
   const add = (tag, cls, text) => { const x = document.createElement(tag); x.className = cls; if (text !== undefined) x.textContent = text; box.appendChild(x); return x; };
@@ -1574,42 +1649,24 @@ function openGpollEdit() { // the room poll form, filled in with the current glo
 }
 $('gpRemove').onclick = () => { if (confirm('Remove the global poll and its votes?')) { send({ type: 'gpoll-set', remove: true }); closePoll(); } };
 
-/* ---------- pop-up notifications, and the number in the browser tab's name ---------- */
-const BASE_TITLE = document.title; let tabCount = 0;
-function tabNote(text) { if (!document.hidden) return; tabCount++; document.title = '(' + tabCount + ') ' + text; } // only while you are looking at another tab
-function clearTab() { tabCount = 0; document.title = BASE_TITLE; }
-document.addEventListener('visibilitychange', () => { if (!document.hidden) clearTab(); }); addEventListener('focus', clearTab);
-function notify(text, kind, onclick) {
-  const box = $('notifs'), n = document.createElement('div'); n.className = 'notif ' + (kind || ''); n.innerHTML = '<i class="nd"></i><span></span>'; n.querySelector('span').textContent = text;
-  n.onclick = () => { if (onclick) onclick(); n.remove(); };
-  box.prepend(n); while (box.children.length > 4) box.lastChild.remove();
-  setTimeout(() => { n.classList.add('out'); setTimeout(() => n.remove(), 320); }, 5000);
-  tabNote(text);
-}
-
-/* ---------- Posts page: a feed everyone on the site shares, with photos, likes and comments ---------- */
-let posts = [], lastPost = 0, postImg = '', feedFilter = 'all'; const openCom = new Set(); // openCom: posts whose comments are showing
-const ago = t => { const s = (Date.now() - t) / 1000; return s < 45 ? 'just now' : s < 3600 ? Math.round(s / 60) + 'm ago' : s < 86400 ? Math.round(s / 3600) + 'h ago' : new Date(t).toLocaleDateString([], { month: 'short', day: 'numeric' }); };
-const HEART = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7.5-4.6-9.5-9.2C1 8.2 3.2 5 6.6 5c2 0 3.5 1.1 5.4 3 1.9-1.9 3.4-3 5.4-3 3.4 0 5.6 3.2 4.1 6.8C19.5 16.4 12 21 12 21z"/></svg>';
-const mk = (par, tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; if (tag === 'button') x.type = 'button'; par.appendChild(x); return x; };
-function postEl(p, fresh) {
-  const d = document.createElement('article'); d.className = 'post mod' + (fresh ? ' new' : ''); d.dataset.pid = p.id;
-  d.innerHTML = '<div class="phead"><div class="pav"></div><div class="pwho"><b></b><time></time></div><button type="button" class="pcode" data-sfx="none"></button></div><div class="ptext"></div><img class="pimg hidden" alt="Photo in post" loading="lazy"><div class="pbtns"><button type="button" class="ghost plike">' + HEART + '<span></span></button><button type="button" class="ghost pcb"></button><button type="button" class="ghost pdel hidden">Delete</button></div>';
-  d.querySelector('.pav').textContent = (p.name[0] || '?').toUpperCase(); d.querySelector('b').textContent = p.name;
-  const tm = d.querySelector('time'); tm.textContent = ago(p.t); tm.title = new Date(p.t).toLocaleString();
-  const code = d.querySelector('.pcode'); code.textContent = '#' + p.code; code.title = p.code === myCode ? 'Your friend code' : 'Add as a friend';
-  code.onclick = () => { if (p.code !== myCode) addFriend(p.code, p.name); };
-  const tx = d.querySelector('.ptext'); tx.textContent = p.text; tx.classList.toggle('hidden', !p.text);
-  if (p.img) { const im = d.querySelector('.pimg'); im.src = '/img/' + p.id; im.classList.remove('hidden'); im.onclick = () => window.open(im.src, '_blank'); }
-  const like = d.querySelector('.plike'); like.classList.toggle('on', !!p.liked); like.setAttribute('aria-pressed', !!p.liked);
-  like.setAttribute('aria-label', (p.liked ? 'Unlike' : 'Like') + ', ' + p.likes + (p.likes === 1 ? ' like' : ' likes')); like.querySelector('span').textContent = p.likes;
-  like.onclick = () => send({ type: 'post-like', id: p.id });
-  const cb = d.querySelector('.pcb'); cb.textContent = 'Comments ' + p.comments.length; cb.onclick = () => { if (!openCom.delete(p.id)) openCom.add(p.id); d.replaceWith(postEl(p)); };
-  if (isAdmin || p.code === myCode) { const del = d.querySelector('.pdel'); del.classList.remove('hidden'); del.onclick = () => { if (confirm('Delete this post?')) send({ type: 'post-del', id: p.id }); }; }
+/* ---------- Posts page: a feed everyone on the site shares, with likes and comments ---------- */
+let posts = [], lastPost = 0; const openCom = new Set(); // openCom: posts whose comments are showing
+const when = t => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+function postEl(p) {
+  const d = document.createElement('article'); d.className = 'post mod'; d.dataset.pid = p.id;
+  const mk = (par, tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; if (tag === 'button') x.type = 'button'; par.appendChild(x); return x; };
+  const head = mk(d, 'div', 'phead'); mk(head, 'div', 'pav', (p.name[0] || '?').toUpperCase()); mk(head, 'b', '', p.name);
+  const code = mk(head, 'button', 'pcode', '@' + p.code); code.title = 'Open profile'; code.onclick = () => openProfile(p.code);
+  mk(head, 'time', '', when(p.t)); if (p.text) mk(d, 'div', 'ptext', p.text);
+  if (picBase && /^[a-f0-9]{24}$/.test(p.img || '')) { const im = mk(d, 'img', 'pimg'); im.alt = 'Image in this post'; im.loading = 'lazy'; im.src = picBase + p.img + '.jpg'; }
+  const btns = mk(d, 'div', 'pbtns'), like = mk(btns, 'button', 'ghost' + (p.liked ? ' on' : ''), '♥ ' + p.likes);
+  like.setAttribute('aria-label', 'Like'); like.setAttribute('aria-pressed', !!p.liked); like.onclick = () => send({ type: 'post-like', id: p.id });
+  mk(btns, 'button', 'ghost', 'Comments ' + p.comments.length).onclick = () => { if (!openCom.delete(p.id)) openCom.add(p.id); d.replaceWith(postEl(p)); };
+  if (isAdmin || p.code === myCode) mk(btns, 'button', 'ghost', 'Delete').onclick = () => { if (confirm('Delete this post?')) send({ type: 'post-del', id: p.id }); };
   if (openCom.has(p.id)) {
     const cs = mk(d, 'div', 'pcoms');
     p.comments.forEach(c => {
-      const row = mk(cs, 'div', 'pcom'); mk(row, 'b', '', c.name); mk(row, 'small', '', '#' + c.code); mk(row, 'span', '', c.text);
+      const row = mk(cs, 'div', 'pcom'); mk(row, 'b', '', c.name); mk(row, 'small', '', '@' + c.code); mk(row, 'span', '', c.text);
       if (isAdmin || c.code === myCode || p.code === myCode) { const x = mk(row, 'button', '', '×'); x.setAttribute('aria-label', 'Delete comment'); x.onclick = () => send({ type: 'post-del', id: p.id, cid: c.id }); }
     });
     const form = mk(cs, 'form', 'pcform'), inp = mk(form, 'input'); inp.maxLength = 300; inp.placeholder = 'Write a comment'; inp.autocomplete = 'off'; inp.setAttribute('aria-label', 'Write a comment');
@@ -1618,112 +1675,391 @@ function postEl(p, fresh) {
   }
   return d;
 }
-const feedList = () => feedFilter === 'friends' ? posts.filter(p => p.code === myCode || friends.some(f => f.code === p.code)) : posts;
-function setFeedCount() { const n = feedList().length; $('feedCount').textContent = n + (n === 1 ? ' post' : ' posts'); }
 function drawPosts() {
-  const box = $('posts'); box.innerHTML = ''; const list = feedList(); setFeedCount();
-  if (!list.length) mk(box, 'p', 'sub empty', feedFilter === 'friends' ? 'No posts from you or your friends yet.' : 'No posts yet. Be the first.');
-  [...list].sort((a, b) => b.id - a.id).forEach(p => box.appendChild(postEl(p)));
+  const box = $('posts'), list = posts.filter(p => feedTab === 'all' || (feedTab === 'mine' ? p.code === myCode : friends.some(f => f.code === p.code))); box.innerHTML = '';
+  if (!list.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = feedTab === 'friends' ? 'Nothing from your friends yet.' : feedTab === 'mine' ? 'You have not posted yet.' : 'No posts yet. Be the first.'; box.appendChild(p); }
+  list.sort((a, b) => b.id - a.id).forEach(p => box.appendChild(postEl(p)));
 }
 function onPost(p) { // a new post, or an existing one that changed (like, comment)
   const i = posts.findIndex(x => x.id === p.id), old = document.querySelector('.post[data-pid="' + p.id + '"]');
   if (i >= 0) posts[i] = p; else posts.push(p);
-  if (!old) { if (!feedList().includes(p)) return; const e = $('posts').querySelector('.empty'); if (e) e.remove(); $('posts').prepend(postEl(p, true)); return setFeedCount(); }
+  if (!old) return drawPosts();
   const was = old.querySelector('.pcform input'), fresh = postEl(p), now = fresh.querySelector('.pcform input'); // keep a half-typed comment
   old.replaceWith(fresh);
   if (was && now) { now.value = was.value; if (document.activeElement === document.body && was.value) now.focus(); }
 }
-function openFeed() { setAv($('pbAv'), myName, myAvatar); show('feed'); send({ type: 'feed', on: true }); scrollTo(0, 0); }
-$('openFeed').onclick = openFeed; $('recentAll').onclick = openFeed;
+$('openFeed').onclick = () => { show('feed'); send({ type: 'feed', on: true }); };
 $('feedBack').onclick = () => { show('lobby'); send({ type: 'feed', on: false }); };
-const setFilter = f => { feedFilter = f; $('ffAll').classList.toggle('on', f === 'all'); $('ffFr').classList.toggle('on', f === 'friends'); drawPosts(); };
-$('ffAll').onclick = () => setFilter('all'); $('ffFr').onclick = () => setFilter('friends');
-
-/* photos on posts: from a file, the camera, the clipboard, or dragged in. They are shrunk here to a small JPEG first */
-const IMG_STEPS = [[1000, .8], [900, .7], [800, .62], [700, .55], [600, .5], [480, .45]];
-function jpegOf(src, w, h) { // the biggest size and quality that stays under about 150 KB
-  for (const [max, q] of IMG_STEPS) {
-    const k = Math.min(1, max / Math.max(w, h)), c = document.createElement('canvas'), x = c.getContext('2d'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
-    x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(src, 0, 0, c.width, c.height);
-    const d = c.toDataURL('image/jpeg', q); if (d.length <= 200000) return d;
-  }
-  return '';
+let feedTab = 'all', picBase = '', postPick = null; // postPick: the image chosen for the post being written
+document.querySelectorAll('#feedTabs button').forEach(b => { b.onclick = () => { feedTab = b.dataset.f; document.querySelectorAll('#feedTabs button').forEach(x => x.classList.toggle('on', x === b)); drawPosts(); }; });
+function setPostPick(file) {
+  const img = $('postPrev').querySelector('img'); if (img.src) URL.revokeObjectURL(img.src);
+  postPick = file || null; $('postPrev').classList.toggle('hidden', !file); if (file) img.src = URL.createObjectURL(file); else img.removeAttribute('src');
 }
-function showPostPrev() { $('pbPrev').classList.toggle('hidden', !postImg); if (postImg) $('pbPrevImg').src = postImg; }
-function setPostImage(file) {
-  if (!file || !/^image\//.test(file.type)) return toast('Pick an image file');
-  const u = URL.createObjectURL(file), im = new Image();
-  im.onload = () => { URL.revokeObjectURL(u); const d = jpegOf(im, im.naturalWidth, im.naturalHeight); if (d) { postImg = d; showPostPrev(); } else toast('That photo is too big to post'); };
-  im.onerror = () => { URL.revokeObjectURL(u); toast('That file could not be read as a photo'); };
-  im.src = u;
-}
-$('pbFile').onclick = () => $('pbFileIn').click();
-$('pbFileIn').onchange = e => { const f = e.target.files[0]; e.target.value = ''; setPostImage(f); };
-$('pbPrevX').onclick = () => { postImg = ''; showPostPrev(); };
-$('postText').addEventListener('paste', e => { const f = [...(e.clipboardData ? e.clipboardData.files : [])].find(x => x.type.startsWith('image/')); if (f) { e.preventDefault(); setPostImage(f); } });
-$('postForm').addEventListener('dragover', e => e.preventDefault());
-$('postForm').addEventListener('drop', e => { const f = e.dataTransfer && [...e.dataTransfer.files].find(x => x.type.startsWith('image/')); if (f) { e.preventDefault(); setPostImage(f); } });
-let camStream;
-async function openCam() {
-  try { camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }); } catch { return toast('No camera available. Use Photo to pick a file instead'); }
-  $('camVid').srcObject = camStream; $('camDlg').classList.remove('hidden');
-}
-function closeCam() { if (camStream) camStream.getTracks().forEach(t => t.stop()); camStream = null; $('camDlg').classList.add('hidden'); }
-$('pbCam').onclick = openCam; $('camCancel').onclick = closeCam;
-$('camSnap').onclick = () => {
-  const v = $('camVid'); if (!v.videoWidth) return toast('The camera is still starting. Try again');
-  const d = jpegOf(v, v.videoWidth, v.videoHeight); closeCam();
-  if (d) { postImg = d; showPostPrev(); } else toast('That photo is too big to post');
-};
-addEventListener('keydown', e => { if (e.key === 'Escape') closeCam(); });
+$('postPic').onclick = () => $('postFile').click(); $('postCam').onclick = () => $('postCamFile').click(); $('postPicX').onclick = () => setPostPick(null);
+$('postFile').onchange = $('postCamFile').onchange = e => { const file = e.target.files[0]; e.target.value = ''; if (file) setPostPick(file); };
 $('postText').addEventListener('input', () => { $('postCount').textContent = $('postText').value.length + ' / 500'; });
-$('postForm').onsubmit = e => {
-  e.preventDefault(); const v = $('postText').value.trim(); if (!v && !postImg) return;
+$('postForm').onsubmit = async e => {
+  e.preventDefault(); const v = $('postText').value.trim(); if (!v && !postPick) return;
   if (Date.now() - lastPost < 10000) return toast('Wait a few seconds before posting again');
-  lastPost = Date.now(); send({ type: 'post-new', text: v, img: postImg });
-  $('postText').value = ''; $('postCount').textContent = '0 / 500'; postImg = ''; showPostPrev();
+  lastPost = Date.now(); let pic;
+  if (postPick) { pic = await uploadImage(postPick); if (!pic) return; } // refused or failed: the text stays so nothing is lost
+  send({ type: 'post-new', text: v, pic }); $('postText').value = ''; $('postCount').textContent = '0 / 500'; setPostPick(null);
 };
 
-/* ---------- "Latest posts" in the menu ---------- */
-function drawRecent(list) {
-  const box = $('recentList'); box.innerHTML = ''; list = list || [];
-  if (!list.length) mk(box, 'p', 'sub', 'No posts yet. Be the first!');
-  list.forEach(p => {
-    const r = mk(box, 'button', 'rrow'), a = mk(r, 'div', 'pav', (p.name[0] || '?').toUpperCase()), t = mk(r, 'div', 'rtxt');
-    mk(t, 'b', '', p.name); mk(t, 'span', '', (p.img ? '[photo] ' : '') + (p.text || 'shared a photo')); mk(r, 'time', '', ago(p.t));
-    r.onclick = openFeed;
+/* ---------- profile page: anyone's display name, bio and posts; your own is editable here ---------- */
+let profUser = '', profFrom = 'lobby';
+function openProfile(user) {
+  if (inRoom) return toast('Leave the room to look at profiles');
+  const cur = ['lobby', 'feed'].find(x => !$(x).classList.contains('hidden')); if (cur) profFrom = cur;
+  profUser = user; closeFr(); show('prof'); send({ type: 'feed', on: true }); send({ type: 'profile', user }); // feed on: likes and comments on the posts shown stay live
+}
+function drawProfile(m) {
+  if (m.user.code !== profUser) return;
+  const u = m.user, mine = u.code === myCode, box = $('profBtns'), list = $('profPosts');
+  const btn = (text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = text; b.onclick = fn; box.appendChild(b); };
+  setAv($('profAv'), u.name, mine ? myAvatar : ''); $('profName').textContent = u.name; $('profUser').textContent = '@' + u.code + (u.admin ? ' · moderator' : '');
+  $('profBio').textContent = u.bio || (mine ? 'No bio yet. Add one below.' : 'No bio yet.');
+  $('profMeta').textContent = (u.online ? 'Online now' : 'Offline') + ' · joined ' + new Date(u.joined).toLocaleDateString() + ' · ' + u.coins + ' coins';
+  box.innerHTML = '';
+  if (!mine) { if (friends.some(f => f.code === u.code)) btn('Message', () => { $('openFr').click(); openDm(u.code); }); else btn('Add friend', () => addFriend(u.code)); }
+  if (isAdmin && !mine) { // moderator tools
+    btn('Reset display name', () => send({ type: 'mod', act: 'reset-name', user: u.code }));
+    btn('Clear bio', () => send({ type: 'mod', act: 'clear-bio', user: u.code }));
+    btn('Delete account', () => { if (confirm('Delete @' + u.code + ' and all their posts? This cannot be undone.')) send({ type: 'mod', act: 'delete', user: u.code }); });
+  }
+  $('profForm').classList.toggle('hidden', !mine); if (mine) { $('profDn').value = u.name; $('profBioIn').value = u.bio; }
+  list.innerHTML = '';
+  if (!m.posts.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'No posts yet.'; list.appendChild(p); }
+  [...m.posts].sort((a, b) => b.id - a.id).forEach(p => list.appendChild(postEl(p)));
+}
+$('openProf').onclick = () => openProfile(myCode);
+$('profBack').onclick = () => { show(profFrom); if (profFrom !== 'feed') send({ type: 'feed', on: false }); };
+$('profForm').onsubmit = e => { e.preventDefault(); send({ type: 'profile-set', display: $('profDn').value, bio: $('profBioIn').value }); };
+
+/* ---------- shop: spend coins on soundboard sounds, themes and abilities ---------- */
+function drawShop() {
+  const box = $('shopList'); box.innerHTML = ''; $('earnS').textContent = EARN;
+  [['sound', 'Soundboard sounds', '🔊'], ['theme', 'Themes', '🎨'], ['ability', 'Abilities', '✨']].forEach(([kind, title, icon]) => {
+    const h = document.createElement('div'); h.className = 'shoph'; h.textContent = title; box.appendChild(h);
+    SHOP.filter(it => it.kind === kind).forEach(it => {
+      const r = document.createElement('div'), b = document.createElement('button'), has = owns(it); r.className = 'frow' + (has ? ' on' : ''); b.type = 'button';
+      r.innerHTML = '<div class="pav"></div><div class="frn"><b></b><small></small></div>';
+      r.querySelector('.pav').textContent = it.icon || icon; r.querySelector('b').textContent = it.name;
+      r.querySelector('small').textContent = has ? (kind === 'theme' ? 'Owned. Pick it in Settings' : kind === 'ability' ? 'Owned. Use it from the People tab in a room' : 'Owned. Play it from Sounds in a room') : it.price + ' coins';
+      if (!has) { b.className = 'solid'; b.textContent = 'Buy'; b.onclick = () => { if (acct.coins < it.price) return toast('You need ' + (it.price - acct.coins) + ' more coins'); send({ type: 'buy', id: it.id }); }; r.appendChild(b); }
+      else if (kind === 'sound') { b.className = 'ghost'; b.textContent = 'Play'; b.dataset.sfx = 'none'; b.onclick = () => playSound(it.id); r.appendChild(b); }
+      box.appendChild(r);
+    });
   });
 }
+const closeShop = () => $('shopDlg').classList.add('hidden');
+$('openShop').onclick = () => { drawShop(); $('shopDlg').classList.remove('hidden'); };
+$('shopDone').onclick = closeShop; $('shopDlg').onclick = e => { if (e.target === $('shopDlg')) closeShop(); };
+addEventListener('keydown', e => { if (e.key === 'Escape') closeShop(); });
 
-/* ---------- tips for new players: one at a time, pointing at the thing. Shown once; Settings can bring them back ---------- */
-const TIPS = [['#openSet', 'Change themes and pfp in settings!'], ['#rooms', 'Join public rooms and play games here!'], ['#openFeed', 'Make posts here!']];
-let tipI = -1, tipsStarted = false;
-function placeTip() {
-  const tip = $('tip'); if (tipI < 0 || tip.classList.contains('hidden')) return;
-  let t = document.querySelector(TIPS[tipI][0]); if (TIPS[tipI][0] === '#rooms') t = t.firstElementChild || t;
-  const r = t.getBoundingClientRect(), w = tip.offsetWidth, left = Math.max(12, Math.min(innerWidth - w - 12, r.left + r.width / 2 - w / 2));
-  tip.style.left = left + 'px'; tip.style.top = Math.max(12, Math.min(innerHeight - tip.offsetHeight - 12, r.bottom + 14)) + 'px';
-  tip.style.setProperty('--ax', Math.max(14, Math.min(w - 26, r.left + r.width / 2 - left - 6)) + 'px');
+/* ---------- soundboard: every sound is made in the browser, there are no sound files ---------- */
+let sbOn = localStorage.getItem('sb') !== 'off';
+$('selSb').checked = sbOn; $('selSb').onchange = () => { sbOn = $('selSb').checked; localStorage.setItem('sb', sbOn ? 'on' : 'off'); };
+function osc(f, d, type, vol, slide, delay) { // one note: frequency, length, wave shape, volume, pitch slide, start delay
+  const c = ctx(), o = c.createOscillator(), g = c.createGain(), t = c.currentTime + (delay || 0);
+  o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t + d);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g).connect(c.destination); o.start(t); o.stop(t + d);
 }
-function showTip(i) {
-  document.querySelectorAll('.tiphl').forEach(x => x.classList.remove('tiphl'));
-  const tip = $('tip');
-  if (i >= TIPS.length || $('lobby').classList.contains('hidden')) { tip.classList.add('hidden'); tipI = -1; localStorage.setItem('tipsDone', '1'); return; }
-  tipI = i; let t = document.querySelector(TIPS[i][0]); if (TIPS[i][0] === '#rooms') t = t.firstElementChild || t;
-  t.classList.add('tiphl'); if (t.scrollIntoView) t.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  $('tipText').textContent = TIPS[i][1]; $('tipStep').textContent = (i + 1) + ' of ' + TIPS.length; $('tipNext').textContent = i === TIPS.length - 1 ? 'Got it' : 'Next';
-  tip.classList.remove('hidden'); placeTip(); setTimeout(placeTip, 400);
+function hiss(d, vol, delay, hp) { // a burst of noise, for claps, cymbals and splats
+  const c = ctx(), len = Math.floor(c.sampleRate * d), buf = c.createBuffer(1, len, c.sampleRate), ch = buf.getChannelData(0), t = c.currentTime + (delay || 0);
+  for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+  const src = c.createBufferSource(), g = c.createGain(), flt = c.createBiquadFilter(); src.buffer = buf; flt.type = 'highpass'; flt.frequency.value = hp || 1000;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); src.connect(flt).connect(g).connect(c.destination); src.start(t);
 }
-function startTips() { if (tipsStarted || localStorage.getItem('tipsDone')) return; tipsStarted = true; setTimeout(() => showTip(0), 900); }
-$('tipNext').onclick = () => showTip(tipI + 1); $('tipSkip').onclick = () => showTip(TIPS.length);
-addEventListener('resize', placeTip); addEventListener('scroll', placeTip, { passive: true });
-$('tipsAgain').onclick = () => { closeSettings(); if (inRoom) return toast('The tips show up in the menu. Leave the room to see them'); localStorage.removeItem('tipsDone'); show('lobby'); showTip(0); };
+const SOUNDS = {
+  s_ding: () => { osc(1320, .5, 'sine', .2); osc(1980, .5, 'sine', .08); },
+  s_boing: () => { osc(180, .5, 'sine', .25, 3.2); osc(360, .5, 'triangle', .08, 3.2); },
+  s_laser: () => osc(1800, .35, 'square', .1, .08),
+  s_buzzer: () => { osc(110, .6, 'sawtooth', .2); osc(116, .6, 'square', .1); },
+  s_airhorn: () => [[0, .22], [.28, .22], [.56, .7]].forEach(([at, len]) => { osc(466, len, 'sawtooth', .16, 1, at); osc(587, len, 'sawtooth', .12, 1, at); }),
+  s_trombone: () => [311, 293, 277, 261].forEach((f, i) => osc(f, i === 3 ? .9 : .32, 'sawtooth', .14, i === 3 ? .85 : .97, i * .35)),
+  s_rimshot: () => { osc(180, .12, 'triangle', .3, .5); osc(150, .12, 'triangle', .3, .5, .18); hiss(.5, .25, .36, 5000); },
+  s_applause: () => { for (let i = 0; i < 28; i++) hiss(.06, .12 + Math.random() * .1, Math.random() * 1.8, 1500 + Math.random() * 2000); hiss(2, .05, 0, 800); }
+};
+function playSound(id, from) { // from: who played it in the room; left out for a preview in the shop
+  if (from !== undefined) floatEmoji(from === myId ? 'me' : from, '🔊');
+  if (sbOn && SOUNDS[id]) try { SOUNDS[id](); } catch {}
+}
+const soundBar = $('soundBar');
+function drawSounds() {
+  const add = (text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = text; b.dataset.sfx = 'none'; b.onclick = fn; soundBar.appendChild(b); };
+  soundBar.innerHTML = '';
+  SHOP.filter(it => it.kind === 'sound' && owns(it)).forEach(it => add(it.name, () => send({ type: 'sound', id: it.id })));
+  add('Get more in the shop', () => { soundBar.classList.add('hidden'); $('openShop').click(); });
+}
+$('soundsBtn').onclick = () => soundBar.classList.toggle('hidden');
+document.addEventListener('click', e => { if (!soundBar.contains(e.target) && e.target.id !== 'soundsBtn') soundBar.classList.add('hidden'); });
+
+/* ---------- abilities: something flies from your tile to theirs and lands on it ---------- */
+const ABIL = { a_tomato: ['🍅', 'rgba(200,20,20,.5)'], a_pie: ['🥧', 'rgba(255,238,205,.6)'], a_snowball: ['⚪', 'rgba(205,232,255,.55)'], a_hearts: ['💖'], a_shake: ['🫨'] }; // [what flies, splat colour]
+function onAbility(m) {
+  const a = ABIL[m.id], key = m.to === myId ? 'me' : m.to, from = $('t-' + (m.from === myId ? 'me' : m.from)), to = $('t-' + key); if (!a || !to) return;
+  const hit = () => {
+    if (m.id === 'a_shake') { to.classList.add('shake'); setTimeout(() => to.classList.remove('shake'), 900); return; }
+    if (m.id === 'a_hearts') { for (let i = 0; i < 8; i++) setTimeout(() => floatEmoji(key, '💖'), i * 120); return; }
+    const sp = document.createElement('div'); sp.className = 'splat'; sp.textContent = a[0]; sp.style.background = 'radial-gradient(circle,' + a[1] + ' 0 38%,transparent 62%)';
+    to.appendChild(sp); setTimeout(() => sp.remove(), 2600);
+    if (sbOn) try { hiss(.18, .3, 0, 400); osc(120, .15, 'sine', .3, .4); } catch {}
+  };
+  if (!from || m.id === 'a_shake') return hit();
+  const A = from.getBoundingClientRect(), B = to.getBoundingClientRect(), p = document.createElement('div'); p.className = 'proj'; p.textContent = a[0]; document.body.appendChild(p);
+  const x0 = A.left + A.width / 2, y0 = A.top + A.height / 2, x1 = B.left + B.width / 2, y1 = B.top + B.height / 2, at = (x, y, r, k) => 'translate(' + x + 'px,' + y + 'px) rotate(' + r + 'deg) scale(' + k + ')';
+  p.animate([{ transform: at(x0, y0, 0, .7) }, { transform: at((x0 + x1) / 2, Math.min(y0, y1) - 90, 360, 1.3), offset: .5 }, { transform: at(x1, y1, 720, 1) }], { duration: 650, easing: 'ease-in' }).onfinish = () => { p.remove(); hit(); };
+}
+
+/* ---------- sending your own images: shrunk in the browser, checked by the server, then shown ---------- */
+async function uploadImage(file) { // gives back the image's id, or null (after telling the user why)
+  try {
+    const im = await new Promise((ok, no) => { const x = new Image(); x.onload = () => ok(x); x.onerror = no; x.src = URL.createObjectURL(file); });
+    const k = Math.min(1, 1024 / Math.max(im.width, im.height)), c = document.createElement('canvas'), g = c.getContext('2d'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+    g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(im.src);
+    let blob, q = .82; do { blob = await new Promise(done => c.toBlob(done, 'image/jpeg', q)); q -= .15; } while (blob && blob.size > 350000 && q > .2); // lower the quality until it fits
+    if (!blob || blob.size > 390000) { toast('That image is too big'); return null; }
+    toast('Checking the image…');
+    const r = await fetch('/upload', { method: 'POST', headers: { 'Content-Type': 'image/jpeg', Authorization: 'Bearer ' + token }, body: blob }), j = await r.json();
+    if (!r.ok) { toast(j.error || 'Could not send that image'); return null; }
+    return j.id;
+  } catch { toast('Could not send that image'); return null; }
+}
+$('picBtn').onclick = () => $('picFile').click();
+$('picFile').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  const id = await uploadImage(file); if (id && inRoom) { send({ type: 'chat', pic: id, re: replyTo ? replyTo.id : undefined }); setReply(null); }
+};
+
+/* ---------- notifications: cards in the corner, and a count in the tab name while you are looking elsewhere ---------- */
+let unseen = 0;
+function setTitle() { // inside the about:blank tab only the count shows, so the tab still reads about:blank when there is nothing new
+  const framed = window !== window.top; document.title = (unseen ? '(' + unseen + ') ' : '') + 'Ten Rooms';
+  if (framed) try { window.top.document.title = unseen ? '(' + unseen + ')' : ''; } catch {}
+}
+function notify(text, onClick) {
+  const box = $('notes'), d = document.createElement('div'); d.className = 'note mod'; d.textContent = text;
+  d.onclick = () => { d.remove(); if (onClick) onClick(); }; box.appendChild(d); while (box.children.length > 4) box.firstChild.remove();
+  setTimeout(() => d.remove(), 5000);
+  if (document.hidden) { unseen++; setTitle(); }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && unseen) { unseen = 0; setTitle(); } });
+
+/* ---------- first-visit tips: three bubbles that point at things in the menu ---------- */
+const HINTS = [['openSet', 'Change themes and pfp in settings!'], ['rooms', 'Join public rooms and play games here!'], ['openFeed', 'Make posts here!']]; let hintAt = -1;
+function showHint(i) {
+  document.querySelectorAll('.hinted').forEach(x => x.classList.remove('hinted')); hintAt = i;
+  if (i >= HINTS.length || i < 0) { hintAt = -1; $('hint').classList.add('hidden'); try { localStorage.setItem('hints', 'done'); } catch {} return; }
+  const el = $(HINTS[i][0]), box = $('hint'); el.classList.add('hinted'); el.scrollIntoView({ block: 'center' });
+  $('hintText').textContent = HINTS[i][1]; $('hintNext').textContent = i === HINTS.length - 1 ? 'Got it' : 'Next'; box.classList.remove('hidden');
+  const r = el.getBoundingClientRect(), top = r.bottom + 12 + box.offsetHeight < innerHeight ? r.bottom + 12 : Math.max(8, Math.min(r.top + 20, innerHeight - box.offsetHeight - 8)); // under the thing it points at, or over its top edge if there is no room
+  box.style.top = top + 'px'; box.style.left = Math.max(12, Math.min(innerWidth - box.offsetWidth - 12, r.left)) + 'px';
+}
+function startHints() { if (hintAt < 0 && localStorage.getItem('hints') !== 'done' && !$('lobby').classList.contains('hidden')) setTimeout(() => { if (!$('lobby').classList.contains('hidden')) showHint(0); }, 600); }
+$('hintNext').onclick = () => showHint(hintAt + 1); $('hintSkip').onclick = () => showHint(HINTS.length);
+
+/* ---------- settings: background effects on or off ---------- */
+$('selFx').checked = fxOn; $('selFx').onchange = () => { fxOn = $('selFx').checked; localStorage.setItem('fx', fxOn ? 'on' : 'off'); };
+
+/* ---------- shared by the race and the arcade: which keys mean which direction ---------- */
+const KEYMAP = { a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right', w: 'up', arrowup: 'up', ' ': 'up', s: 'down', arrowdown: 'down' };
+const typing = e => !!(e.target.closest && e.target.closest('input,textarea,select'));
+const fgc = al => 'rgba(' + dotRGB + ',' + al + ')';
+
+/* ---------- platformer race: everyone in the room runs the same course; you simulate yourself and see the others' positions ---------- */
+const raceEl = $('race'), rcv = $('rcv'), rg = rcv.getContext('2d'), RW = 800, RH = 450, PW = 22, PH = 30, held = {};
+let raceSeed = 1, racers = {}, raceState = 'free', raceAt = 0, raceMsg = '', level = [], finishX = 0, runner = null, raceLast = 0, raceAcc = 0, raceSent = 0; // raceState: free roam, count (3-2-1), run, done
+function buildLevel(seed) { // the same seed always builds the same course, so everyone races on identical platforms
+  let a = seed >>> 0, x = 320, y = 360;
+  const rnd = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  level = [{ x: -300, y: 360, w: 620, h: 300 }];
+  while (x < 5200) {
+    const gap = 50 + rnd() * 90, w = 90 + rnd() * 190, ny = Math.max(190, Math.min(390, y + (rnd() - .5) * 150));
+    y = Math.max(ny, y - 70); x += gap; level.push({ x, y, w, h: rnd() < .3 ? 300 : 18 }); x += w; // never more than 70 up: that is what a jump can reach
+  }
+  level.push({ x: x + 70, y: 360, w: 600, h: 300 }); finishX = x + 70 + 260;
+  runner = { x: 40, y: 360 - PH, vx: 0, vy: 0, ground: false, coyote: 0, sx: 40, sy: 360 - PH };
+}
+const touching = (p, b) => p.x < b.x + b.w && p.x + PW > b.x && p.y < b.y + b.h && p.y + PH > b.y;
+function raceStep() { // one sixtieth of a second of running and jumping
+  const p = runner, frozen = raceState === 'count';
+  p.vx = frozen ? 0 : ((held.right ? 1 : 0) - (held.left ? 1 : 0)) * 5;
+  if (!frozen && held.up && p.coyote > 0) { p.vy = -11.5; p.coyote = 0; }
+  if (!held.up && p.vy < -4) p.vy = -4; // letting go early makes a shorter hop
+  p.vy = Math.min(p.vy + .6 + (held.down ? .5 : 0), 14);
+  p.x += p.vx; for (const b of level) if (touching(p, b)) p.x = p.vx > 0 ? b.x - PW : b.x + b.w;
+  p.y += p.vy; p.ground = false;
+  for (const b of level) if (touching(p, b)) {
+    if (p.vy > 0) { p.y = b.y - PH; p.ground = true; p.sx = Math.max(b.x + 4, Math.min(p.x, b.x + b.w - PW - 4)); p.sy = p.y; } else p.y = b.y + b.h;
+    p.vy = 0;
+  }
+  p.coyote = p.ground ? 6 : p.coyote - 1; // a few frames of grace after running off an edge
+  if (p.y > 760) { p.x = p.sx; p.y = p.sy; p.vy = 0; } // fell: back to the last platform you stood on
+  if (raceState === 'run' && p.x > finishX) { raceState = 'done'; send({ type: 'race', act: 'finish' }); }
+}
+function drawRace() {
+  const p = runner, cam = Math.max(-300, Math.min(p.x - RW * .4, finishX + 340 - RW)), now = Date.now();
+  rg.setTransform(2, 0, 0, 2, 0, 0); rg.clearRect(0, 0, RW, RH);
+  rg.fillStyle = fgc(.05); for (let i = 0; i < 12; i++) rg.fillRect(((i * 190 - cam * .3) % (RW + 200) + RW + 200) % (RW + 200) - 100, 60 + (i * 53) % 220, 90, 26); // far clouds, drifting slower than the ground
+  for (const b of level) { if (b.x + b.w < cam || b.x > cam + RW) continue; rg.fillStyle = fgc(.16); rg.fillRect(b.x - cam, b.y, b.w, b.h); rg.fillStyle = accHex; rg.fillRect(b.x - cam, b.y, b.w, 4); }
+  rg.fillStyle = fgc(.9); rg.fillRect(finishX - cam, 360 - 120, 4, 120); rg.fillStyle = accHex; rg.fillRect(finishX - cam + 4, 360 - 120, 46, 28); // finish flag
+  rg.font = '600 12px Manrope,sans-serif'; rg.textAlign = 'center';
+  for (const id in racers) {
+    const o = racers[id]; if (now - o.t > 3000 || !people[id]) { delete racers[id]; continue; }
+    o.dx += (o.x - o.dx) * .3; o.dy += (o.y - o.dy) * .3; // glide toward the last reported spot
+    rg.fillStyle = fgc(.55); rg.fillRect(o.dx - cam, o.dy, PW, PH); rg.fillText(people[id].name, o.dx - cam + PW / 2, o.dy - 6);
+  }
+  rg.fillStyle = accHex; rg.fillRect(p.x - cam, p.y, PW, PH); rg.fillStyle = fgc(1); rg.fillText('You', p.x - cam + PW / 2, p.y - 6);
+  rg.font = '700 26px Unbounded,sans-serif';
+  const left = raceAt - now, text = raceState === 'count' ? String(Math.max(1, Math.ceil(left / 1000))) : raceState === 'run' && left > -900 ? 'GO!' : raceState === 'free' ? 'Press Start race, or just practise' : '';
+  if (text) rg.fillText(text, RW / 2, 70);
+  rg.font = '600 14px Manrope,sans-serif'; rg.textAlign = 'left';
+  if (raceState === 'run') rg.fillText(((now - raceAt) / 1000).toFixed(1) + 's', 14, 24);
+  if (raceMsg) { rg.textAlign = 'center'; rg.fillText(raceMsg, RW / 2, 100); }
+}
+function raceLoop(t) {
+  if (!raceOpen) return;
+  requestAnimationFrame(raceLoop);
+  raceAcc += Math.min(100, t - (raceLast || t)); raceLast = t;
+  if (raceState === 'count' && Date.now() >= raceAt) raceState = 'run';
+  while (raceAcc >= 16.67) { raceStep(); raceAcc -= 16.67; }
+  if (t - raceSent > 80) { raceSent = t; send({ type: 'race', act: 'pos', x: runner.x, y: runner.y }); }
+  drawRace();
+}
+function setRace(open) {
+  if (open === raceOpen) return;
+  raceOpen = open;
+  if (open) {
+    setBoard(false); $('stage').appendChild(raceEl); raceEl.classList.remove('hidden'); buildLevel(raceSeed);
+    raceState = Date.now() < raceAt ? 'count' : 'free'; raceLast = 0; raceAcc = 0; requestAnimationFrame(raceLoop); send({ type: 'race', act: 'open', on: true });
+  } else { raceEl.classList.add('hidden'); for (const k in held) held[k] = false; send({ type: 'race', act: 'open', on: false }); }
+  layout();
+}
+function raceQuit() { raceOpen = false; raceEl.classList.add('hidden'); racers = {}; raceAt = 0; raceMsg = ''; raceState = 'free'; } // leaving the room
+function onRaceStart(m) {
+  raceSeed = m.seed; raceAt = Date.now() + m.wait; raceMsg = '';
+  if (raceOpen) { buildLevel(raceSeed); raceState = 'count'; } else notify('A platformer race is starting', () => { if (inRoom) setRace(true); });
+}
+$('raceGo').onclick = () => send({ type: 'race', act: 'start' }); $('raceX').onclick = () => setRace(false);
+document.querySelectorAll('.rtouch button').forEach(b => { // on-screen buttons for phones
+  b.dataset.sfx = 'none';
+  b.addEventListener('pointerdown', e => { e.preventDefault(); held[b.dataset.k] = true; });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, () => { held[b.dataset.k] = false; }));
+});
+addEventListener('blur', () => { for (const k in held) held[k] = false; });
+addEventListener('keyup', e => { const k = KEYMAP[e.key.toLowerCase()]; if (k) held[k] = false; });
+
+/* ---------- arcade: single-player games in the menu (Snake, 2048, Memory). Best scores are saved in this browser ---------- */
+const acv = $('acv'), ag = acv.getContext('2d'); let arc = '', arcTimer = 0, snake = [], sdir, snext, sfood, sscore = 0, sdead = true, g48 = [], g48score = 0, mem = null;
+const arcInfo = t => { $('aInfo').textContent = t; };
+function best(key, v, low) { // remembers the best score; low: fewer is better
+  const old = +localStorage.getItem('best_' + key) || 0, top = !old ? v : low ? Math.min(old, v || old) : Math.max(old, v);
+  if (top && top !== old) try { localStorage.setItem('best_' + key, top); } catch {}
+  return top;
+}
+function snakeFood() { do sfood = { x: Math.floor(Math.random() * 20), y: Math.floor(Math.random() * 20) }; while (snake.some(c => c.x === sfood.x && c.y === sfood.y)); }
+function snakeDraw() {
+  ag.clearRect(0, 0, 400, 400); ag.fillStyle = accHex; ag.fillRect(sfood.x * 20 + 3, sfood.y * 20 + 3, 14, 14);
+  snake.forEach((c, i) => { ag.fillStyle = fgc(i ? .7 : 1); ag.fillRect(c.x * 20 + 1, c.y * 20 + 1, 18, 18); });
+}
+function snakeTick() {
+  if (arc !== 'snake' || $('arcDlg').classList.contains('hidden')) return clearInterval(arcTimer);
+  sdir = snext; const h = { x: snake[0].x + sdir.x, y: snake[0].y + sdir.y };
+  if (h.x < 0 || h.y < 0 || h.x > 19 || h.y > 19 || snake.some(c => c.x === h.x && c.y === h.y)) {
+    sdead = true; clearInterval(arcTimer); snakeDraw(); return arcInfo('Game over. Score ' + sscore + ' · best ' + best('snake', sscore) + '. Press Space or New game');
+  }
+  snake.unshift(h); if (h.x === sfood.x && h.y === sfood.y) { sscore++; snakeFood(); } else snake.pop();
+  arcInfo('Score ' + sscore + ' · best ' + best('snake', sscore) + ' · WASD or arrows, or swipe'); snakeDraw();
+}
+function snakeNew() { snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }]; sdir = snext = { x: 1, y: 0 }; sscore = 0; sdead = false; snakeFood(); clearInterval(arcTimer); arcTimer = setInterval(snakeTick, 110); snakeDraw(); }
+function g48Add() { const free = g48.map((v, i) => (v ? -1 : i)).filter(i => i >= 0); if (free.length) g48[free[Math.floor(Math.random() * free.length)]] = Math.random() < .9 ? 2 : 4; }
+function g48Draw() {
+  ag.clearRect(0, 0, 400, 400); ag.textAlign = 'center'; ag.textBaseline = 'middle';
+  g48.forEach((v, i) => {
+    const x = (i % 4) * 100 + 6, y = Math.floor(i / 4) * 100 + 6, lvl = v ? Math.log2(v) : 0;
+    ag.fillStyle = v ? 'rgba(' + accRGB + ',' + Math.min(1, .12 + lvl * .08) + ')' : fgc(.07); ag.fillRect(x, y, 88, 88);
+    if (v) { ag.fillStyle = fgc(1); ag.font = '700 ' + (v > 999 ? 24 : 32) + 'px Unbounded,sans-serif'; ag.fillText(v, x + 44, y + 46); }
+  });
+  const stuck = !g48.includes(0) && !g48.some((v, i) => (i % 4 < 3 && v === g48[i + 1]) || (i < 12 && v === g48[i + 4]));
+  arcInfo((stuck ? 'No moves left. ' : '') + 'Score ' + g48score + ' · best ' + best('g48', g48score) + (stuck ? '' : ' · WASD or arrows, or swipe'));
+}
+function g48Move(dx, dy) { // slide every row or column toward the pressed side, merging equal neighbours once
+  let moved = false;
+  for (let line = 0; line < 4; line++) {
+    const idx = [0, 1, 2, 3].map(k => (dx ? line * 4 + (dx > 0 ? 3 - k : k) : (dy > 0 ? 3 - k : k) * 4 + line)), vals = idx.map(i => g48[i]).filter(Boolean);
+    for (let k = 0; k < vals.length - 1; k++) if (vals[k] === vals[k + 1]) { vals[k] *= 2; g48score += vals[k]; vals.splice(k + 1, 1); }
+    idx.forEach((i, k) => { const v = vals[k] || 0; if (g48[i] !== v) moved = true; g48[i] = v; });
+  }
+  if (moved) g48Add(); g48Draw();
+}
+function g48New() { g48 = Array(16).fill(0); g48score = 0; g48Add(); g48Add(); g48Draw(); }
+function memDraw() {
+  const box = $('amem'), left = mem.cards.filter(c => !c.done).length; box.innerHTML = '';
+  mem.cards.forEach((c, i) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.sfx = 'none'; b.className = 'mcard' + (c.up || c.done ? ' up' : ''); b.textContent = c.up || c.done ? c.e : ''; b.setAttribute('aria-label', c.up || c.done ? c.e : 'Hidden card'); b.onclick = () => memFlip(i); box.appendChild(b); });
+  arcInfo(left ? 'Moves ' + mem.moves + ' · find the matching pairs' : 'Done in ' + mem.moves + ' moves · best ' + best('mem', mem.moves, true));
+}
+function memFlip(i) {
+  const c = mem.cards[i]; if (mem.lock || c.up || c.done) return;
+  c.up = true; mem.pick.push(c);
+  if (mem.pick.length === 2) {
+    const [a, b] = mem.pick; mem.pick = []; mem.moves++;
+    if (a.e === b.e) { a.done = b.done = true; a.up = b.up = false; }
+    else { mem.lock = true; setTimeout(() => { a.up = b.up = false; mem.lock = false; if (arc === 'mem') memDraw(); }, 700); } // show a wrong pair for a moment
+  }
+  memDraw();
+}
+function memNew() { const e = ['🍕', '🚀', '🐸', '🎧', '⚽', '🌵', '👻', '🍩']; mem = { cards: [...e, ...e].map(x => ({ e: x, k: Math.random() })).sort((a, b) => a.k - b.k), pick: [], moves: 0, lock: false }; memDraw(); }
+function arcStart(game) {
+  arc = game; clearInterval(arcTimer); acv.classList.toggle('hidden', game === 'mem'); $('amem').classList.toggle('hidden', game !== 'mem');
+  document.querySelectorAll('#arcTabs button').forEach(b => b.classList.toggle('on', b.dataset.g === game));
+  if (game === 'snake') snakeNew(); else if (game === 'g48') g48New(); else memNew();
+}
+function arcDir(k) { // one direction press or swipe
+  const d = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[k]; if (!d) return;
+  if (arc === 'snake') { if (sdead) return snakeNew(); if (d[0] !== -sdir.x || d[1] !== -sdir.y) snext = { x: d[0], y: d[1] }; } // no turning straight back into yourself
+  else if (arc === 'g48') g48Move(d[0], d[1]);
+}
+const closeArc = () => { $('arcDlg').classList.add('hidden'); clearInterval(arcTimer); };
+$('openArc').onclick = () => { $('arcDlg').classList.remove('hidden'); arcStart(arc || 'snake'); };
+$('arcDone').onclick = closeArc; $('arcNew').onclick = () => arcStart(arc); $('arcDlg').onclick = e => { if (e.target === $('arcDlg')) closeArc(); };
+document.querySelectorAll('#arcTabs button').forEach(b => { b.onclick = () => arcStart(b.dataset.g); });
+let swipe = null;
+acv.addEventListener('pointerdown', e => { swipe = [e.clientX, e.clientY]; });
+acv.addEventListener('pointerup', e => {
+  if (!swipe) return; const dx = e.clientX - swipe[0], dy = e.clientY - swipe[1]; swipe = null;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) { if (arc === 'snake' && sdead) snakeNew(); return; }
+  arcDir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up');
+});
+addEventListener('keydown', e => { // WASD, arrows and Space drive whichever game is open
+  if (e.key === 'Escape') closeArc();
+  const k = KEYMAP[e.key.toLowerCase()]; if (!k || typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (!$('arcDlg').classList.contains('hidden')) { e.preventDefault(); if (e.key === ' ') { if (arc === 'snake' && sdead) snakeNew(); } else arcDir(k); }
+  else if (raceOpen) { e.preventDefault(); held[k] = true; }
+});
 
 function toast(t) {
   const old = $('toast'); if (old) old.remove();
   const d = document.createElement('div'); d.id = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 4000);
 }
-connect();
+/* ---------- start-up: the site opens itself inside an about:blank tab ---------- */
+function openBlank() { // a blank tab whose only content is this site in a full-page frame; false if the browser refused
+  let w = null; try { w = window.open('about:blank', '_blank'); } catch {}
+  if (!w) return false;
+  const fr = w.document.createElement('iframe'); fr.src = location.href; fr.allow = 'camera; microphone; display-capture; autoplay; fullscreen; clipboard-write; speaker-selection';
+  fr.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0'; w.document.body.style.cssText = 'margin:0;background:#000;overflow:hidden'; w.document.body.appendChild(fr);
+  return true;
+}
+const stayed = (() => { try { return !!sessionStorage.getItem('stay'); } catch { return false; } })();
+if (window !== window.top || stayed) connect(); // already inside the blank tab's frame, or this tab chose to stay
+else {
+  const opened = () => { $('cloakMsg').textContent = 'Ten Rooms is open in the new tab. You can close this one.'; $('cloakGo').classList.add('hidden'); $('cloakStay').textContent = 'Use it in this tab instead'; };
+  $('cloak').classList.remove('hidden');
+  if (openBlank()) opened(); // most browsers block a tab that opens without a click, so the button is the fallback
+  $('cloakGo').onclick = () => { if (openBlank()) opened(); else toast('Your browser blocked the new tab. Allow pop-ups, or stay in this tab'); };
+  $('cloakStay').onclick = () => { try { sessionStorage.setItem('stay', '1'); } catch {} $('cloak').classList.add('hidden'); connect(); };
+}
 </script>
 </body>
 </html>
