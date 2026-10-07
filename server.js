@@ -3,7 +3,7 @@ const http = require('http'), fs = require('fs'), path = require('path'), crypto
 const { WebSocketServer } = require('ws');
 // Raised whenever the page starts needing something new from the server. index.html carries the number it expects, and tells moderators when
 // the server it reached is older: that means index.html was updated on GitHub but server.js was not. Also shown at /status.
-const VERSION = 24;
+const VERSION = 25;
 
 const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
 // [name, max people]. Small rooms keep full video; bigger rooms get lower per-person video quality (see tune() in index.html).
@@ -416,6 +416,9 @@ const SHGUNS = { pistol: { dmg: 25, gap: 280, n: 1 }, smg: { dmg: 12, gap: 90, n
 // A shooter match counts as running until someone wins, or a minute goes by with no hits. Nobody can start another while one is running.
 const shootLive = r => !!r.shoot && !!r.shoot.live && !r.shoot.over && Date.now() - r.shoot.last < 60000;
 const privates = new Map(); // id -> a room like the ten public ones, plus: private, allowed (usernames that may join), made (when)
+const brawlers = r => [...r.members.values()].filter(p => p.brawling && p.bw); // who is in the sky brawl right now
+const brawlState = r => ({ type: 'brawl-state', live: !!(r.brawl && r.brawl.live), score: r.brawl ? r.brawl.score : {}, pcts: Object.fromEntries(brawlers(r).map(p => [p.id, p.bw.pct])) }); // whether a match is being scored, the score, and everyone's %
+function brawlCheck(r) { if (r.brawl && r.brawl.live && brawlers(r).length < 2) { r.brawl.live = false; brawlers(r).forEach(p => send(p, brawlState(r))); } } // a match cannot go on with one person
 const mazers = r => [...r.members.values()].filter(p => p.mazing); // who is inside the horror maze right now
 function mazeState(r) { // what every player in the maze needs to know about the round; also picks who moves the monster
   const z = r.maze, ids = mazers(r).map(p => p.id); if (!ids.includes(z.host)) z.host = ids[0] || 0;
@@ -442,6 +445,7 @@ function leave(ws) {
   r.members.delete(ws.id); ws.room = null;
   if (ws.mazing) { ws.mazing = false; mazers(r).forEach(p => send(p, { type: 'maze-gone', id: ws.id })); if (r.maze && mazers(r).length) mazers(r).forEach(p => send(p, mazeState(r))); }
   if (ws.hanging) { ws.hanging = false; r.members.forEach(p => p.hanging && send(p, { type: 'hang-gone', id: ws.id })); if (r.tag && r.tag.it === ws.id) { r.tag = null; r.members.forEach(p => p.hanging && send(p, { type: 'hang-tag', it: 0 })); } }
+  if (ws.brawling) { ws.brawling = false; brawlers(r).forEach(p => send(p, { type: 'brawl-gone', id: ws.id })); brawlCheck(r); }
   if (ws.shooting) { ws.shooting = false; r.members.forEach(p => p.shooting && send(p, { type: 'shoot-gone', id: ws.id })); }
   toRoom(r, { type: 'peer-left', id: ws.id });
   say(r, `${ws.name} left`);
@@ -451,7 +455,7 @@ function leave(ws) {
     else if (r.draw.drawer === ws.id) { say(r, ws.name + ' was drawing and left'); drawNext(r); }
   }
   if (r.private && !r.members.size) privates.delete(r.id); // a private call ends when the last person leaves
-  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; r.shoot = null; r.maze = null; r.tag = null; } // empty room resets
+  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; r.shoot = null; r.maze = null; r.tag = null; r.brawl = null; } // empty room resets
   pushLobby();
 }
 
@@ -672,6 +676,33 @@ wss.on('connection', (ws, req) => {
         r.tag = { it: t.id, at: Date.now() }; r.members.forEach(p => p.hanging && send(p, { type: 'hang-tag', it: t.id, name: t.name, by: ws.name }));
       }
       else if (m.act === 'goal' && ws.hanging) { const ms = m.ms | 0; if (ms >= 3000 && ms < 3600000 && !slow(ws, 'lastGoal', 5000)) others({ type: 'hang-note', text: ws.name + ' finished the parkour in ' + (ms / 1000).toFixed(1) + 's' }); }
+    } else if (m.type === 'brawl' && ws.room) { // sky brawl: a 3D fight on a floating island. Everyone moves themselves; the damage (%) and the score are kept here
+      const r = ws.room, now = Date.now(), num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0), all = msg => brawlers(r).forEach(p => send(p, msg)), others = msg => brawlers(r).forEach(p => p !== ws && send(p, msg));
+      if (m.act === 'open') {
+        ws.brawling = !!m.on;
+        if (!ws.brawling) { others({ type: 'brawl-gone', id: ws.id }); brawlCheck(r); return; }
+        ws.bw = { pct: 0, safe: now + 2500, by: 0, at: 0 }; send(ws, brawlState(r)); // safe: they cannot be hit until then. by, at: who hit them last, and when
+        if (!slow(ws, 'lastBrawlIn', 20000)) r.members.forEach(p => { if (!p.brawling) send(p, { type: 'brawl-open', name: ws.name }); }); // invite the rest of the room
+      } else if (!ws.brawling || !ws.bw) return;
+      else if (m.act === 'pos') { if (!slow(ws, 'lastBPos', 70)) others({ type: 'brawl-pos', id: ws.id, x: num(m.x), y: num(m.y), z: num(m.z), r: num(m.r), a: m.a ? 1 : 0, pct: ws.bw.pct, safe: ws.bw.safe > now ? 1 : 0 }); }
+      else if (m.act === 'hit') { // a punch landed. The person hit is told their new % and works out their own knock-back
+        const t = r.members.get(m.to); if (!t || t === ws || !t.brawling || !t.bw || t.bw.safe > now || slow(ws, 'punch' + t.id, 350)) return;
+        ws.bw.safe = 0; t.bw.pct = Math.min(300, t.bw.pct + (m.big ? 18 : 11)); t.bw.by = ws.id; t.bw.at = now; // throwing a punch ends your own protection
+        send(t, { type: 'brawl-hit', by: ws.id, pct: t.bw.pct, big: m.big ? 1 : 0 });
+      } else if (m.act === 'fell') { // they dropped off the island: back to 0%, and in a match a point for whoever hit them last
+        if (slow(ws, 'lastFell', 1500)) return;
+        const k = now - ws.bw.at < 8000 ? r.members.get(ws.bw.by) : null, by = k && k.brawling ? k : null, b = r.brawl && r.brawl.live ? r.brawl : null;
+        ws.bw = { pct: 0, safe: now + 3200, by: 0, at: 0 };
+        if (by && b) b.score[by.id] = (b.score[by.id] || 0) + 1;
+        all({ type: 'brawl-ko', id: ws.id, name: ws.name, by: by ? by.id : 0, byName: by ? by.name : '', score: r.brawl ? r.brawl.score : {}, live: !!b }); // shown in the game's own readout, never written into the chat
+        if (by && b && b.score[by.id] >= 5) { b.live = false; say(r, by.name + ' won the sky brawl'); all({ ...brawlState(r), winner: by.name }); }
+      } else if (m.act === 'start') {
+        if (r.brawl && r.brawl.live && now - r.brawl.at < 600000) return err(ws, 'A match is already running. Wait for it to finish');
+        if (brawlers(r).length < 2) return err(ws, 'A match needs at least 2 people in the brawl');
+        if (slow(ws, 'lastBrawlGo', 5000)) return;
+        r.brawl = { live: true, score: {}, at: now }; brawlers(r).forEach(p => { p.bw = { pct: 0, safe: now + 2500, by: 0, at: 0 }; });
+        all({ ...brawlState(r), go: ws.name });
+      }
     } else if (m.type === 'maze' && ws.room) { // horror maze: the round lives here; the host's browser moves the monster and everyone reports their own position
       const r = ws.room, num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0), all = msg => mazers(r).forEach(p => send(p, msg)), others = msg => mazers(r).forEach(p => p !== ws && send(p, msg));
       if (m.act === 'open') {

@@ -409,6 +409,9 @@ button:active:not(:disabled){transform:scale(.95)}
 #mcv{width:100%;height:100%;display:block;border-radius:12px;touch-action:none;cursor:crosshair}
 #mmap{position:absolute;right:16px;top:16px;width:min(168px,30%);height:auto;aspect-ratio:1;border:1px solid rgb(255 255 255/.25);border-radius:8px;opacity:.88;pointer-events:none}
 .setnote{margin:0;font-size:.8rem;opacity:.7}
+#brawl .bwrap{position:relative;padding:8px}
+#fcv{width:100%;height:100%;display:block;border-radius:12px;touch-action:none;cursor:grab}
+#brawlPct{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);font-size:2.4rem;font-weight:800;line-height:1;color:#fff;text-shadow:0 2px 0 #000,0 0 12px rgb(0 0 0/.8);pointer-events:none}
 #hideView{position:absolute;inset:8px;border-radius:12px;pointer-events:none;background:radial-gradient(ellipse at center,transparent 30%,rgb(0 0 0/.85) 100%),repeating-linear-gradient(180deg,rgb(12 7 3/.97) 0 24px,transparent 24px 36px)} /* the slats of the closet door you are looking out through */
 #skill{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);width:min(440px,72%);height:24px;border:2px solid #fff;border-radius:6px;background:rgb(0 0 0/.8);pointer-events:none;overflow:hidden}
 #skillZone{position:absolute;top:0;bottom:0;background:#2dff88}
@@ -719,6 +722,16 @@ button:active:not(:disabled){transform:scale(.95)}
   </div>
   <div class="bwrap"><canvas id="mcv"></canvas><div id="hideView" class="hidden"></div><canvas id="mmap" width="168" height="168"></canvas><div id="mzHud" class="hud"></div><div id="skill" class="hidden"><i id="skillZone"></i><b id="skillPin"></b></div></div>
 </div>
+<div id="brawl" class="boardmod mod hidden" role="region" aria-label="Sky brawl">
+  <div class="bh">
+    <h3>Sky brawl</h3>
+    <span class="bsz">WASD to move, Space to jump (once more in the air), click or F to punch, Shift to dash. Every hit raises their %: the higher it is, the further they fly. Knock them off the island</span>
+    <span style="flex:1"></span>
+    <button type="button" class="solid" id="brawlGo">Start match</button>
+    <button type="button" class="ghost" id="brawlX">Close</button>
+  </div>
+  <div class="bwrap"><canvas id="fcv"></canvas><div id="brawlHud" class="hud"></div><div id="brawlPct"></div></div>
+</div>
 <div id="scare" class="hidden"><canvas id="scareCv" width="800" height="450"></canvas></div>
 <div id="callBar" class="mod hidden" role="alert"><span id="callText"></span><button type="button" class="solid" id="callYes">Accept</button><button type="button" class="ghost" id="callNo">Decline</button></div>
 <div id="rulesDlg" class="hidden">
@@ -770,7 +783,7 @@ button:active:not(:disabled){transform:scale(.95)}
 
 <script>
 const $ = id => document.getElementById(id);
-let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, dotRGB = '255,255,255', accRGB = '45,255,136', accHex = '#2dff88', fxOn = localStorage.getItem('fx') !== 'off', shootOpen = false, hangOpen = false, mazeOpen = false;
+let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, dotRGB = '255,255,255', accRGB = '45,255,136', accHex = '#2dff88', fxOn = localStorage.getItem('fx') !== 'off', shootOpen = false, hangOpen = false, mazeOpen = false, fightOpen = false;
 
 /* ---------- floating dot web (always running; slower if reduced motion is on) ---------- */
 (() => {
@@ -789,7 +802,7 @@ let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, 
   addEventListener('pointerdown', e => { if (fxOn && rings.length < 6) rings.push({ x: e.clientX, y: e.clientY, r: 6 }); }); // every click sends out a ring
   size();
   (function tick() {
-    if (shootOpen || hangOpen || mazeOpen) return void requestAnimationFrame(tick); // paused while a game is on screen: the game gets the frame time
+    if (shootOpen || hangOpen || mazeOpen || fightOpen) return void requestAnimationFrame(tick); // paused while a game is on screen: the game gets the frame time
     cx.clearRect(0, 0, W, H);
     if (fxOn) { // the loud part: drifting glows in the theme colours, shooting stars and click rings
       time += .004 * speed;
@@ -829,7 +842,7 @@ let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, 
 /* ---------- views + name ---------- */
 function show(v) { ['auth', 'lobby', 'feed', 'prof', 'call'].forEach(x => $(x).classList.toggle('hidden', x !== v)); $('nav').classList.toggle('hidden', v === 'auth' || v === 'call'); [['feedBack', 'lobby'], ['openFeed', 'feed'], ['openProf', 'prof']].forEach(([id, view]) => $(id).classList.toggle('on', v === view)); if (v !== 'lobby' && hintAt >= 0) showHint(-1); } // leaving the menu ends the tips
 // Accounts: you log in with a username and password. The server answers with a token that keeps this browser logged in.
-const NEED_SERVER = 24; let serverOld = false; // the server version this page was written for; serverOld: the server we reached is older than that
+const NEED_SERVER = 25; let serverOld = false; // the server version this page was written for; serverOld: the server we reached is older than that
 let acct = null, token = localStorage.getItem('token') || '', authMode = 'login'; // acct: { code (your @username), display, bio, av }
 // Settings follow your account: theme, font, background, sounds, panel sizes, the "Join with" switches, your gun, the volumes you set for people and whether you have seen the tips.
 // Which camera, mic and speaker you picked stays on this device and is never sent.
@@ -927,6 +940,12 @@ function handle(m) {
   else if (m.type === 'maze-gone') { if (mzMates[m.id] && Z) { Z.scene.remove(mzMates[m.id].g); delete mzMates[m.id]; } }
   else if (m.type === 'maze-open') { if (!mazeOpen) invite(m.name + ' went into the horror maze', () => setMaze(true)); }
   else if (m.type === 'maze-noise') onMazeNoise(m);
+  else if (m.type === 'brawl-state') onBrawlState(m);
+  else if (m.type === 'brawl-pos') onBrawlPos(m);
+  else if (m.type === 'brawl-hit') onBrawlHit(m);
+  else if (m.type === 'brawl-ko') onBrawlKo(m);
+  else if (m.type === 'brawl-gone') { if (ftMates[m.id] && FT) { FT.scene.remove(ftMates[m.id].g); delete ftMates[m.id]; } }
+  else if (m.type === 'brawl-open') { if (!fightOpen) invite(m.name + ' is in the sky brawl', () => setFight(true)); }
   else if (m.type === 'call-room') { clearTimeout(callWait); if (inRoom) { send({ type: 'leave' }); exitRoom(); } closeFr(); joinRoom(m.room); toast('Calling… they come in when they accept'); } // the private call you just started
   else if (m.type === 'call-invite') onCallInvite(m);
   else if (m.type === 'hang-pos') onHangPos(m);
@@ -1028,13 +1047,16 @@ async function joinRoom(id) {
     send({ type: 'join', room: id });
   } finally { joining = false; }
 }
+function parkGames() { // a game's panel sits inside the stage while it is open. Before the stage is emptied the panels go back to the page itself, hidden, so they and the buttons and readouts inside them are never thrown away
+  [boardEl, shEl, hgEl, mzEl, ftEl].forEach(el => { el.classList.add('hidden'); document.body.appendChild(el); });
+}
 function onJoined(m) {
   inRoom = true; roomMax = m.max || 6; show('call');
-  $('roomTitle').textContent = m.name; roomId = m.room; shSeed = m.shoot || 0; $('stage').innerHTML = ''; $('log').innerHTML = ''; setReply(null); drawKick(m.vote || { over: true });
+  $('roomTitle').textContent = m.name; roomId = m.room; shSeed = m.shoot || 0; parkGames(); $('stage').innerHTML = ''; $('log').innerHTML = ''; setReply(null); drawKick(m.vote || { over: true });
   m.chat.forEach(x => addMsg(x));
   addTile('me', myName, local, true, { avatar: myAvatar });
   updateBtns(); pin(null); $('topicIn').value = m.topic || '';
-  strokes = (m.board || []).map(x => ({ ...x })); redraw(); onDrawRound(m.draw);
+  strokes = (m.board || []).map(x => ({ ...x })); redraw(); try { onDrawRound(m.draw); } catch (e) { console.warn(e); } // whatever happens here, the people in the room still get connected below
   // the newcomer sends offers to everyone already inside
   m.peers.forEach((p, i) => { // stagger the connections so a full room doesn't hit the browser all at once
     addTile(p.id, p.name, null, false, p);
@@ -1103,9 +1125,14 @@ function dropPeer(id) {
   updateCount();
 }
 function exitRoom() {
-  drawKick({ over: true }); stageQuit(); inRoom = false; Object.keys(peers).forEach(dropPeer); unmeter('me'); boardOpen = false; boardEl.classList.add('hidden'); strokes = []; cur = null; pend = []; redraw();
-  sharing = null; screenAudio = null; $('share').textContent = 'Share screen'; pin(null); Object.keys(people).forEach(k => delete people[k]); renderPeople(); Object.keys(typers).forEach(k => setTyper(k, '', false));
-  if (local) local.getTracks().forEach(t => t.stop());
+  const safe = fn => { try { fn(); } catch (e) { console.warn('leaving the room:', e); } }; // each piece of clean-up runs on its own: one that fails must never leave you stuck in the room
+  inRoom = false;
+  safe(() => drawKick({ over: true })); safe(stageQuit);
+  Object.keys(peers).forEach(id => safe(() => dropPeer(id))); safe(() => unmeter('me'));
+  safe(() => { boardOpen = false; boardEl.classList.add('hidden'); strokes = []; cur = null; pend = []; redraw(); });
+  safe(() => { sharing = null; screenAudio = null; $('share').textContent = 'Share screen'; pin(null); });
+  safe(() => { Object.keys(people).forEach(k => delete people[k]); renderPeople(); Object.keys(typers).forEach(k => setTyper(k, '', false)); });
+  safe(() => { if (local) local.getTracks().forEach(t => t.stop()); });
   local = null; $('mic').textContent = 'Mute mic'; $('cam').textContent = 'Stop camera';
   $('mic').classList.remove('off'); $('cam').classList.remove('off');
   if (!$('auth').classList.contains('hidden')) return;
@@ -1500,7 +1527,7 @@ let boardOpen = false, strokes = [], brush = '#ffffff', mySeq = 0, cur = null, p
 const boardEl = $('board'), bcv = $('bcv'), bx = bcv.getContext('2d');
 const SW = ['#ffffff', '#2dff88', '#ffd23f', '#ff5fa2', '#3fd0ff', '#0b0b0b']; // last one is the eraser
 function layout() {
-  const st = $('stage'); const big = boardOpen || shootOpen || hangOpen || mazeOpen; st.classList.toggle('pinned', !!pinId || big); st.classList.toggle('boardopen', big); // one big thing at a time takes the main slot
+  const st = $('stage'); const big = boardOpen || shootOpen || hangOpen || mazeOpen || fightOpen; st.classList.toggle('pinned', !!pinId || big); st.classList.toggle('boardopen', big); // one big thing at a time takes the main slot
   if (sideGrip.parentNode !== st) st.appendChild(sideGrip); // the stage is emptied on every join, so put the handle back
   sideGrip.classList.toggle('hidden', !pinId && !big);
 }
@@ -1553,7 +1580,7 @@ function setBoard(open) {
   else boardEl.classList.add('hidden');
   layout();
 }
-$('boardBtn').onclick = () => { if (!boardOpen) { setShoot(false); setHang(false); setMaze(false); } setBoard(!boardOpen); }; $('bclose').onclick = () => setBoard(false);
+$('boardBtn').onclick = () => { if (!boardOpen) { setShoot(false); setHang(false); setMaze(false); setFight(false); } setBoard(!boardOpen); }; $('bclose').onclick = () => setBoard(false);
 $('bclear').onclick = () => { if (drawing && drawing.drawer !== myId) return toast('Only ' + drawing.name + ' can clear the board this round'); strokes = []; redraw(); send({ type: 'board-clear' }); };
 const bpt = e => { const r = bcv.getBoundingClientRect(); return [Math.max(0, Math.min(1000, Math.round((e.clientX - r.left) / r.width * 1000))), Math.max(0, Math.min(625, Math.round((e.clientY - r.top) / r.height * 625)))]; };
 function extend(x, y) { const from = cur.pts.length; cur.pts.push(x, y); pend.push(x, y); drawStroke(cur, from); }
@@ -1729,13 +1756,13 @@ function drawOpenGame(el, g, mid) { // games the whole room plays at once: no se
   }
 }
 const gameBar = $('gameBar');
-[['', 'On the stage'], ['hang3d', '3D hangout'], ['maze', 'Horror maze'], ['shoot', 'Shooter arena'], ['draw', 'Draw and guess'], ['', 'In chat'], ['ttt', 'Tic-Tac-Toe'], ['c4', 'Connect Four'], ['rps', 'Rock Paper Scissors'], ['num', 'Guess the number'],
+[['', 'On the stage'], ['hang3d', '3D hangout'], ['brawl', 'Sky brawl'], ['maze', 'Horror maze'], ['shoot', 'Shooter arena'], ['draw', 'Draw and guess'], ['', 'In chat'], ['ttt', 'Tic-Tac-Toe'], ['c4', 'Connect Four'], ['rps', 'Rock Paper Scissors'], ['num', 'Guess the number'],
   ['scram', 'Word scramble'], ['math', 'Maths race'], ['react', 'Reaction race'], ['hang', 'Hangman'], ['', 'Quick'], ['roll', 'Roll a dice'], ['flip', 'Flip a coin']].forEach(([k, label]) => {
   if (!k) { const h = document.createElement('div'); h.className = 'gamesec'; h.textContent = label; return gameBar.appendChild(h); } // a heading, not a game
   const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
   b.onclick = () => {
     gameBar.classList.add('hidden');
-    if (k === 'maze') return setMaze(true); if (k === 'shoot') return setShoot(true); if (k === 'hang3d') return setHang(true);
+    if (k === 'maze') return setMaze(true); if (k === 'shoot') return setShoot(true); if (k === 'hang3d') return setHang(true); if (k === 'brawl') return setFight(true);
     if (k === 'draw') return send({ type: 'draw', act: 'start' }); // the server answers by opening the board for everyone
     send(GAMES[k] ? { type: 'game', kind: k } : { type: 'luck', kind: k }); tab('chat');
   };
@@ -1885,7 +1912,8 @@ function dmLine(d) { // one message in the open conversation: text, a GIF or an 
 }
 function openDm(code) {
   dmOpen = code; delete unread[code]; $('frHome').classList.add('hidden'); $('frChat').classList.remove('hidden');
-  $('frWho').textContent = nameOf(code); $('frCall').classList.toggle('hidden', !pres[code]); // you can only ring someone who is online $('frLog').innerHTML = ''; (dms[code] || []).forEach(dmLine); frBadge(); $('frText').focus();
+  $('frWho').textContent = nameOf(code); $('frCall').classList.toggle('hidden', !pres[code]); // you can only ring someone who is online
+  $('frLog').innerHTML = ''; (dms[code] || []).forEach(dmLine); frBadge(); $('frText').focus(); // start from an empty window and draw only this person's messages
 }
 function onDm(m) { // m.from is set on messages to you; your own come back with m.to so every open tab shows them
   const code = m.from || m.to; if (!friends.some(f => f.code === code)) return;
@@ -2183,7 +2211,9 @@ $('joinX').onclick = () => $('joinBar').classList.add('hidden');
 const RW = 800, RH = 450; // the shooter's playing field, in its own units
 let shLive = false; // a shooter match is running right now, so Start is refused
 function stageQuit() { // leaving the room closes whichever game was open
-  shootOpen = false; shLive = false; hangQuit(); mazeQuit(); onDrawRound(null); shEl.classList.add('hidden'); $('joinBar').classList.add('hidden');
+  shootOpen = false; shLive = false;
+  [hangQuit, mazeQuit, fightQuit, () => onDrawRound(null)].forEach(fn => { try { fn(); } catch (e) { console.warn('closing a game:', e); } }); // each on its own, so a game that fails to close cannot stop you leaving
+  shEl.classList.add('hidden'); $('joinBar').classList.add('hidden');
   foes = {}; shots = []; shScore = {}; shMsg = '';
 }
 
@@ -2325,7 +2355,7 @@ function setShoot(open) {
   if (open === shootOpen) return;
   shootOpen = open;
   if (open) {
-    setBoard(false); setHang(false); setMaze(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(shEl); shEl.classList.remove('hidden');
+    setBoard(false); setHang(false); setMaze(false); setFight(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(shEl); shEl.classList.remove('hidden');
     buildArena(shSeed); spawnHero(); shots = []; sparks = []; shLast = 0; shAcc = 0; requestAnimationFrame(shootLoop); send({ type: 'shoot', act: 'open', on: true }); // the server answers with the room's real map
   } else { shEl.classList.add('hidden'); aim.down = false; for (const k in held) held[k] = false; send({ type: 'shoot', act: 'open', on: false }); }
   layout();
@@ -2507,14 +2537,14 @@ function setHang(open) {
   if (open === hangOpen) return;
   hangOpen = open; keysOff();
   if (open) {
-    setBoard(false); setShoot(false); setMaze(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(hgEl); hgEl.classList.remove('hidden'); layout();
+    setBoard(false); setShoot(false); setMaze(false); setFight(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(hgEl); hgEl.classList.remove('hidden'); layout();
     loadThree().then(() => { if (!hangOpen) return; if (!H) hangInit(); hangLast = 0; requestAnimationFrame(hangLoop); send({ type: 'hang', act: 'open', on: true }); },
       () => { toast('The 3D hangout could not load. Check your connection and try again'); setHang(false); });
   } else { hgEl.classList.add('hidden'); send({ type: 'hang', act: 'open', on: false }); layout(); }
 }
 function hangQuit() { hangOpen = false; tagIt = 0; hgEl.classList.add('hidden'); mates = {}; if (H) { H.ren.dispose(); H = null; } } // leaving the room: the next room gets its own park
-addEventListener('keydown', e => { // movement keys for the hangout and the maze
-  if (!(hangOpen || mazeOpen)) return;
+addEventListener('keydown', e => { // movement keys for the hangout, the maze and the sky brawl
+  if (!(hangOpen || mazeOpen || fightOpen)) return;
   if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return keysOff(); // typing in chat, or a browser shortcut: let go of everything
   hk[e.code] = true; if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   if (e.code === 'KeyE' && H && hangOpen) H.dance = performance.now() + 3000;
@@ -2533,6 +2563,137 @@ function onHangTag(m) { // the server's word on who is "it" (0: the game is over
 }
 $('hangTag').onclick = () => send({ type: 'hang', act: 'tag-start' });
 $('hangX').onclick = () => setHang(false);
+
+/* ---------- sky brawl: a 3D fight on a floating island. Every punch raises the other person's %, and the higher it is the further the next hit throws them. Knock them off the edge to score ---------- */
+// You move your own figure. When your punch reaches someone you tell the server, which keeps everyone's % and the score; the person who was hit works out their own knock-back.
+const ftEl = $('brawl'), fcv = $('fcv'), ftHud = $('brawlHud'), ftPct = $('brawlPct'), ISLE = 13, PADS = [[17.5, 0], [-17.5, 0], [0, 17.5], [0, -17.5]], PADR = 2.3; // ISLE: the island's radius. PADS: four small islands just off its edge, PADR across
+let FT = null, ftMates = {}, ftLast = 0, ftSent = 0, ftLive = false, ftScore = {}, ftNote = '', ftNoteAt = 0, ftDrag = null; // FT: the scene, camera, renderer and your own figure. ftLive: a match is being scored
+const ftOver = (x, z) => Math.hypot(x, z) < ISLE || PADS.some(q => Math.hypot(x - q[0], z - q[1]) < PADR); // is there ground under this spot
+function ftInit() {
+  const T = THREE, scene = new T.Scene(), cam = new T.PerspectiveCamera(60, 16 / 9, .1, 260), ren = new T.WebGLRenderer({ canvas: fcv, antialias: true, powerPreference: 'high-performance' }), rnd = seeded(77);
+  const put = (geo, col, x, y, z, basic) => { const m = new T.Mesh(geo, basic ? new T.MeshBasicMaterial({ color: col }) : new T.MeshLambertMaterial({ color: col })); m.position.set(x, y, z); scene.add(m); return m; };
+  const pr = Math.min(window.devicePixelRatio || 1, 1.25); ren.setPixelRatio(pr); scene.background = new T.Color(0x2a1f4d); scene.fog = new T.Fog(0x2a1f4d, 55, 180);
+  scene.add(new T.HemisphereLight(0xffe2c4, 0x35285e, 1)); const sun = new T.DirectionalLight(0xffc48a, .8); sun.position.set(-20, 30, 12); scene.add(sun);
+  put(new T.CylinderGeometry(ISLE, ISLE - 3.5, 4, 40), 0x7a5a3c, 0, -2, 0); // the island: earth underneath, grass on top
+  put(new T.CircleGeometry(ISLE, 40), 0x63b35a, 0, .02, 0).rotation.x = -Math.PI / 2;
+  put(new T.RingGeometry(ISLE - .5, ISLE, 40), 0xff5a4d, 0, .04, 0, true).rotation.x = -Math.PI / 2; // a red rim, so you can see where the edge is
+  put(new T.CircleGeometry(3, 24), 0xe9d9a6, 0, .03, 0).rotation.x = -Math.PI / 2; // the sandy middle, where you drop back in
+  PADS.forEach(q => { put(new T.CylinderGeometry(PADR, PADR - 1, 1.6, 18), 0x7a5a3c, q[0], -.8, q[1]); put(new T.CircleGeometry(PADR, 18), 0x8fd17f, q[0], .02, q[1]).rotation.x = -Math.PI / 2; });
+  for (let i = 0; i < 22; i++) { const a = rnd() * 6.283, d = 24 + rnd() * 70, c = put(new T.SphereGeometry(3 + rnd() * 5, 8, 6), 0xf4ecff, Math.cos(a) * d, -14 - rnd() * 22, Math.sin(a) * d, true); c.scale.y = .35; } // clouds, far below
+  const dots = []; for (let i = 0; i < 140; i++) { const a = rnd() * 6.283, e = .08 + rnd() * 1.3; dots.push(Math.cos(a) * Math.cos(e) * 200, Math.sin(e) * 200, Math.sin(a) * Math.cos(e) * 200); } // stars
+  const sky = new T.BufferGeometry(); sky.setAttribute('position', new T.Float32BufferAttribute(dots, 3)); scene.add(new T.Points(sky, new T.PointsMaterial({ color: 0xffffff, size: 1.4, fog: false })));
+  scene.traverse(o => { o.matrixAutoUpdate = false; o.updateMatrix(); }); // nothing above ever moves, so its position is worked out once
+  const me = hangFigure(new T.Color(accHex), 'You'); scene.add(me);
+  FT = { scene, cam, ren, me, yaw: 0, pitch: .38, yawT: 0, pitchT: .38, dist: 9, vy: 0, kx: 0, kz: 0, jumps: 0, spWas: false, face: 0, punchAt: -9999, dashAt: -9999, dx: 0, dz: 1, pct: 0, safe: 0, fell: 0, w: 0, h: 0, pr, n: 0, acc: 0, fps: 60, live: false }; // live: the drawing loop is already running
+  ftDrop(); ftDrawPct();
+}
+function ftDrop() { // you come back in from above the middle of the island
+  const a = Math.random() * 6.283, d = Math.random() * 2.5; FT.me.position.set(Math.cos(a) * d, 7, Math.sin(a) * d); FT.vy = 0; FT.kx = FT.kz = 0; FT.jumps = 0; FT.fell = 0;
+}
+function ftDrawPct() { if (!FT) return; ftPct.textContent = FT.pct + '%'; ftPct.style.color = FT.pct ? 'hsl(' + Math.max(0, 50 - FT.pct * .4) + ',100%,60%)' : '#fff'; } // your own %, from white through yellow to red
+function ftSetPct(o, pct) { // the % floating over someone else's head, redrawn only when it changes
+  if (o.pct === pct) return; o.pct = pct;
+  if (o.pl) { o.g.remove(o.pl); o.pl.material.map.dispose(); o.pl.material.dispose(); }
+  o.pl = hangLabel(pct + '%'); o.pl.position.y = 3.2; o.pl.scale.set(2.6, .5, 1); o.g.add(o.pl);
+}
+function ftPose(g, moving, dt, punch, safe) { // the walk, a straight punch with the right arm, and a blink while someone cannot be hit yet
+  hangPose(g, moving, false, dt, false, -1);
+  if (punch >= 0) g.userData.arms[1].rotation.x = -1.55 * Math.sin(punch * Math.PI);
+  g.visible = !safe || Math.floor(performance.now() / 110) % 2 === 0;
+}
+function ftPunch(t) { // punch: everyone within reach is hit, and you turn to face the nearest of them. A punch thrown just after a dash hits harder
+  if (!FT || t - FT.punchAt < 420) return;
+  const p = FT.me.position, big = t - FT.dashAt < 500, near = Object.keys(ftMates).map(id => ({ id: +id, o: ftMates[id], d: Math.hypot(ftMates[id].x - p.x, ftMates[id].y - p.y, ftMates[id].z - p.z) })).filter(x => x.d < 2.9 && !x.o.safe).sort((a, b) => a.d - b.d);
+  FT.punchAt = t; if (sfxOn) try { hiss(.1, .1, 0, 1800); } catch {}
+  if (near.length) { FT.face = Math.atan2(near[0].o.x - p.x, near[0].o.z - p.z); tone(big ? 140 : 220, .09, 'square', .07, .6); } // a thump when it connects
+  near.forEach(x => send({ type: 'brawl', act: 'hit', to: x.id, big: big ? 1 : 0 })); // the server adds the damage and tells them
+}
+function onBrawlHit(m) { // someone's punch reached you: the server says what your % is now, and you fly away from them
+  if (!FT || !fightOpen) return;
+  const p = FT.me.position, o = ftMates[m.by], dx = o ? p.x - o.x : 1, dz = o ? p.z - o.z : 0, d = Math.hypot(dx, dz) || 1, v = (m.big ? 10 : 6.5) + m.pct * .15;
+  FT.pct = m.pct | 0; FT.kx = dx / d * v; FT.kz = dz / d * v; FT.vy = 5 + m.pct * .035; FT.jumps = Math.min(FT.jumps, 1); // you always get one jump back to try to save yourself
+  tone(m.big ? 110 : 170, .14, 'sawtooth', .09, .5); ftDrawPct();
+}
+function ftLoop(t) {
+  if (!fightOpen || !FT) { if (FT) FT.live = false; return; }
+  requestAnimationFrame(ftLoop);
+  const dt = Math.min(.05, (t - (ftLast || t)) / 1000), me = FT.me, p = me.position, w = fcv.clientWidth, h = fcv.clientHeight; ftLast = t;
+  if (w && h && (w !== FT.w || h !== FT.h)) { FT.w = w; FT.h = h; FT.ren.setSize(w, h, false); FT.cam.aspect = w / h; FT.cam.updateProjectionMatrix(); } // follow the panel's size
+  FT.n++; FT.acc += dt; if (FT.n >= 90) { // every 90 frames: if it is running under 40 fps, draw at a lower resolution
+    FT.fps = Math.round(FT.n / FT.acc); FT.n = 0; FT.acc = 0;
+    if (FT.fps < 40 && FT.pr > .55) { FT.pr -= .25; FT.ren.setPixelRatio(FT.pr); FT.w = 0; }
+  }
+  if (document.hasFocus && !document.hasFocus()) keysOff(); // the page is not being typed into right now, so no key can really be held
+  FT.yaw += (FT.yawT - FT.yaw) * Math.min(1, dt * 14); FT.pitch += (FT.pitchT - FT.pitch) * Math.min(1, dt * 14); // the camera eases to where you dragged it
+  const fwd = (hk.KeyW || hk.ArrowUp ? 1 : 0) - (hk.KeyS || hk.ArrowDown ? 1 : 0), side = (hk.KeyD || hk.ArrowRight ? 1 : 0) - (hk.KeyA || hk.ArrowLeft ? 1 : 0), moving = !!(fwd || side);
+  let mx = 0, mz = 0;
+  if (moving) { mx = -Math.sin(FT.yaw) * fwd + Math.cos(FT.yaw) * side; mz = -Math.cos(FT.yaw) * fwd - Math.sin(FT.yaw) * side; const len = Math.hypot(mx, mz) || 1; mx /= len; mz /= len; FT.face = Math.atan2(mx, mz); } // W walks away from the camera, A and D step sideways
+  if ((hk.ShiftLeft || hk.ShiftRight) && t - FT.dashAt > 2200) { // dash: a short burst the way you are going. It also gets you back when you have been knocked past the edge
+    FT.dashAt = t; FT.dx = moving ? mx : Math.sin(FT.face); FT.dz = moving ? mz : Math.cos(FT.face); FT.vy = Math.max(FT.vy, 3); if (sfxOn) try { hiss(.15, .08, 0, 900); } catch {}
+  }
+  if (t - FT.dashAt < 180) { p.x += FT.dx * 21 * dt; p.z += FT.dz * 21 * dt; } else if (moving) { p.x += mx * 6.5 * dt; p.z += mz * 6.5 * dt; }
+  me.rotation.y = turnTo(me.rotation.y, FT.face, dt * 14);
+  const drag = Math.max(0, 1 - dt * 2.6); p.x += FT.kx * dt; p.z += FT.kz * dt; FT.kx *= drag; FT.kz *= drag; // knock-back from a punch, fading out
+  const space = !!hk.Space, press = space && !FT.spWas; FT.spWas = space; // a jump counts once per press: one from the ground and one more in the air
+  if (press && FT.jumps < 2) { FT.vy = FT.jumps ? 7 : 7.8; FT.jumps++; tone(FT.jumps === 2 ? 620 : 480, .05, 'sine', .03, 1.4); }
+  const y0 = p.y; FT.vy -= 20 * dt; p.y += FT.vy * dt;
+  if (ftOver(p.x, p.z) && FT.vy <= 0 && p.y <= 0 && (y0 >= -.05 || p.y > -.9)) { p.y = 0; FT.vy = 0; FT.jumps = 0; } // landed (a small step up at the rim counts, so a near miss still catches the edge)
+  else if (p.y < -.9 && p.y > -4) { const d = Math.hypot(p.x, p.z), rim = ISLE - 3.5 * (-p.y / 4) + .35; if (d < rim && d > .001) { p.x *= rim / d; p.z *= rim / d; } } // under the rim the island's side is solid
+  if (p.y < -16 && !FT.fell) { FT.fell = t; send({ type: 'brawl', act: 'fell' }); tone(150, .4, 'sawtooth', .08, .3); } // off the island: the server gives the point to whoever hit you last
+  if (FT.fell && t - FT.fell > 700) ftDrop();
+  if (hk.KeyF) ftPunch(t);
+  const punch = t - FT.punchAt < 240 ? (t - FT.punchAt) / 240 : -1;
+  ftPose(me, moving && p.y === 0, dt, punch, t < FT.safe);
+  for (const id in ftMates) { // everyone else glides toward the last spot they reported
+    const o = ftMates[id], g = o.g; if (Date.now() - o.t > 4000 || !people[id]) { FT.scene.remove(g); delete ftMates[id]; continue; }
+    const far = Math.hypot(o.x - g.position.x, o.z - g.position.z); g.position.x += (o.x - g.position.x) * .25; g.position.y += (o.y - g.position.y) * .3; g.position.z += (o.z - g.position.z) * .25;
+    g.rotation.y = turnTo(g.rotation.y, o.r, dt * 12);
+    ftPose(g, far > .06 && o.y <= .05, dt, o.a ? Math.min(1, (Date.now() - o.aAt) / 240) : -1, !!o.safe);
+  }
+  const cp = Math.cos(FT.pitch) * FT.dist; FT.cam.position.set(p.x + Math.sin(FT.yaw) * cp, p.y + 1.6 + Math.sin(FT.pitch) * FT.dist, p.z + Math.cos(FT.yaw) * cp); FT.cam.lookAt(p.x, p.y + 1.5, p.z);
+  if (t - ftSent > 100) { // ten times a second: tell the others where you are, and refresh the readout
+    ftSent = t; send({ type: 'brawl', act: 'pos', x: p.x, y: p.y, z: p.z, r: me.rotation.y, a: punch >= 0 ? 1 : 0 });
+    const cd = Math.max(0, 2200 - (t - FT.dashAt)), board = Object.keys(ftScore).filter(id => +id === myId || people[id]).map(id => (+id === myId ? 'You' : people[id].name) + ' ' + ftScore[id]).join(' · ');
+    ftHud.textContent = (t < ftNoteAt ? ftNote + ' · ' : '') + (ftLive ? 'First to 5 knockouts' + (board ? ' · ' + board : '') : 'Free play. Press Start match to keep score') + ' · dash ' + (cd ? (cd / 1000).toFixed(1) + 's' : 'ready') + ' · ' + FT.fps + ' fps';
+  }
+  FT.ren.render(FT.scene, FT.cam);
+}
+function onBrawlPos(m) {
+  if (!FT || !fightOpen || !people[m.id]) return;
+  let o = ftMates[m.id]; if (!o) { o = ftMates[m.id] = { g: hangFigure(new THREE.Color().setHSL((m.id * 67 % 360) / 360, .7, .55), people[m.id].name), aAt: 0, pct: -1, pl: null }; o.g.position.set(m.x, m.y, m.z); FT.scene.add(o.g); }
+  if (m.a && !o.a) o.aAt = Date.now(); // a punch just started
+  o.x = m.x; o.y = m.y; o.z = m.z; o.r = m.r; o.a = m.a; o.safe = m.safe; o.t = Date.now(); ftSetPct(o, m.pct | 0);
+}
+function onBrawlState(m) { // the server's word on the match: whether one is being scored, the score, and everyone's %
+  ftLive = !!m.live; ftScore = m.score || {};
+  if (FT && m.pcts) { FT.pct = m.pcts[myId] | 0; ftDrawPct(); }
+  if (!fightOpen) return;
+  if (m.go) { toast(m.go + ' started a match. First to 5 knockouts wins'); if (FT) { ftDrop(); FT.safe = performance.now() + 2500; } }
+  if (m.winner) { toast(m.winner + ' wins the match!'); sfx.ping(); }
+}
+function onBrawlKo(m) { // someone went off the island: they are back to 0%, and whoever hit them last has a point if a match is on
+  ftScore = m.score || ftScore; ftLive = !!m.live;
+  if (m.id === myId) { if (FT) { FT.pct = 0; FT.safe = performance.now() + 3200; ftDrawPct(); } } else if (ftMates[m.id]) ftSetPct(ftMates[m.id], 0);
+  ftNote = m.by ? (m.by === myId ? 'You' : m.byName) + ' knocked ' + (m.id === myId ? 'you' : m.name) + ' off' : (m.id === myId ? 'You' : m.name) + ' fell off'; ftNoteAt = performance.now() + 3500; // shown in the readout, not in the chat
+  if (m.by === myId && fightOpen) tone(880, .15, 'sine', .08, 1.5);
+}
+function setFight(open) {
+  if (open === fightOpen) return;
+  fightOpen = open; keysOff();
+  if (open) {
+    setBoard(false); setShoot(false); setHang(false); setMaze(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(ftEl); ftEl.classList.remove('hidden'); layout();
+    loadThree().then(() => { if (!fightOpen) return; if (!FT) ftInit(); if (!FT.live) { FT.live = true; ftLast = 0; requestAnimationFrame(ftLoop); } send({ type: 'brawl', act: 'open', on: true }); }, // the server answers with the score and everyone's %
+      () => { toast('The sky brawl could not load. Check your connection and try again'); setFight(false); });
+  } else { ftEl.classList.add('hidden'); send({ type: 'brawl', act: 'open', on: false }); layout(); }
+}
+function fightQuit() { fightOpen = false; ftEl.classList.add('hidden'); ftMates = {}; ftLive = false; ftScore = {}; if (FT) { FT.ren.dispose(); FT = null; } } // leaving the room: the next room starts its own
+// dragging on the picture turns the camera; the wheel zooms; a click without dragging throws a punch
+fcv.addEventListener('pointerdown', e => { fcv.setPointerCapture(e.pointerId); ftDrag = [e.clientX, e.clientY, 0]; });
+fcv.addEventListener('pointermove', e => { if (!ftDrag || !FT) return; ftDrag[2] += Math.abs(e.clientX - ftDrag[0]) + Math.abs(e.clientY - ftDrag[1]); FT.yawT -= (e.clientX - ftDrag[0]) * .006; FT.pitchT = clamp2(FT.pitchT + (e.clientY - ftDrag[1]) * .005, .05, 1.25); ftDrag[0] = e.clientX; ftDrag[1] = e.clientY; });
+fcv.addEventListener('pointerup', () => { if (ftDrag && ftDrag[2] < 6) ftPunch(performance.now()); ftDrag = null; });
+fcv.addEventListener('pointercancel', () => { ftDrag = null; });
+fcv.addEventListener('wheel', e => { e.preventDefault(); if (FT) FT.dist = clamp2(FT.dist + (e.deltaY > 0 ? 1 : -1), 4, 18); }, { passive: false });
+$('brawlGo').onclick = () => send({ type: 'brawl', act: 'start' }); $('brawlX').onclick = () => setFight(false);
 
 /* ---------- horror maze: its own game. First person, dark, one flashlight each. Find the 5 keys and reach the door before the thing in the maze reaches you ---------- */
 // The server keeps the round (the maze's seed, keys found, who was caught). One player's browser, the "host", moves the monster and the server passes that on to the rest.
@@ -2755,7 +2916,7 @@ function setMaze(open) {
   if (open === mazeOpen) return;
   mazeOpen = open; keysOff();
   if (open) {
-    setBoard(false); setShoot(false); setHang(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(mzEl); mzEl.classList.remove('hidden'); layout(); mzShow(false);
+    setBoard(false); setShoot(false); setHang(false); setFight(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(mzEl); mzEl.classList.remove('hidden'); layout(); mzShow(false);
     $('mzHud').textContent = 'Opening the maze…'; mmg.clearRect(0, 0, mmap.width, mmap.height); clearTimeout(mzWait);
     mzWait = setTimeout(() => { if (mazeOpen && !mzRound) $('mzHud').textContent = 'The maze could not start: the server did not answer.' + (isAdmin ? ' server.js on GitHub is probably older than this page.' : ' Tell a moderator.'); }, 6000); // without this a silent server just leaves a black screen
     loadThree().then(() => { if (!mazeOpen) return; mzRound = null; mzHum(true); send({ type: 'maze', act: 'open', on: true }); }, // the server answers with the round, and that builds the maze
@@ -2853,7 +3014,7 @@ function onDrawRound(m) { // a new round, or the end of the game (nothing, or ov
   clearInterval(drawTick);
   if (!m || m.over) { drawing = null; return drawShow(); }
   drawing = { drawer: m.drawer, name: m.name, len: m.len, until: Date.now() + m.left, word: '' }; drawTick = setInterval(drawShow, 1000); drawShow();
-  if (shootOpen || hangOpen || mazeOpen) invite(m.name + ' is drawing in Draw and guess', () => { setShoot(false); setHang(false); setMaze(false); setBoard(true); }); // do not yank people out of another game
+  if (shootOpen || hangOpen || mazeOpen || fightOpen) invite(m.name + ' is drawing in Draw and guess', () => { setShoot(false); setHang(false); setMaze(false); setFight(false); setBoard(true); }); // do not yank people out of another game
   else if (!boardOpen) setBoard(true);
   if (m.drawer === myId) toast('Your turn to draw!');
 }
