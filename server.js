@@ -3,7 +3,7 @@ const http = require('http'), fs = require('fs'), path = require('path'), crypto
 const { WebSocketServer } = require('ws');
 // Raised whenever the page starts needing something new from the server. index.html carries the number it expects, and tells moderators when
 // the server it reached is older: that means index.html was updated on GitHub but server.js was not. Also shown at /status.
-const VERSION = 25;
+const VERSION = 26;
 
 const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
 // [name, max people]. Small rooms keep full video; bigger rooms get lower per-person video quality (see tune() in index.html).
@@ -105,7 +105,7 @@ const SB_URL = envVal('SUPABASE_URL').replace(/\/+$/, ''), SB_KEY = envVal('SUPA
 if (!useSB) console.warn('WARNING: Supabase is not connected (' + (SB_URL ? 'SUPABASE_SECRET_KEY' : 'SUPABASE_URL') + ' is not set). Accounts and posts are kept in a local file and will be LOST on the next deploy or restart.');
 const DATA = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'tenrooms.json'), ACC = path.join(path.dirname(DATA), 'accounts.json');
 const ADMINS = new Set((process.env.ADMIN_USERS || 'diddydespacito').split(',').map(s => s.trim().toLowerCase().replace(/^@/, '')).filter(Boolean)); // usernames that can moderate: delete posts and accounts, reset names, run the global poll
-const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0, blocked: { users: [], devices: [] }, flags: [], reports: [] }; // blocked.devices: [{ id, user }]
+const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0, blocked: { users: [], devices: [] }, flags: [], reports: [], groups: [] }; // blocked.devices: [{ id, user }]
 const ever = new Set(), today = new Set(); // usernames seen ever, and seen on store.day
 const accounts = new Map(), tokens = new Map(); // username -> account; hash of a login token -> username
 const dirty = new Set(), gone = new Set(); // accounts waiting to be written, and deleted ones waiting to be removed
@@ -115,6 +115,7 @@ function adopt(d) { // take loaded data as the current state
   if (!store.blocked || !Array.isArray(store.blocked.users) || !Array.isArray(store.blocked.devices)) store.blocked = { users: [], devices: [] };
   if (!Array.isArray(store.flags)) store.flags = [];
   if (!Array.isArray(store.reports)) store.reports = [];
+  store.groups = (Array.isArray(store.groups) ? store.groups : []).filter(g => g && typeof g.id === 'string' && Array.isArray(g.members) && Array.isArray(g.log));
   ever.clear(); (store.ever || []).forEach(c => ever.add(c)); today.clear(); (store.today || []).forEach(c => today.add(c));
 }
 function adoptAccounts(list) {
@@ -260,6 +261,18 @@ function presence(ws) { // tell one person which of their friends are online and
   });
   send(ws, { type: 'presence', list });
 }
+// Group chats: a named chat between friends. Who is in each group and its last few messages are kept (one-to-one messages are only passed on, never kept),
+// so someone who was offline can read what they missed.
+const GROUP_MAX = 12, GROUPS_EACH = 10, GROUP_LOG = 40; // people in one group, groups one person can be in, messages kept for each group
+const groupsOf = user => store.groups.filter(g => g.members.includes(user));
+const groupView = g => ({ id: g.id, name: g.name, owner: g.owner, last: g.log.length ? g.log[g.log.length - 1].t : 0, members: g.members.filter(u => accounts.has(u)).map(u => ({ code: u, name: accounts.get(u).display, av: avOf(u) })) });
+const sendGroups = user => { const list = groupsOf(user).map(groupView); socketsOf(user).forEach(o => send(o, { type: 'groups', list })); };
+const toGroup = (g, msg) => g.members.forEach(u => socketsOf(u).forEach(o => send(o, msg)));
+function groupDrop(g, user) { // take someone out of a group. The group goes when nobody is left, and passes to the next person if its owner went
+  const i = g.members.indexOf(user); if (i < 0) return; g.members.splice(i, 1);
+  if (!g.members.length) store.groups = store.groups.filter(x => x !== g); else if (g.owner === user) g.owner = g.members[0];
+  save(); sendGroups(user); g.members.forEach(sendGroups);
+}
 function sendFriends(user) { // their saved list, plus the people who added them and are waiting to be added back
   const a = accounts.get(user); if (!a) return;
   a.friends = a.friends.filter(c => accounts.has(c));
@@ -283,7 +296,7 @@ function startSession(ws, a, fresh, dev) { // this socket is now logged in as ac
   if (!online.has(ws.code)) online.set(ws.code, new Set());
   online.get(ws.code).add(ws); seen(ws.code);
   send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, v: VERSION, gifs: !!KLIPY, pics: !!OPENAI, saved: useSB, reports: ADMINS.has(a.username) ? store.reports.length : 0, latest: latest(), picBase: OPENAI && postPics ? PIC_BASE : '', stats: stats(), token, me: meView(a), settings: a.settings || null, admin: ADMINS.has(a.username) });
-  send(ws, { type: 'gpoll', poll: gpollView(ws) }); sendFriends(a.username); pushLobby();
+  send(ws, { type: 'gpoll', poll: gpollView(ws) }); sendFriends(a.username); sendGroups(a.username); pushLobby();
 }
 async function auth(ws, m) { // the only messages a socket may send before it is logged in
   const fail = (text, expired) => send(ws, { type: 'auth-fail', text, expired });
@@ -333,6 +346,7 @@ function deleteAccount(a) { // moderation: the account, its posts, comments and 
   const u = a.username;
   socketsOf(u).forEach(o => { send(o, { type: 'auth-fail', text: 'This account was deleted', expired: true }); o.close(); });
   a.sessions.forEach(h => tokens.delete(h)); accounts.delete(u); dirty.delete(u); gone.add(u);
+  groupsOf(u).forEach(g => groupDrop(g, u)); // out of every group chat
   accounts.forEach(o => { const i = o.friends.indexOf(u); if (i >= 0) { o.friends.splice(i, 1); saveAcct(o); sendFriends(o.username); } });
   store.posts.filter(p => p.code === u).forEach(p => { dropPic(p); toFeed(() => ({ type: 'post-del', id: p.id })); });
   store.posts = store.posts.filter(p => p.code !== u); pushLatest();
@@ -416,6 +430,39 @@ const SHGUNS = { pistol: { dmg: 25, gap: 280, n: 1 }, smg: { dmg: 12, gap: 90, n
 // A shooter match counts as running until someone wins, or a minute goes by with no hits. Nobody can start another while one is running.
 const shootLive = r => !!r.shoot && !!r.shoot.live && !r.shoot.over && Date.now() - r.shoot.last < 60000;
 const privates = new Map(); // id -> a room like the ten public ones, plus: private, allowed (usernames that may join), made (when)
+// Steal a Brainrot: buy brainrots off a moving belt, they earn money in your base, and anyone can carry one off from a base that is not locked.
+// The page has the same table (with the names) and the same two belt functions, so both sides agree on what is coming down the belt without any messages.
+const BR = [[25, 2, 28], [90, 6, 22], [250, 14, 16], [600, 30, 11], [1400, 60, 8], [3200, 120, 5.5], [7500, 260, 4], [18000, 550, 2.5], [40000, 1100, 1.6], [90000, 2300, .8], [220000, 5000, .45], [600000, 12000, .15]]; // each kind: price, money a second, how often it turns up
+const BR_GAP = 2600, BR_RIDE = 24000, BR_SUM = BR.reduce((a, b) => a + b[2], 0); // a new one comes out every BR_GAP ms and takes BR_RIDE ms to cross
+const brRand = (seed, i) => { let a = (seed + i * 0x9E3779B1) >>> 0; a = Math.imul(a ^ (a >>> 15), 1 | a); a = (a + Math.imul(a ^ (a >>> 7), 61 | a)) ^ a; return ((a ^ (a >>> 14)) >>> 0) / 4294967296; };
+const brKind = (seed, i) => { let x = brRand(seed, i) * BR_SUM; for (let k = 0; k < BR.length; k++) { x -= BR[k][2]; if (x < 0) return k; } return 0; }; // which kind the belt's i-th brainrot is
+const brBase = slot => ({ x: (slot % 4 - 1.5) * 15, z: (slot < 4 ? -1 : 1) * 13 }), brPad = (slot, pad) => { const b = brBase(slot); return { x: b.x + (pad % 4 - 1.5) * 2.6, z: b.z + (pad < 4 ? -2.2 : 2.2) }; }; // where base and pad number so-and-so are
+const brRate = p => p.pets.reduce((a, x) => a + (x && !x.out ? BR[x.k][1] : 0), 0), brSettle = (p, now) => { p.cash += brRate(p) * (now - p.at) / 1000; p.at = now; }; // money is worked out when it is needed, from what they earn a second
+const stealers = r => [...r.members.values()].filter(p => p.stealing);
+const stealView = r => ({ type: 'steal-state', now: Date.now(), seed: r.steal.seed, t0: r.steal.t0, bought: r.steal.bought, bases: [...r.steal.P.values()].map(p => ({ id: p.id, slot: p.slot, name: p.name, cash: Math.floor(p.cash), at: p.at, lock: p.lock, cd: p.cd, pets: p.pets.map(x => (x ? [x.k, x.out] : 0)) })) });
+const stealPush = r => { const v = stealView(r); stealers(r).forEach(p => send(p, v)); }; // the whole picture, to everyone playing, whenever anything changes
+function stealDrop(g, p, now) { // a thief was slapped, or left: what they were carrying goes back to its pad
+  const c = p.carry; if (!c) return false; p.carry = null;
+  const o = g.P.get(c.owner), pet = o && o.pets[c.pad]; if (pet && pet.out === p.id) { brSettle(o, now); pet.out = 0; }
+  return true;
+}
+function stealBank(g, p, now) { // a thief got home: the brainrot is theirs now. Gives back its kind, or -1 if it could not be kept
+  const c = p.carry, o = g.P.get(c.owner), pet = o && o.pets[c.pad], free = p.pets.indexOf(null); p.carry = null;
+  if (!pet || pet.out !== p.id) return -1;
+  brSettle(o, now); brSettle(p, now);
+  if (free < 0) { pet.out = 0; return -1; } // nowhere to put it, so it goes back
+  o.pets[c.pad] = null; p.pets[free] = { k: pet.k, out: 0 }; return pet.k;
+}
+function stealLeave(r, ws) { // someone left the room: their base empties
+  const g = r.steal, p = g && g.P.get(ws.id), now = Date.now(); if (!p) return;
+  stealDrop(g, p, now); // what they were carrying goes back
+  g.P.forEach(q => { // and anyone carrying one of theirs gets to keep it
+    if (!q.carry || q.carry.owner !== ws.id) return;
+    const pet = p.pets[q.carry.pad], free = q.pets.indexOf(null); q.carry = null;
+    if (pet && free >= 0) { brSettle(q, now); q.pets[free] = { k: pet.k, out: 0 }; }
+  });
+  g.P.delete(ws.id); stealPush(r);
+}
 const brawlers = r => [...r.members.values()].filter(p => p.brawling && p.bw); // who is in the sky brawl right now
 const brawlState = r => ({ type: 'brawl-state', live: !!(r.brawl && r.brawl.live), score: r.brawl ? r.brawl.score : {}, pcts: Object.fromEntries(brawlers(r).map(p => [p.id, p.bw.pct])) }); // whether a match is being scored, the score, and everyone's %
 function brawlCheck(r) { if (r.brawl && r.brawl.live && brawlers(r).length < 2) { r.brawl.live = false; brawlers(r).forEach(p => send(p, brawlState(r))); } } // a match cannot go on with one person
@@ -445,6 +492,8 @@ function leave(ws) {
   r.members.delete(ws.id); ws.room = null;
   if (ws.mazing) { ws.mazing = false; mazers(r).forEach(p => send(p, { type: 'maze-gone', id: ws.id })); if (r.maze && mazers(r).length) mazers(r).forEach(p => send(p, mazeState(r))); }
   if (ws.hanging) { ws.hanging = false; r.members.forEach(p => p.hanging && send(p, { type: 'hang-gone', id: ws.id })); if (r.tag && r.tag.it === ws.id) { r.tag = null; r.members.forEach(p => p.hanging && send(p, { type: 'hang-tag', it: 0 })); } }
+  if (ws.stealing) { ws.stealing = false; stealers(r).forEach(p => send(p, { type: 'steal-gone', id: ws.id })); }
+  try { stealLeave(r, ws); } catch (e) { console.warn('steal clean-up failed:', e.message); } // a game's clean-up must never stop the rest of leaving the room
   if (ws.brawling) { ws.brawling = false; brawlers(r).forEach(p => send(p, { type: 'brawl-gone', id: ws.id })); brawlCheck(r); }
   if (ws.shooting) { ws.shooting = false; r.members.forEach(p => p.shooting && send(p, { type: 'shoot-gone', id: ws.id })); }
   toRoom(r, { type: 'peer-left', id: ws.id });
@@ -455,7 +504,7 @@ function leave(ws) {
     else if (r.draw.drawer === ws.id) { say(r, ws.name + ' was drawing and left'); drawNext(r); }
   }
   if (r.private && !r.members.size) privates.delete(r.id); // a private call ends when the last person leaves
-  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; r.shoot = null; r.maze = null; r.tag = null; r.brawl = null; } // empty room resets
+  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; r.shoot = null; r.maze = null; r.tag = null; r.brawl = null; r.steal = null; } // empty room resets
   pushLobby();
 }
 
@@ -676,6 +725,57 @@ wss.on('connection', (ws, req) => {
         r.tag = { it: t.id, at: Date.now() }; r.members.forEach(p => p.hanging && send(p, { type: 'hang-tag', it: t.id, name: t.name, by: ws.name }));
       }
       else if (m.act === 'goal' && ws.hanging) { const ms = m.ms | 0; if (ms >= 3000 && ms < 3600000 && !slow(ws, 'lastGoal', 5000)) others({ type: 'hang-note', text: ws.name + ' finished the parkour in ' + (ms / 1000).toFixed(1) + 's' }); }
+    } else if (m.type === 'steal' && ws.room) { // Steal a Brainrot: the money, the bases and who is carrying what all live here
+      const r = ws.room, now = Date.now(), num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0), others = msg => stealers(r).forEach(p => p !== ws && send(p, msg));
+      if (m.act === 'open') {
+        ws.stealing = !!m.on;
+        if (!ws.stealing) { others({ type: 'steal-gone', id: ws.id }); const p = r.steal && r.steal.P.get(ws.id); if (p && stealDrop(r.steal, p, now)) stealPush(r); return; } // closing the game with one in your arms puts it back
+        const g = r.steal = r.steal || { seed: 1 + Math.floor(Math.random() * 1e9), t0: now, bought: [], P: new Map() }; // P: everyone who has a base, by their id
+        if (!g.P.has(ws.id)) { // their first time in: the first empty base of the 8, and a little money to start with
+          const used = new Set([...g.P.values()].map(p => p.slot)); let slot = 0; while (used.has(slot)) slot++;
+          if (slot < 8) g.P.set(ws.id, { id: ws.id, slot, name: ws.name, cash: 100, at: now, lock: 0, cd: 0, pets: Array(8).fill(null), carry: null }); // pets: what is on each of the 8 pads, as { k: kind, out: who is carrying it off, or 0 }
+        }
+        ws.sp = null; stealPush(r);
+        if (!slow(ws, 'lastStealIn', 20000)) r.members.forEach(p => { if (!p.stealing) send(p, { type: 'steal-open', name: ws.name }); }); // invite the rest of the room
+        return;
+      }
+      const g = r.steal, me = g && g.P.get(ws.id); if (!ws.stealing || !g) return;
+      if (m.act === 'pos') {
+        if (slow(ws, 'lastStPos', 70)) return;
+        ws.sp = { x: num(m.x), z: num(m.z) }; others({ type: 'steal-pos', id: ws.id, x: ws.sp.x, z: ws.sp.z, r: num(m.r), s: m.s ? 1 : 0 });
+        if (me && me.carry) { // carrying one and back inside their own base: it is theirs
+          const b = brBase(me.slot); if (Math.abs(ws.sp.x - b.x) > 6 || Math.abs(ws.sp.z - b.z) > 6) return;
+          const from = r.members.get(me.carry.owner), k = stealBank(g, me, now); stealPush(r);
+          if (from && k >= 0) send(from, { type: 'steal-note', what: 'gone', name: ws.name, k });
+        }
+      } else if (m.act === 'buy') { // take one off the belt
+        const i = m.i | 0, age = now - g.t0 - i * BR_GAP, k = brKind(g.seed, i);
+        if (!me || me.carry || i < 0 || age < 0 || age > BR_RIDE || g.bought.includes(i)) return;
+        if (!ws.sp || Math.hypot(ws.sp.x - (-34 + 68 * age / BR_RIDE), ws.sp.z) > 8) return; // they have to be standing by it
+        if (me.pets.indexOf(null) < 0) return err(ws, 'Your base is full. Sell one first: stand by it and press X');
+        brSettle(me, now); if (me.cash < BR[k][0]) return err(ws, 'You do not have enough cash for that one');
+        me.cash -= BR[k][0]; me.pets[me.pets.indexOf(null)] = { k, out: 0 };
+        const oldest = Math.floor((now - g.t0 - BR_RIDE) / BR_GAP); g.bought = g.bought.filter(x => x >= oldest); g.bought.push(i); stealPush(r);
+      } else if (m.act === 'grab') { // pick one up in somebody else's base
+        const o = g.P.get(m.from), pad = m.pad | 0, pet = o && o.pets[pad];
+        if (!me || !o || o === me || !pet || pet.out || me.carry || slow(ws, 'lastGrab', 500)) return;
+        if (o.lock > now) return err(ws, 'That base is locked');
+        if (me.pets.indexOf(null) < 0) return err(ws, 'Your base is full, so you have nowhere to put it');
+        const q = brPad(o.slot, pad); if (!ws.sp || Math.hypot(ws.sp.x - q.x, ws.sp.z - q.z) > 5) return;
+        brSettle(o, now); pet.out = ws.id; me.carry = { owner: o.id, pad }; stealPush(r);
+        const from = r.members.get(o.id); if (from) send(from, { type: 'steal-note', what: 'taking', name: ws.name, k: pet.k }); // the owner is warned even if they have the game closed
+      } else if (m.act === 'slap') { // hit someone close by: whatever they are carrying goes back
+        const t = r.members.get(m.to), tp = t && g.P.get(t.id);
+        if (!t || t === ws || !t.stealing || !ws.sp || !t.sp || Math.hypot(ws.sp.x - t.sp.x, ws.sp.z - t.sp.z) > 5.5 || slow(ws, 'lastSlap', 600)) return;
+        stealers(r).forEach(p => send(p, { type: 'steal-slap', by: ws.id, to: t.id }));
+        if (tp && stealDrop(g, tp, now)) stealPush(r);
+      } else if (m.act === 'lock') { // 30 seconds with nobody else allowed in, then 15 before it can be locked again
+        if (!me) return; if (me.cd > now) return err(ws, me.lock > now ? 'Your base is already locked' : 'The lock is still recharging');
+        me.lock = now + 30000; me.cd = now + 45000; stealPush(r);
+      } else if (m.act === 'sell') { // sell one of your own for half what it costs, to make room
+        const pad = m.pad | 0, pet = me && me.pets[pad]; if (!pet || pet.out) return;
+        brSettle(me, now); me.cash += Math.floor(BR[pet.k][0] / 2); me.pets[pad] = null; stealPush(r);
+      }
     } else if (m.type === 'brawl' && ws.room) { // sky brawl: a 3D fight on a floating island. Everyone moves themselves; the damage (%) and the score are kept here
       const r = ws.room, now = Date.now(), num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0), all = msg => brawlers(r).forEach(p => send(p, msg)), others = msg => brawlers(r).forEach(p => p !== ws && send(p, msg));
       if (m.act === 'open') {
@@ -786,6 +886,39 @@ wss.on('connection', (ws, req) => {
         socketsOf(to).forEach(o => send(o, { type: 'dm', from: ws.code, name: ws.name, ...body }));
         socketsOf(ws.code).forEach(o => send(o, { type: 'dm', to, ...body }));
       });
+    } else if (m.type === 'group-new') { // start a group chat with some of your friends
+      const tell = text => send(ws, { type: 'dm-fail', text }), name = String(m.name || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+      const picks = [...new Set(Array.isArray(m.members) ? m.members.map(String) : [])].filter(u => u !== ws.code && mutual(ws.code, u) && groupsOf(u).length < GROUPS_EACH).slice(0, GROUP_MAX - 1); // only friends who added you back, and nobody who is already in too many
+      if (!name) return tell('Give the group a name');
+      if (!picks.length) return tell('Pick at least one friend who has added you back');
+      if (groupsOf(ws.code).length >= GROUPS_EACH) return tell('You are in ' + GROUPS_EACH + ' group chats already. Leave one first');
+      if (slow(ws, 'lastGroupNew', 5000)) return tell('Wait a few seconds before making another group');
+      textOk(name, ws.code, 'a group chat name').then(ok => {
+        if (!ok) return tell('That name was blocked');
+        const g = { id: 'g' + crypto.randomBytes(6).toString('hex'), name, owner: ws.code, members: [ws.code, ...picks], log: [] };
+        store.groups.push(g); save(); g.members.forEach(sendGroups);
+      });
+    } else if (m.type === 'group-add' || m.type === 'group-kick' || m.type === 'group-leave' || m.type === 'group-open' || m.type === 'group-msg') {
+      const g = store.groups.find(x => x.id === m.id), tell = text => send(ws, { type: 'dm-fail', text }); if (!g || !g.members.includes(ws.code)) return; // only the people in a group can do anything with it
+      if (m.type === 'group-open') send(ws, { type: 'group-log', id: g.id, log: g.log }); // the last messages, including any sent while they were away
+      else if (m.type === 'group-leave') groupDrop(g, ws.code);
+      else if (m.type === 'group-kick') { if (g.owner === ws.code && m.code !== ws.code) groupDrop(g, String(m.code)); }
+      else if (m.type === 'group-add') {
+        const u = String(m.code || ''); if (g.owner !== ws.code) return tell('Only the person who made the group can add people');
+        if (g.members.includes(u) || !mutual(ws.code, u)) return tell('You can only add friends who have added you back');
+        if (g.members.length >= GROUP_MAX) return tell('This group is full');
+        if (groupsOf(u).length >= GROUPS_EACH) return tell('They are in too many group chats already');
+        g.members.push(u); save(); g.members.forEach(sendGroups);
+      } else { // a message: text, a GIF, or an image that was uploaded and checked
+        const gif = KLIPY && typeof m.gif === 'string' && m.gif.length < 300 && GIFURL.test(m.gif) ? m.gif : null, up = !gif && typeof m.pic === 'string' && pics.get(m.pic), pic = up && up.by === ws.code && !up.used ? m.pic : null;
+        const text = gif || pic ? '' : String(m.text || '').trim().slice(0, 500); if ((!text && !gif && !pic) || slow(ws, 'lastGroupMsg', 300)) return;
+        textOk(text, ws.code, 'a group chat').then(ok => {
+          if (!ok) return tell('That message was blocked');
+          if (!store.groups.includes(g) || !g.members.includes(ws.code)) return; // they left, or the group ended, while the message was being checked
+          const msg = { from: ws.code, name: ws.acct.display, text, t: Date.now() }; if (gif) msg.gif = gif; if (pic) { up.used = true; msg.pic = pic; }
+          g.log.push(msg); if (g.log.length > GROUP_LOG) g.log.shift(); save(); toGroup(g, { type: 'group-msg', id: g.id, msg });
+        });
+      }
     } else if (m.type === 'call') { // ring a friend. Makes a private call (or, from inside one, brings them into it)
       const to = String(m.to || ''); if (!mutual(ws.code, to) || !online.has(to)) return err(ws, 'They are offline or have not added you back');
       if (slow(ws, 'lastCall', 4000)) return err(ws, 'Wait a few seconds before calling again');
