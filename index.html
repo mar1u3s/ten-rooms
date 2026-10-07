@@ -370,10 +370,6 @@ button:active:not(:disabled){transform:scale(.95)}
 .guns .on{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:600}
 #scv{width:min(100cqw,177.7cqh);height:auto;aspect-ratio:16/9;border:1px solid var(--line);border-radius:12px;background:#0a0c12;touch-action:none;cursor:crosshair}
 /* latest posts beside the menu, search, sign-up tips */
-#lobby{max-width:1280px;display:grid;grid-template-columns:minmax(0,1fr) 300px;column-gap:26px;align-content:start}
-#lobby > *{grid-column:1}
-#lobby > .solid{justify-self:start}
-#sideFeed{grid-column:2;grid-row:1/span 30;align-self:start;position:sticky;top:84px;display:grid;gap:10px;padding:16px}
 #sideFeed h2{font-size:1.1rem}
 #sideFeed .sub{font-size:.85rem}
 #sideList{display:grid;gap:8px}
@@ -383,7 +379,6 @@ button:active:not(:disabled){transform:scale(.95)}
 .sidepost b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sidepost span{font-size:.85rem;color:var(--dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .sidepost img{grid-column:1/-1;width:100%;max-height:110px;margin-top:6px;object-fit:cover;border-radius:10px}
-@media(max-width:980px){#lobby{display:block}#sideFeed{position:static;margin-bottom:22px}}
 .searchbar{display:flex;gap:8px;margin-bottom:14px}
 .searchbar input{flex:1;min-width:0;background:var(--bg);color:inherit;font:inherit;border:1px solid var(--line);border-radius:10px;padding:10px}
 .searchbar button{flex:none;border-radius:10px;padding:0 16px}
@@ -413,6 +408,11 @@ button:active:not(:disabled){transform:scale(.95)}
 #maze .bwrap{position:relative;padding:8px;background:#000}
 #mcv{width:100%;height:100%;display:block;border-radius:12px;touch-action:none;cursor:crosshair}
 #mmap{position:absolute;right:16px;top:16px;width:min(168px,30%);height:auto;aspect-ratio:1;border:1px solid rgb(255 255 255/.25);border-radius:8px;opacity:.88;pointer-events:none}
+.setnote{margin:0;font-size:.8rem;opacity:.7}
+#hideView{position:absolute;inset:8px;border-radius:12px;pointer-events:none;background:radial-gradient(ellipse at center,transparent 30%,rgb(0 0 0/.85) 100%),repeating-linear-gradient(180deg,rgb(12 7 3/.97) 0 24px,transparent 24px 36px)} /* the slats of the closet door you are looking out through */
+#skill{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);width:min(440px,72%);height:24px;border:2px solid #fff;border-radius:6px;background:rgb(0 0 0/.8);pointer-events:none;overflow:hidden}
+#skillZone{position:absolute;top:0;bottom:0;background:#2dff88}
+#skillPin{position:absolute;top:0;bottom:0;width:4px;margin-left:-2px;background:#fff;box-shadow:0 0 8px #fff}
 #scare{position:fixed;inset:0;z-index:60;background:#000;overflow:hidden}
 #scare canvas{width:100%;height:100%;object-fit:cover;animation:scare 1.1s linear}
 @keyframes scare{0%{transform:scale(.35)}10%{transform:scale(1.25) rotate(-2deg)}25%{transform:scale(1.1) rotate(2deg)}45%{transform:scale(1.3) rotate(-1deg)}70%{transform:scale(1.2) rotate(1deg)}100%{transform:scale(1.5)}}
@@ -431,6 +431,32 @@ button:active:not(:disabled){transform:scale(.95)}
 .dm small{display:block;margin-top:2px;font-size:.65rem;opacity:.6}
 /* shown to moderators when the server is older than this page */
 #oldServer{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:44;max-width:92vw;padding:10px 16px;font-size:.88rem;background:var(--bg);border:1px solid #ffb020;border-radius:14px;box-shadow:0 0 0 2px #ffb020}
+/* menu layout: the title and the join card on top, rooms on the left, the poll and latest posts on the right, site numbers and notices at the bottom */
+#lobby{max-width:1280px}
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:30px}
+#lobby .hero h1{margin-bottom:10px}
+#lobby .hero .sub{margin:0}
+.joincard{display:grid;gap:12px;min-width:270px;padding:16px;border-radius:20px}
+#quick{margin:0;padding:14px 24px;font-size:1.05rem}
+.prejoin{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.85rem;color:var(--dim)}
+.prejoin button{padding:6px 14px;font-size:.85rem;color:var(--fg)}
+.prejoin button[aria-pressed=true]{border-color:var(--acc)}
+.prejoin button.off{text-decoration:line-through;opacity:.65}
+.lobbygrid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:26px;align-items:start;margin-bottom:34px}
+.lobbyside{display:grid;gap:16px;position:sticky;top:84px}
+.lobbyside .gp{max-width:none;margin:0}
+#sideFeed{display:grid;gap:10px;padding:16px}
+#lobby #sideFeed .sub{margin:0;font-size:.85rem}
+.sechead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.sechead h2{font-size:1.25rem;margin-right:6px}
+.sechead .chip b{color:var(--fg);font-weight:600}
+#lobby .notice{max-width:none;margin:18px 0 0}
+#lobby .credits{margin-top:18px}
+@media(max-width:980px){.lobbygrid{grid-template-columns:1fr}.lobbyside{position:static}.joincard{width:100%}}
+/* games menu in two columns with headings; Draw and guess line on the board */
+#gameBar{grid-template-columns:1fr 1fr;max-height:70vh;max-width:92vw;overflow:auto}
+.gamesec{grid-column:1/-1;padding:8px 12px 2px;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.drawinfo{font-weight:600;color:var(--acc)}
 /* themes */
 #settings .panel{max-height:100%;overflow:auto}
 .themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -505,27 +531,32 @@ button:active:not(:disabled){transform:scale(.95)}
 </section>
 
 <main id="lobby" class="view hidden">
-  <h1>Ten rooms</h1>
-  <p class="sub">Walk into any open room to talk on video. Every room has its own chat.</p>
+  <header class="hero">
+    <div>
+      <h1>Ten rooms</h1>
+      <p class="sub">Walk into any open room to talk on video. Every room has its own chat, games and a 3D hangout.</p>
+    </div>
+    <div class="joincard mod">
+      <button class="solid" id="quick">Quick join</button>
+      <div class="prejoin"><span>Join with</span><button type="button" class="ghost" id="preCam" aria-pressed="true">Camera on</button><button type="button" class="ghost" id="preMic" aria-pressed="true">Mic on</button></div>
+    </div>
+  </header>
+  <div class="lobbygrid">
+    <section>
+      <div class="sechead"><h2>Rooms</h2><span class="chip"><b id="stLive">0</b> live</span><span class="chip"><b id="stOnline">0</b> people in rooms</span><span class="chip"><b id="stFree">0</b> free seats</span></div>
+      <div class="rooms" id="rooms"></div>
+    </section>
+    <aside class="lobbyside">
+      <div id="gpoll" class="gp mod hidden"></div>
+      <div id="sideFeed" class="mod" aria-label="Latest posts">
+        <h2>Latest posts</h2>
+        <div id="sideList"></div>
+        <button type="button" class="solid" id="sideGo">See all posts</button>
+      </div>
+    </aside>
+  </div>
+  <div class="sechead"><h2>Site</h2><span class="chip"><b id="stToday">0</b> logged on today</span><span class="chip"><b id="stEver">0</b> ever logged on</span><span class="chip"><b id="stMenu">0</b> online in the menu</span></div>
   <p class="notice">Notice: this site is only for entertainment purposes. If requested by important figures, we will take the website down. Everything here is checked by AI moderation: chat, direct messages, posts, names and images. <button type="button" class="linkb" id="rulesLink">Read the rules</button></p>
-  <aside id="sideFeed" class="mod" aria-label="Latest posts">
-    <h2>Latest posts</h2>
-    <div id="sideList"></div>
-    <button type="button" class="solid" id="sideGo">See all posts</button>
-  </aside>
-  <div class="stats">
-    <div class="stat"><b id="stLive">0</b><span>live rooms</span></div>
-    <div class="stat"><b id="stOnline">0</b><span>people online</span></div>
-    <div class="stat"><b id="stFree">0</b><span>free seats</span></div>
-  </div>
-  <div id="gpoll" class="gp mod hidden"></div>
-  <button class="solid" id="quick">Quick join</button>
-  <div class="rooms" id="rooms"></div>
-  <div class="stats low">
-    <div class="stat"><b id="stToday">0</b><span>logged on today</span></div>
-    <div class="stat"><b id="stEver">0</b><span>ever logged on</span></div>
-    <div class="stat"><b id="stMenu">0</b><span>online in the menu</span></div>
-  </div>
   <footer class="credits mod"><span class="chip">Credits</span><b>@diddydespacito</b></footer>
 </main>
 
@@ -596,6 +627,7 @@ button:active:not(:disabled){transform:scale(.95)}
 <div id="settings" class="hidden">
   <div class="panel" role="dialog" aria-label="Settings">
     <h2>Settings</h2>
+    <p class="setnote">Your settings are saved to your account and follow you to other devices. Camera, microphone and speaker choices stay on this device.</p>
     <label for="avPick">Profile picture</label>
     <div class="avrow"><div id="avPrev" class="avprev"></div><div class="avbtns"><button type="button" class="ghost" id="avPick">Choose photo</button><button type="button" class="ghost" id="avClear">Remove</button></div></div>
     <input type="file" id="avFile" accept="image/*" hidden>
@@ -671,6 +703,7 @@ button:active:not(:disabled){transform:scale(.95)}
     <h3>3D hangout</h3>
     <span class="bsz">WASD to walk, Space to jump, drag to look, scroll to zoom, E to dance, R to go to the parkour start</span>
     <span style="flex:1"></span>
+    <button type="button" class="ghost" id="hangTag">Play tag</button>
     <button type="button" class="ghost" id="hangX">Close</button>
   </div>
   <div class="bwrap"><canvas id="hcv"></canvas><div id="hangHud" class="hud"></div></div>
@@ -679,12 +712,12 @@ button:active:not(:disabled){transform:scale(.95)}
 <div id="maze" class="boardmod mod hidden" role="region" aria-label="Horror maze">
   <div class="bh">
     <h3>Horror maze</h3>
-    <span class="bsz">WASD to move, Shift to run, click the picture to look with the mouse (Esc lets go). Find 5 keys, then the door</span>
+    <span class="bsz">WASD to move, Shift to run, E to hide in a closet, click the picture to look with the mouse (Esc lets go). Find 5 keys, then the door</span>
     <span style="flex:1"></span>
     <button type="button" class="solid" id="mazeGo">New round</button>
     <button type="button" class="ghost" id="mazeX">Close</button>
   </div>
-  <div class="bwrap"><canvas id="mcv"></canvas><canvas id="mmap" width="168" height="168"></canvas><div id="mzHud" class="hud"></div></div>
+  <div class="bwrap"><canvas id="mcv"></canvas><div id="hideView" class="hidden"></div><canvas id="mmap" width="168" height="168"></canvas><div id="mzHud" class="hud"></div><div id="skill" class="hidden"><i id="skillZone"></i><b id="skillPin"></b></div></div>
 </div>
 <div id="scare" class="hidden"><canvas id="scareCv" width="800" height="450"></canvas></div>
 <div id="callBar" class="mod hidden" role="alert"><span id="callText"></span><button type="button" class="solid" id="callYes">Accept</button><button type="button" class="ghost" id="callNo">Decline</button></div>
@@ -700,8 +733,7 @@ button:active:not(:disabled){transform:scale(.95)}
       <li><b>Do not cheat.</b>No sharing test or homework answers, and no hacks, exploits or extra accounts to win games or get round a block.</li>
       <li><b>Be yourself.</b>Do not pretend to be another student, a teacher or a moderator.</li>
       <li><b>No spam.</b>Do not flood chat, posts or calls, and no advertising.</li>
-      <li><b>Follow your school's rules.</b>Use Ten Rooms only when and where you are allowed to.</li>
-      <li><b>Speak up.</b>If someone breaks a rule or makes you uncomfortable, press Report or tell an adult you trust.</li>
+      <li><b>Report problems the right way.</b>If someone breaks a rule, press Report on their post, comment, profile or name in a room and say what happened. Do not make false reports, and do not start a fight about it in chat.</li>
     </ol>
     <button type="button" class="solid" id="rulesDone">Got it</button>
   </div>
@@ -725,9 +757,11 @@ button:active:not(:disabled){transform:scale(.95)}
 <div id="board" class="boardmod mod hidden" role="region" aria-label="Shared drawing board">
   <div class="bh">
     <h3>Drawing Board</h3>
+    <b id="drawInfo" class="drawinfo hidden"></b>
     <div id="swatches" role="group" aria-label="Colour"></div>
     <label class="bsz">Size <input type="range" id="bsize" min="2" max="30" value="5"></label>
     <span style="flex:1"></span>
+    <button type="button" class="ghost hidden" id="drawSkip">Skip my turn</button>
     <button type="button" class="ghost" id="bclear">Clear</button>
     <button type="button" class="ghost" id="bclose">Close</button>
   </div>
@@ -795,8 +829,43 @@ let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, 
 /* ---------- views + name ---------- */
 function show(v) { ['auth', 'lobby', 'feed', 'prof', 'call'].forEach(x => $(x).classList.toggle('hidden', x !== v)); $('nav').classList.toggle('hidden', v === 'auth' || v === 'call'); [['feedBack', 'lobby'], ['openFeed', 'feed'], ['openProf', 'prof']].forEach(([id, view]) => $(id).classList.toggle('on', v === view)); if (v !== 'lobby' && hintAt >= 0) showHint(-1); } // leaving the menu ends the tips
 // Accounts: you log in with a username and password. The server answers with a token that keeps this browser logged in.
-const NEED_SERVER = 22; let serverOld = false; // the server version this page was written for; serverOld: the server we reached is older than that
+const NEED_SERVER = 24; let serverOld = false; // the server version this page was written for; serverOld: the server we reached is older than that
 let acct = null, token = localStorage.getItem('token') || '', authMode = 'login'; // acct: { code (your @username), display, bio, av }
+// Settings follow your account: theme, font, background, sounds, panel sizes, the "Join with" switches, your gun, the volumes you set for people and whether you have seen the tips.
+// Which camera, mic and speaker you picked stays on this device and is never sent.
+const SYNC = ['theme', 'font', 'bgdim', 'sfx', 'fx', 'sizes', 'gun', 'vols', 'hints']; // browser storage keys that are copied to the account as they are
+let syncTimer = 0, syncOff = false, syncDirty = false; // syncOff: settings are being applied from the account right now, so they are not sent straight back
+const saveSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} syncSoon(); }; // save a setting in this browser and on the account
+function settingsNow() { const st = { joinCam: prefs.joinCam !== false, joinMic: prefs.joinMic !== false, bg: localStorage.getItem('bgid') || '' }; SYNC.forEach(k => { const v = localStorage.getItem(k); if (v !== null) st[k] = v; }); return st; }
+function syncSoon() { // a setting changed: tell the account once things have been still for a moment
+  if (syncOff || !acct || !token) return;
+  syncDirty = true; clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => { if (ws && ws.readyState === 1) { send({ type: 'settings', data: settingsNow() }); syncDirty = false; } }, 800); // not connected: it stays marked and is sent at the next login
+}
+function applySettings(st, base) { // the account's settings arrived (at login, or because you changed one on another device): make this browser match
+  if (!st || typeof st !== 'object') return;
+  syncOff = true;
+  try {
+    SYNC.forEach(k => { if (typeof st[k] === 'string') localStorage.setItem(k, st[k]); });
+    ['joinCam', 'joinMic'].forEach(k => { if (typeof st[k] === 'boolean') prefs[k] = st[k]; }); savePrefs(); drawPre();
+    setTheme(localStorage.getItem('theme')); setFont(localStorage.getItem('font')); setBgDim(localStorage.getItem('bgdim') === null ? 55 : localStorage.getItem('bgdim')); setGun(localStorage.getItem('gun'));
+    sfxOn = localStorage.getItem('sfx') !== 'off'; $('selSfx').checked = sfxOn; fxOn = localStorage.getItem('fx') !== 'off'; $('selFx').checked = fxOn;
+    const bg = typeof st.bg === 'string' ? st.bg : '', had = localStorage.getItem('bgid') || ''; // bg: the id of your own background image on the server
+    if (bg && bg !== had && base) { const url = base + bg + '.jpg'; setBg(url); localStorage.setItem('bgimg', url); localStorage.setItem('bgid', bg); }
+    else if (!bg && had) { setBg(''); localStorage.removeItem('bgimg'); localStorage.removeItem('bgid'); } // it was taken off on another device
+    [[sizes, 'sizes'], [vols, 'vols']].forEach(([o, k]) => { let v = {}; try { v = JSON.parse(localStorage.getItem(k)) || {}; } catch {} Object.keys(o).forEach(x => delete o[x]); Object.assign(o, v); }); applySizes();
+  } catch {}
+  syncOff = false;
+}
+async function syncBg(quiet) { // this browser has a background the account does not know about: upload it, so your other devices get it too
+  const data = localStorage.getItem('bgimg') || ''; if (!data.startsWith('data:image/') || !picBase || localStorage.getItem('bgid') || (quiet && localStorage.getItem('bgskip'))) return;
+  try {
+    const bin = atob(data.slice(data.indexOf(',') + 1)), bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const id = await uploadImage(new Blob([bytes], { type: 'image/jpeg' }), 1600, quiet);
+    if (id && localStorage.getItem('bgimg') === data) { localStorage.setItem('bgid', id); syncSoon(); } // unless it was changed again while this one was uploading
+    else if (!id && quiet) localStorage.setItem('bgskip', '1'); // it was refused or could not be sent: it stays on this device, and is not tried again at every login
+  } catch {}
+}
 const dev = (() => { // a random id for this browser, so a moderator's block can cover the device as well as the account
   let k = localStorage.getItem('dev');
   if (!/^[a-f0-9]{32}$/.test(k || '')) { k = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join(''); try { localStorage.setItem('dev', k); } catch {} }
@@ -819,7 +888,7 @@ $('authForm').onsubmit = e => {
   if (ws && ws.readyState === 1) { authNote('Checking…'); send(pendingAuth); pendingAuth = null; } // not connected yet: it is sent the moment the connection opens
   else authNote('Waking the server up. This can take up to a minute, then you are logged in automatically.');
 };
-$('logout').onclick = () => { send({ type: 'logout', token }); token = ''; localStorage.removeItem('token'); exitRoom(); show('auth'); ws.close(4001); };
+$('logout').onclick = () => { if (syncDirty) send({ type: 'settings', data: settingsNow() }); syncDirty = false; clearTimeout(syncTimer); send({ type: 'logout', token }); token = ''; localStorage.removeItem('token'); exitRoom(); show('auth'); ws.close(4001); };
 
 let wakeTimer = 0;
 function connect() {
@@ -842,7 +911,7 @@ function drawMe() { $('me').textContent = acct.display + ' @' + acct.code; }
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; serverOld = (m.v || 0) < NEED_SERVER; $('oldServer').classList.toggle('hidden', !(serverOld && isAdmin)); $('authGo').disabled = false; authNote(''); if (isAdmin && !m.saved) setTimeout(() => notify('Warning: accounts are NOT being saved. Supabase is not connected, so everything resets on the next update. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Render.'), 1500); $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); $('dmPic').classList.toggle('hidden', !m.pics); $('dmGif').classList.toggle('hidden', !m.gifs); picBase = m.picBase || ''; picWhy = !m.pics ? 'OPENAI_API_KEY is not set in Render' : !m.saved ? 'Supabase is not connected in Render' : ''; drawLatest(m.latest || []); $('openMod').classList.toggle('hidden', !isAdmin); $('openMod').classList.toggle('has-new', !!m.reports); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; serverOld = (m.v || 0) < NEED_SERVER; $('oldServer').classList.toggle('hidden', !(serverOld && isAdmin)); $('authGo').disabled = false; authNote(''); if (isAdmin && !m.saved) setTimeout(() => notify('Warning: accounts are NOT being saved. Supabase is not connected, so everything resets on the next update. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Render.'), 1500); $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); $('dmPic').classList.toggle('hidden', !m.pics); $('dmGif').classList.toggle('hidden', !m.gifs); picBase = m.picBase || ''; picWhy = !m.pics ? 'OPENAI_API_KEY is not set in Render' : !m.saved ? 'Supabase is not connected in Render' : ''; drawLatest(m.latest || []); $('openMod').classList.toggle('hidden', !isAdmin); $('openMod').classList.toggle('has-new', !!m.reports); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } if (!serverOld) { if (m.settings && !syncDirty) applySettings(m.settings, picBase); else syncSoon(); if (!(m.settings && m.settings.bg)) syncBg(true); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
   else if (m.type === 'lobby') { rooms = m.rooms; drawStats(m.stats); drawLobby(); }
   else if (m.type === 'error') { clearTimeout(callWait); toast(m.text); if (!inRoom && local) { local.getTracks().forEach(t => t.stop()); local = null; } } // a refused join must not leave the camera on
   else if (m.type === 'joined') onJoined(m);
@@ -857,11 +926,14 @@ function handle(m) {
   else if (m.type === 'maze-caught') { if (mzRound) { mzRound.caught = m.caught; mzApply(); if (mazeOpen) notify(m.name + ' was caught'); } }
   else if (m.type === 'maze-gone') { if (mzMates[m.id] && Z) { Z.scene.remove(mzMates[m.id].g); delete mzMates[m.id]; } }
   else if (m.type === 'maze-open') { if (!mazeOpen) invite(m.name + ' went into the horror maze', () => setMaze(true)); }
+  else if (m.type === 'maze-noise') onMazeNoise(m);
   else if (m.type === 'call-room') { clearTimeout(callWait); if (inRoom) { send({ type: 'leave' }); exitRoom(); } closeFr(); joinRoom(m.room); toast('Calling… they come in when they accept'); } // the private call you just started
   else if (m.type === 'call-invite') onCallInvite(m);
   else if (m.type === 'hang-pos') onHangPos(m);
   else if (m.type === 'hang-gone') { if (mates[m.id] && H) { H.scene.remove(mates[m.id].g); delete mates[m.id]; } }
   else if (m.type === 'hang-open') { if (!hangOpen) invite(m.name + ' is in the 3D hangout', () => setHang(true)); }
+  else if (m.type === 'hang-note') { if (hangOpen) toast(m.text); } // knockouts and parkour times: shown to the people in the hangout, never written into the chat
+  else if (m.type === 'settings') applySettings(m.data, picBase); // you changed a setting on another device
   else if (m.type === 'shoot-pos') { const o = foes[m.id] || (foes[m.id] = { dx: m.x, dy: m.y }); o.x = m.x; o.y = m.y; o.a = m.a; o.hp = m.hp; o.gun = m.gun; o.safe = m.safe; o.t = Date.now(); }
   else if (m.type === 'shoot-fire') { if (shootOpen && GUNS[m.gun]) { m.as.forEach(a => shots.push(mkShot(m.x, m.y, a, m.gun, m.id))); if (foes[m.id]) foes[m.id].flash = Date.now(); } }
   else if (m.type === 'shoot-gone') delete foes[m.id];
@@ -876,7 +948,10 @@ function handle(m) {
   else if (m.type === 'state') setState(m.id, m);
   else if (m.type === 'avatar') { if (people[m.id]) upsert(m.id, { avatar: safeAv(m.data) }); }
   else if (m.type === 'stroke') onStroke(m);
-  else if (m.type === 'board-clear') { strokes = []; redraw(); toast(m.by + ' cleared the board'); }
+  else if (m.type === 'board-clear') { strokes = []; redraw(); if (m.by) toast(m.by + ' cleared the board'); }
+  else if (m.type === 'draw-round') onDrawRound(m);
+  else if (m.type === 'draw-word') { if (drawing) { drawing.word = m.word; drawShow(); } }
+  else if (m.type === 'hang-tag') onHangTag(m);
   else if (m.type === 'mreact') { const d = document.querySelector('.msg[data-mid="' + m.mid + '"]'); if (d) drawReacts(d, m.reacts); }
   else if (m.type === 'react') { floatEmoji(m.id, m.emoji); tone(700, .08, 'sine', .04, 1.5); }
   else if (m.type === 'typing') setTyper(m.id, m.name, m.on);
@@ -932,18 +1007,26 @@ $('quick').onclick = () => { // quick join: the open room with the most people i
 };
 
 /* ---------- calls ---------- */
+let joining = false; // a join is under way: a second click must not open the camera a second time
 async function joinRoom(id) {
+  if (joining) return; joining = true;
   const r = rooms.find(x => x.id === id), big = r && r.max >= 30, gum = c => navigator.mediaDevices.getUserMedia(c);
-  try { local = await gum(big ? { audio: constraints().audio } : constraints()); }
-  catch {
-    try { local = await gum({ audio: constraints().audio }); toast('No camera found: joining with audio only'); }
-    catch { local = null; toast('No mic or camera: joining as a viewer'); }
-  }
-  if (big) { // big rooms: listen first, speak or show video when you choose
-    if (local) local.getAudioTracks().forEach(t => t.enabled = false);
-    toast('Big room: you joined muted with your camera off. Use the buttons below to speak or show video.');
-  }
-  send({ type: 'join', room: id });
+  const cam = prefs.joinCam !== false && !big, mic = prefs.joinMic !== false; // the "Join with" switches in the menu; big rooms never start with video
+  if (local) { local.getTracks().forEach(t => t.stop()); local = null; } // a stream left over from an earlier try would keep the camera light on
+  try {
+    if (cam || mic) {
+      try { local = await gum({ ...(cam ? { video: constraints().video } : {}), ...(mic ? { audio: constraints().audio } : {}) }); }
+      catch {
+        if (cam && mic) { try { local = await gum({ audio: constraints().audio }); toast('No camera found: joining with audio only'); } catch { local = null; toast('No mic or camera: joining as a viewer'); } }
+        else { local = null; toast('Could not open your ' + (cam ? 'camera' : 'mic') + ': joining without it'); }
+      }
+    }
+    if (big) { // big rooms: listen first, speak or show video when you choose
+      if (local) local.getAudioTracks().forEach(t => t.enabled = false);
+      toast('Big room: you joined muted with your camera off. Use the buttons below to speak or show video.');
+    }
+    send({ type: 'join', room: id });
+  } finally { joining = false; }
 }
 function onJoined(m) {
   inRoom = true; roomMax = m.max || 6; show('call');
@@ -951,7 +1034,7 @@ function onJoined(m) {
   m.chat.forEach(x => addMsg(x));
   addTile('me', myName, local, true, { avatar: myAvatar });
   updateBtns(); pin(null); $('topicIn').value = m.topic || '';
-  strokes = (m.board || []).map(x => ({ ...x })); redraw();
+  strokes = (m.board || []).map(x => ({ ...x })); redraw(); onDrawRound(m.draw);
   // the newcomer sends offers to everyone already inside
   m.peers.forEach((p, i) => { // stagger the connections so a full room doesn't hit the browser all at once
     addTile(p.id, p.name, null, false, p);
@@ -1086,17 +1169,18 @@ async function switchDevice(kind, id) { // swap the live camera or mic without l
   prefs[kind] = id; savePrefs();
   const vid = kind === 'cam';
   if (!local || !id || (vid && sharing)) return; // while sharing, the camera choice applies when sharing stops
+  if (!(vid ? local.getVideoTracks() : local.getAudioTracks()).length) return; // it is switched off right now: the choice is saved and used when you turn it on, instead of turning it on behind your back
   let s;
   try { s = await navigator.mediaDevices.getUserMedia(vid ? { video: { deviceId: { exact: id } } } : { audio: { deviceId: { exact: id }, echoCancellation: true, noiseSuppression: true } }); }
   catch { return toast('Could not switch to that device'); }
   swapTrack(s.getTracks()[0]); pushState();
 }
-$('selSfx').onchange = () => { sfxOn = $('selSfx').checked; localStorage.setItem('sfx', sfxOn ? 'on' : 'off'); if (sfxOn) sfx.pop(); };
+$('selSfx').onchange = () => { sfxOn = $('selSfx').checked; saveSet('sfx', sfxOn ? 'on' : 'off'); if (sfxOn) sfx.pop(); };
 $('selCam').onchange = () => switchDevice('cam', $('selCam').value);
 $('selMic').onchange = () => switchDevice('mic', $('selMic').value);
 $('selSpk').onchange = () => { prefs.spk = $('selSpk').value; savePrefs(); document.querySelectorAll('.tile:not(.me) video').forEach(applySink); };
 
-/* ---------- themes (saved in this browser) ---------- */
+/* ---------- themes (saved on your account) ---------- */
 // bg and fg are "r g b" so the CSS can fade them; vid is the filter put on everyone's video
 const THEMES = {
   mono: { name: 'Mono', bg: '0 0 0', fg: '255 255 255', acc: '#2dff88', vid: 'grayscale(1) contrast(1.05)' },
@@ -1130,7 +1214,7 @@ function setTheme(k) {
   s.setProperty('--bgc', t.bg); s.setProperty('--fgc', t.fg); s.setProperty('--acc', t.acc); s.setProperty('--vid', t.vid || 'none');
   dotRGB = t.fg.replace(/ /g, ',');
   accHex = t.acc; accRGB = [1, 3, 5].map(i => parseInt(t.acc.slice(i, i + 2), 16)).join(',');
-  localStorage.setItem('theme', k);
+  saveSet('theme', k);
   document.querySelectorAll('.th').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
 }
 Object.entries(THEMES).forEach(([k, t]) => {
@@ -1344,7 +1428,7 @@ function upsert(id, d) {
 }
 const vols = (() => { try { return JSON.parse(localStorage.getItem('vols')) || {}; } catch { return {}; } })();
 const getVol = (n, k) => (vols[n] && vols[n][k] !== undefined ? vols[n][k] : 100);
-const setVol = (n, k, v) => { (vols[n] = vols[n] || {})[k] = +v; localStorage.setItem('vols', JSON.stringify(vols)); };
+const setVol = (n, k, v) => { (vols[n] = vols[n] || {})[k] = +v; saveSet('vols', JSON.stringify(vols)); };
 function applyVol(id) {
   const p = people[id], t = $('t-' + id); if (!p || !t || id === 'me') return;
   t.querySelector('video').volume = getVol(p.name, 'v') / 100;
@@ -1421,7 +1505,7 @@ function layout() {
   sideGrip.classList.toggle('hidden', !pinId && !big);
 }
 
-/* ---------- resizable panels: drag the chat's edge, or the gap beside the pinned tile or board. Sizes are saved in this browser ---------- */
+/* ---------- resizable panels: drag the chat's edge, or the gap beside the pinned tile or board. Sizes are saved on your account ---------- */
 const sizes = (() => { try { return JSON.parse(localStorage.getItem('sizes')) || {}; } catch { return {}; } })();
 const sideGrip = document.createElement('div'); sideGrip.id = 'sideGrip'; sideGrip.className = 'grip hidden'; sideGrip.title = 'Drag to resize. Double-click to reset';
 const clamp = (v, lo, hi) => Math.round(Math.max(lo, Math.min(hi, v)));
@@ -1430,7 +1514,7 @@ function applySizes() {
   ['chatw', 'chath', 'sidew'].forEach(k => { if (sizes[k]) s.setProperty('--' + k, sizes[k] + 'px'); else s.removeProperty('--' + k); });
 }
 function grip(el, onMove, keys) { // keys: the saved sizes a double-click puts back to normal
-  const save = () => { applySizes(); localStorage.setItem('sizes', JSON.stringify(sizes)); };
+  const save = () => { applySizes(); saveSet('sizes', JSON.stringify(sizes)); };
   el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('on'); });
   el.addEventListener('pointermove', e => { if (el.hasPointerCapture(e.pointerId)) { onMove(e); applySizes(); } });
   ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, () => { el.classList.remove('on'); save(); }));
@@ -1470,7 +1554,7 @@ function setBoard(open) {
   layout();
 }
 $('boardBtn').onclick = () => { if (!boardOpen) { setShoot(false); setHang(false); setMaze(false); } setBoard(!boardOpen); }; $('bclose').onclick = () => setBoard(false);
-$('bclear').onclick = () => { strokes = []; redraw(); send({ type: 'board-clear' }); };
+$('bclear').onclick = () => { if (drawing && drawing.drawer !== myId) return toast('Only ' + drawing.name + ' can clear the board this round'); strokes = []; redraw(); send({ type: 'board-clear' }); };
 const bpt = e => { const r = bcv.getBoundingClientRect(); return [Math.max(0, Math.min(1000, Math.round((e.clientX - r.left) / r.width * 1000))), Math.max(0, Math.min(625, Math.round((e.clientY - r.top) / r.height * 625)))]; };
 function extend(x, y) { const from = cur.pts.length; cur.pts.push(x, y); pend.push(x, y); drawStroke(cur, from); }
 function flush() {
@@ -1479,7 +1563,7 @@ function flush() {
   pend = [];
 }
 bcv.addEventListener('pointerdown', e => {
-  if (e.button > 0) return; bcv.setPointerCapture(e.pointerId);
+  if (e.button > 0 || (drawing && drawing.drawer !== myId)) return; bcv.setPointerCapture(e.pointerId); // in Draw and guess only the drawer can draw
   cur = { sid: myId + '-' + (++mySeq), c: brush, w: +$('bsize').value * (brush === SW[5] ? 3 : 1), pts: [] };
   strokes.push(cur); const [x, y] = bpt(e); extend(x, y); extend(x, y);
 });
@@ -1576,12 +1660,12 @@ $('pollForm').onsubmit = e => {
 };
 
 /* ---------- mini-games (the server checks every move and sends back the new state) ---------- */
-const GAMES = { ttt: 'Tic-Tac-Toe', c4: 'Connect Four', rps: 'Rock Paper Scissors', num: 'Guess the number', react: 'Reaction race', hang: 'Hangman' }, RPS = { rock: '✊', paper: '✋', scissors: '✌️' };
+const GAMES = { ttt: 'Tic-Tac-Toe', c4: 'Connect Four', rps: 'Rock Paper Scissors', num: 'Guess the number', react: 'Reaction race', hang: 'Hangman', scram: 'Word scramble', math: 'Maths race' }, RPS = { rock: '✊', paper: '✋', scissors: '✌️' };
 function drawGame(d, g) {
   const box = d.querySelector('.mextra'), me = g.p.indexOf(myName), mid = +d.dataset.mid; box.innerHTML = '';
   const el = (tag, cls, text) => { const x = document.createElement(tag); x.className = cls; if (text !== undefined) x.textContent = text; box.appendChild(x); return x; };
   let status = '';
-  if (g.kind === 'num' || g.kind === 'react' || g.kind === 'hang') return drawOpenGame(el, g, mid);
+  if (['num', 'react', 'hang', 'scram', 'math'].includes(g.kind)) return drawOpenGame(el, g, mid);
   el('div', 'pq', GAMES[g.kind]); el('div', 'gwho', g.p[0] + ' vs ' + (g.p[1] || '…'));
   if (g.p.length < 2) {
     if (me === 0) status = 'Waiting for someone to join';
@@ -1621,6 +1705,16 @@ function drawOpenGame(el, g, mid) { // games the whole room plays at once: no se
       form.onsubmit = e => { e.preventDefault(); if (inp.value) send({ type: 'gmove', mid, n: +inp.value }); };
     }
     el('small', '', over ? g.win + ' got it in ' + g.tries + (g.tries === 1 ? ' guess' : ' guesses') : g.last ? g.last + (/(\d+)$/.exec(g.last)[1] < g.lo ? ': too low' : ': too high') : 'Guess the secret number');
+  } else if (g.kind === 'scram' || g.kind === 'math') { // one question for the whole room; the first right answer wins
+    const word = g.kind === 'scram';
+    el('div', 'gbig' + (word ? ' gword' : ''), word ? [...(over ? String(g.ans) : g.scr)].join(' ').toUpperCase() : g.q + (over ? ' = ' + g.ans : ''));
+    if (!over) {
+      const form = el('form', 'grow'), inp = document.createElement('input'), b = document.createElement('button');
+      inp.placeholder = word ? 'Unscramble it' : 'Your answer'; inp.setAttribute('aria-label', inp.placeholder); inp.autocomplete = 'off'; if (!word) inp.inputMode = 'numeric';
+      b.className = 'solid gjoin'; b.style.margin = 0; b.textContent = 'Go'; form.append(inp, b);
+      form.onsubmit = e => { e.preventDefault(); const v = inp.value.trim(); if (v) send(word ? { type: 'gmove', mid, w: v } : { type: 'gmove', mid, n: +v }); inp.value = ''; };
+    }
+    el('small', '', over ? g.win + ' got it first, after ' + g.tries + (g.tries === 1 ? ' try' : ' tries') : g.last ? g.last + '. Not it' : word ? 'Unscramble the word. First right answer wins' : 'Work it out. First right answer wins');
   } else if (g.kind === 'react') {
     const b = el('button', 'gbtn' + (g.go && !over ? ' go' : ''), over ? g.win + ' wins' : g.go ? 'CLICK!' : 'Wait for it…');
     b.type = 'button'; b.dataset.sfx = 'none'; b.disabled = over || g.out.includes(myName); b.onclick = () => send({ type: 'gmove', mid });
@@ -1635,9 +1729,16 @@ function drawOpenGame(el, g, mid) { // games the whole room plays at once: no se
   }
 }
 const gameBar = $('gameBar');
-[['hang3d', '3D hangout'], ['maze', 'Horror maze'], ['shoot', 'Shooter arena'], ['ttt', 'Tic-Tac-Toe'], ['c4', 'Connect Four'], ['rps', 'Rock Paper Scissors'], ['num', 'Guess the number'], ['react', 'Reaction race'], ['hang', 'Hangman'], ['roll', 'Roll a dice'], ['flip', 'Flip a coin']].forEach(([k, label]) => {
+[['', 'On the stage'], ['hang3d', '3D hangout'], ['maze', 'Horror maze'], ['shoot', 'Shooter arena'], ['draw', 'Draw and guess'], ['', 'In chat'], ['ttt', 'Tic-Tac-Toe'], ['c4', 'Connect Four'], ['rps', 'Rock Paper Scissors'], ['num', 'Guess the number'],
+  ['scram', 'Word scramble'], ['math', 'Maths race'], ['react', 'Reaction race'], ['hang', 'Hangman'], ['', 'Quick'], ['roll', 'Roll a dice'], ['flip', 'Flip a coin']].forEach(([k, label]) => {
+  if (!k) { const h = document.createElement('div'); h.className = 'gamesec'; h.textContent = label; return gameBar.appendChild(h); } // a heading, not a game
   const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
-  b.onclick = () => { gameBar.classList.add('hidden'); if (k === 'maze') return setMaze(true); if (k === 'shoot') return setShoot(true); if (k === 'hang3d') return setHang(true); send(GAMES[k] ? { type: 'game', kind: k } : { type: 'luck', kind: k }); tab('chat'); };
+  b.onclick = () => {
+    gameBar.classList.add('hidden');
+    if (k === 'maze') return setMaze(true); if (k === 'shoot') return setShoot(true); if (k === 'hang3d') return setHang(true);
+    if (k === 'draw') return send({ type: 'draw', act: 'start' }); // the server answers by opening the board for everyone
+    send(GAMES[k] ? { type: 'game', kind: k } : { type: 'luck', kind: k }); tab('chat');
+  };
   gameBar.appendChild(b);
 });
 $('gamesBtn').onclick = () => gameBar.classList.toggle('hidden');
@@ -1993,18 +2094,19 @@ function onAbility(m) {
 }
 
 /* ---------- sending your own images: shrunk in the browser, checked by the server, then shown ---------- */
-async function uploadImage(file) { // gives back the image's id, or null (after telling the user why)
+async function uploadImage(file, max, quiet) { // gives back the image's id, or null (after telling the user why, unless quiet). max: the longest side in pixels, 1024 if left out
+  const tell = t => { if (!quiet) toast(t); };
   try {
     const im = await new Promise((ok, no) => { const x = new Image(); x.onload = () => ok(x); x.onerror = no; x.src = URL.createObjectURL(file); });
-    const k = Math.min(1, 1024 / Math.max(im.width, im.height)), c = document.createElement('canvas'), g = c.getContext('2d'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+    const k = Math.min(1, (max || 1024) / Math.max(im.width, im.height)), c = document.createElement('canvas'), g = c.getContext('2d'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
     g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(im.src);
     let blob, q = .82; do { blob = await new Promise(done => c.toBlob(done, 'image/jpeg', q)); q -= .15; } while (blob && blob.size > 350000 && q > .2); // lower the quality until it fits
-    if (!blob || blob.size > 390000) { toast('That image is too big'); return null; }
-    toast('Checking the image…');
+    if (!blob || blob.size > 390000) { tell('That image is too big'); return null; }
+    tell('Checking the image…');
     const r = await fetch('/upload', { method: 'POST', headers: { 'Content-Type': 'image/jpeg', Authorization: 'Bearer ' + token }, body: blob }), j = await r.json();
-    if (!r.ok) { toast(j.error || 'Could not send that image'); return null; }
+    if (!r.ok) { tell(j.error || 'Could not send that image'); return null; }
     return j.id;
-  } catch { toast('Could not send that image'); return null; }
+  } catch { tell('Could not send that image'); return null; }
 }
 $('picBtn').onclick = () => $('picFile').click();
 $('picFile').onchange = async e => {
@@ -2019,6 +2121,14 @@ addEventListener('keydown', e => { // in a call: M mutes or unmutes, V turns the
   if (e.key === 'm' || e.key === 'M') $('mic').click(); else if (e.key === 'v' || e.key === 'V') $('cam').click();
 });
 $('mic').title = 'Mute or unmute (M)'; $('cam').title = 'Camera on or off (V)';
+
+/* ---------- "Join with" switches in the menu: whether your camera and mic start on when you walk into a room (saved on your account) ---------- */
+function drawPre() {
+  [['preCam', 'joinCam', 'Camera'], ['preMic', 'joinMic', 'Mic']].forEach(([id, key, label]) => { const on = prefs[key] !== false; $(id).textContent = label + (on ? ' on' : ' off'); $(id).setAttribute('aria-pressed', on); $(id).classList.toggle('off', !on); });
+}
+$('preCam').onclick = () => { prefs.joinCam = prefs.joinCam === false; savePrefs(); drawPre(); syncSoon(); };
+$('preMic').onclick = () => { prefs.joinMic = prefs.joinMic === false; savePrefs(); drawPre(); syncSoon(); };
+drawPre();
 
 /* ---------- notifications: cards in the corner, and a count in the tab name while you are looking elsewhere ---------- */
 let unseen = 0;
@@ -2038,7 +2148,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && un
 const HINTS = [['openSet', 'Change themes and pfp in settings!'], ['rooms', 'Join public rooms and play games here!'], ['openFeed', 'Make posts here!']]; let hintAt = -1;
 function showHint(i) {
   document.querySelectorAll('.hinted').forEach(x => x.classList.remove('hinted')); hintAt = i;
-  if (i >= HINTS.length || i < 0) { hintAt = -1; $('hint').classList.add('hidden'); try { localStorage.setItem('hints', 'done'); } catch {} return; }
+  if (i >= HINTS.length || i < 0) { hintAt = -1; $('hint').classList.add('hidden'); try { saveSet('hints', 'done'); } catch {} return; }
   const el = $(HINTS[i][0]), box = $('hint'); el.classList.add('hinted'); el.scrollIntoView({ block: 'center' });
   $('hintText').textContent = HINTS[i][1]; $('hintNext').textContent = i === HINTS.length - 1 ? 'Got it' : 'Next'; box.classList.remove('hidden');
   const r = el.getBoundingClientRect(), top = r.bottom + 12 + box.offsetHeight < innerHeight ? r.bottom + 12 : Math.max(8, Math.min(r.top + 20, innerHeight - box.offsetHeight - 8)); // under the thing it points at, or over its top edge if there is no room
@@ -2048,7 +2158,7 @@ function startHints() { if (hintAt < 0 && localStorage.getItem('hints') !== 'don
 $('hintNext').onclick = () => showHint(hintAt + 1); $('hintSkip').onclick = () => showHint(HINTS.length);
 
 /* ---------- settings: background effects on or off ---------- */
-$('selFx').checked = fxOn; $('selFx').onchange = () => { fxOn = $('selFx').checked; localStorage.setItem('fx', fxOn ? 'on' : 'off'); };
+$('selFx').checked = fxOn; $('selFx').onchange = () => { fxOn = $('selFx').checked; saveSet('fx', fxOn ? 'on' : 'off'); };
 
 /* ---------- shared by the race and the arcade: which keys mean which direction ---------- */
 const KEYMAP = { a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right', w: 'up', arrowup: 'up', ' ': 'up', s: 'down', arrowdown: 'down' };
@@ -2073,7 +2183,7 @@ $('joinX').onclick = () => $('joinBar').classList.add('hidden');
 const RW = 800, RH = 450; // the shooter's playing field, in its own units
 let shLive = false; // a shooter match is running right now, so Start is refused
 function stageQuit() { // leaving the room closes whichever game was open
-  shootOpen = false; shLive = false; hangQuit(); mazeQuit(); shEl.classList.add('hidden'); $('joinBar').classList.add('hidden');
+  shootOpen = false; shLive = false; hangQuit(); mazeQuit(); onDrawRound(null); shEl.classList.add('hidden'); $('joinBar').classList.add('hidden');
   foes = {}; shots = []; shScore = {}; shMsg = '';
 }
 
@@ -2117,7 +2227,7 @@ function spawnHero() { // the open cell, out of a dozen random ones, that is fur
   for (let i = 0; i < 12 && openCells.length; i++) { const c = openCells[Math.floor(Math.random() * openCells.length)], d = Math.min(9999, ...Object.values(foes).filter(o => o.hp > 0).map(o => Math.hypot(o.x - c.x, o.y - c.y))); if (d > bestD) { bestD = d; at = c; } }
   hero = { x: at.x, y: at.y, a: 0, hp: 100, safe: Date.now() + 1500, flash: 0 };
 }
-function setGun(k) { if (!GUNS[k]) return; gun = k; try { localStorage.setItem('gun', k); } catch {} document.querySelectorAll('#guns button').forEach(b => b.classList.toggle('on', b.dataset.g === k)); }
+function setGun(k) { if (!GUNS[k]) return; gun = k; try { saveSet('gun', k); } catch {} document.querySelectorAll('#guns button').forEach(b => b.classList.toggle('on', b.dataset.g === k)); }
 Object.keys(GUNS).forEach((k, i) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.g = k; b.dataset.sfx = 'none'; b.textContent = (i + 1) + ' ' + GUNS[k].name; b.onclick = () => setGun(k); $('guns').appendChild(b); });
 setGun(gun);
 addEventListener('keydown', e => { const i = '1234'.indexOf(e.key); if (shootOpen && i >= 0 && e.key.length === 1 && !typing(e)) setGun(Object.keys(GUNS)[i]); });
@@ -2234,7 +2344,7 @@ $('shootX').onclick = () => setShoot(false);
 
 /* ---------- 3D hangout: a small park, with a parkour course and a sword arena, that everyone in the room can walk around in together. Drawn with three.js, which is only downloaded the first time someone opens it ---------- */
 const hgEl = $('hang'), hcv = $('hcv'), hk = {}; // hk: which keys are down, by physical key (shared with the horror maze)
-let H = null, mates = {}, roomId = 0, hangLast = 0, hangSent = 0, hangCols = [], hangBoxes = []; // H: the scene, camera, renderer and your own figure
+let H = null, mates = {}, roomId = 0, hangLast = 0, hangSent = 0, hangCols = [], hangBoxes = [], tagIt = 0, tagAt = 0; // tagIt: who is "it" in a game of tag (0: no game) // H: the scene, camera, renderer and your own figure
 // hangCols: round things you cannot walk through, as [x, z, radius, height]. hangBoxes: blocks you can stand on or bump into, as { x, z, hw, hd, top, bot }
 const ARENA = { x: -22, z: -14, r: 6.5 }, inArena = p => Math.hypot(p.x - ARENA.x, p.z - ARENA.z) < ARENA.r; // the sword arena: you hold a sword while you are inside it
 const turnTo = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * Math.min(1, k); // turn angle a part of the way to b, the short way round
@@ -2307,6 +2417,7 @@ function hangInit() {
   scene.traverse(o => { o.matrixAutoUpdate = false; o.updateMatrix(); }); // nothing above ever moves, so its position is worked out once
   const fire = put(new T.ConeGeometry(.5, 1.3, 7), 0xff8a2a, 0, .8, 0, true), me = hangFigure(new T.Color(accHex), 'You'); me.position.set(4 + rnd() * 2, 0, 9 + rnd() * 2); scene.add(me);
   H = { scene, cam, ren, me, fire, plats, yaw: 0, pitch: .32, yawT: 0, pitchT: .32, dist: 7.5, vy: 0, dance: 0, w: 0, h: 0, pr, n: 0, acc: 0, fps: 60, on: -1, t0: 0, face: 0, swingAt: -9999, hp: 3, kx: 0, kz: 0, wasIn: false };
+  H.mark = new T.Mesh(new T.ConeGeometry(.3, .6, 8), new T.MeshBasicMaterial({ color: 0xff2a2a })); H.mark.rotation.x = Math.PI; H.mark.position.y = 3.25; // the red arrow that floats over whoever is "it"
 }
 function hangCollide(p) { // push your figure back out of anything solid
   for (const c of hangCols) { if (p.y > c[3]) continue; const dx = p.x - c[0], dz = p.z - c[1], d = Math.hypot(dx, dz), min = c[2] + .35; if (d < min && d > .0001) { p.x = c[0] + dx / d * min; p.z = c[1] + dz / d * min; } }
@@ -2353,7 +2464,7 @@ function hangLoop(t) {
   const fwd = (hk.KeyW || hk.ArrowUp ? 1 : 0) - (hk.KeyS || hk.ArrowDown ? 1 : 0), side = (hk.KeyD || hk.ArrowRight ? 1 : 0) - (hk.KeyA || hk.ArrowLeft ? 1 : 0), moving = !!(fwd || side), dancing = t < H.dance, armed = inArena(p);
   if (moving) { // W walks away from the camera, A and D step sideways
     const mx = -Math.sin(H.yaw) * fwd + Math.cos(H.yaw) * side, mz = -Math.cos(H.yaw) * fwd - Math.sin(H.yaw) * side, len = Math.hypot(mx, mz) || 1;
-    p.x += mx / len * 5.5 * dt; p.z += mz / len * 5.5 * dt; H.face = Math.atan2(mx, mz);
+    const sp = (tagIt === myId ? 6.2 : 5.5) * dt; p.x += mx / len * sp; p.z += mz / len * sp; H.face = Math.atan2(mx, mz); // "it" is a little faster
   }
   if (dancing && !moving) me.rotation.y += dt * 7; else me.rotation.y = turnTo(me.rotation.y, H.face, dt * 12); // turn smoothly toward the way you are walking
   p.x = clamp2(p.x + H.kx * dt, -58, 58); p.z = clamp2(p.z + H.kz * dt, -58, 58); H.kx *= Math.max(0, 1 - dt * 5); H.kz *= Math.max(0, 1 - dt * 5); // knock-back from a sword hit, fading out
@@ -2374,11 +2485,15 @@ function hangLoop(t) {
     if (o.e) g.rotation.y += dt * 7; else g.rotation.y = turnTo(g.rotation.y, o.r, dt * 10);
     hangPose(g, far > .06, !!o.e, dt, inArena(o), o.s ? Math.min(1, (Date.now() - o.sAt) / 260) : -1);
   }
+  const itFig = tagIt === myId ? me : mates[tagIt] ? mates[tagIt].g : null; // tag: keep the arrow over whoever is "it"
+  if (H.mark.parent !== itFig) { if (H.mark.parent) H.mark.parent.remove(H.mark); if (itFig) itFig.add(H.mark); }
+  H.mark.position.y = 3.25 + Math.sin(t / 200) * .12;
+  if (tagIt === myId && t - tagAt > 1500) for (const id in mates) { const o = mates[id]; if (Math.hypot(o.x - p.x, o.z - p.z) < 1.3 && Math.abs(o.y - p.y) < 1.6) { send({ type: 'hang', act: 'tag', to: +id }); tagAt = t; break; } } // you are it and touching someone: pass it on
   H.fire.scale.y = 1 + Math.sin(t / 70) * .18; H.fire.rotation.y += dt * 3;
   const cp = Math.cos(H.pitch) * H.dist; H.cam.position.set(p.x + Math.sin(H.yaw) * cp, p.y + 1.6 + Math.sin(H.pitch) * H.dist, p.z + Math.cos(H.yaw) * cp); H.cam.lookAt(p.x, p.y + 1.5, p.z);
   if (t - hangSent > 100) { // ten times a second: tell the others where you are, and refresh the little readout
     hangSent = t; send({ type: 'hang', act: 'pos', x: p.x, y: p.y, z: p.z, r: me.rotation.y, e: dancing ? 1 : 0, s: swing >= 0 ? 1 : 0 });
-    $('hangHud').textContent = (armed ? '♥'.repeat(H.hp) + ' · F or click to swing · ' : '') + (H.t0 && H.on !== 0 ? 'Parkour ' + ((t - H.t0) / 1000).toFixed(1) + 's · ' : '') + H.fps + ' fps';
+    $('hangHud').textContent = (tagIt ? (tagIt === myId ? 'You are IT! Touch someone · ' : (people[tagIt] ? people[tagIt].name : 'Someone') + ' is IT · ') : '') + (armed ? '♥'.repeat(H.hp) + ' · F or click to swing · ' : '') + (H.t0 && H.on !== 0 ? 'Parkour ' + ((t - H.t0) / 1000).toFixed(1) + 's · ' : '') + H.fps + ' fps';
   }
   H.ren.render(H.scene, H.cam);
 }
@@ -2397,7 +2512,7 @@ function setHang(open) {
       () => { toast('The 3D hangout could not load. Check your connection and try again'); setHang(false); });
   } else { hgEl.classList.add('hidden'); send({ type: 'hang', act: 'open', on: false }); layout(); }
 }
-function hangQuit() { hangOpen = false; hgEl.classList.add('hidden'); mates = {}; if (H) { H.ren.dispose(); H = null; } } // leaving the room: the next room gets its own park
+function hangQuit() { hangOpen = false; tagIt = 0; hgEl.classList.add('hidden'); mates = {}; if (H) { H.ren.dispose(); H = null; } } // leaving the room: the next room gets its own park
 addEventListener('keydown', e => { // movement keys for the hangout and the maze
   if (!(hangOpen || mazeOpen)) return;
   if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return keysOff(); // typing in chat, or a browser shortcut: let go of everything
@@ -2412,37 +2527,60 @@ hcv.addEventListener('pointermove', e => { if (!hangDrag || !H) return; hangDrag
 hcv.addEventListener('pointerup', () => { if (hangDrag && hangDrag[2] < 6) hangSwing(performance.now()); hangDrag = null; });
 hcv.addEventListener('pointercancel', () => { hangDrag = null; });
 hcv.addEventListener('wheel', e => { e.preventDefault(); if (H) H.dist = clamp2(H.dist + (e.deltaY > 0 ? 1 : -1), 3, 16); }, { passive: false });
+function onHangTag(m) { // the server's word on who is "it" (0: the game is over)
+  tagIt = m.it || 0; tagAt = performance.now(); if (!hangOpen) return;
+  if (!tagIt) toast('Tag is over'); else if (tagIt === myId) { sfx.ping(); toast(m.by ? m.by + ' tagged you. You are IT!' : 'You are IT! Touch someone to pass it on'); } else toast(m.name + ' is IT. Run!');
+}
+$('hangTag').onclick = () => send({ type: 'hang', act: 'tag-start' });
 $('hangX').onclick = () => setHang(false);
 
 /* ---------- horror maze: its own game. First person, dark, one flashlight each. Find the 5 keys and reach the door before the thing in the maze reaches you ---------- */
 // The server keeps the round (the maze's seed, keys found, who was caught). One player's browser, the "host", moves the monster and the server passes that on to the rest.
-const mzEl = $('maze'), mcv = $('mcv'), mmap = $('mmap'), mmg = mmap.getContext('2d'), MT = 2, MN = 21, MKEYS = 5; // MT: metres per tile; MN: tiles along each side
-let Z = null, mzGrid = [], mzKeys = [], mzExit = null, mzRound = null, mzMates = {}, mzLast = 0, mzSent = 0, mzDrone = null, mzDrag = null, mzWait = 0;
-const mzTile = v => Math.floor(v / MT), mzMid = c => (c + .5) * MT;
-const mzWall = (x, z) => { const c = mzTile(x), r = mzTile(z); return c < 0 || r < 0 || c >= MN || r >= MN || mzGrid[r][c] === 1; };
+// The maze is MC by MC cells. A cell is 2 tiles of floor across with a 1-tile wall between cells, so every path is 3.2 m wide.
+const mzEl = $('maze'), mcv = $('mcv'), mmap = $('mmap'), mmg = mmap.getContext('2d'), MT = 1.6, MC = 9, MN = MC * 3 + 1, MKEYS = 5; // MT: metres per tile; MN: tiles along each side
+let Z = null, mzGrid = [], mzKeys = [], mzExit = null, mzClosets = [], mzRound = null, mzMates = {}, mzLast = 0, mzSent = 0, mzDrone = null, mzDrag = null, mzWait = 0;
+const mzTile = v => Math.floor(v / MT), mzMid = c => (c + .5) * MT, mzCell = i => (i * 3 + 2) * MT; // mzMid: the middle of a tile; mzCell: the middle of a cell
+const mzWall = (x, z) => { const c = mzTile(x), r = mzTile(z); return c < 0 || r < 0 || c >= MN || r >= MN || mzGrid[r][c] !== 0; }; // 0 floor, 1 wall, 2 a closet set into a wall (solid too)
 const mzFree = (x, z, rad) => !mzWall(x - rad, z - rad) && !mzWall(x + rad, z - rad) && !mzWall(x - rad, z + rad) && !mzWall(x + rad, z + rad);
-function mzBuild(seed) { // carve a maze out of a grid of solid tiles, then open extra gaps so there is more than one way round
-  const rnd = seeded(seed || 1), g = Array.from({ length: MN }, () => Array(MN).fill(1)), stack = [[1, 1]], cells = []; g[1][1] = 0;
-  while (stack.length) {
-    const [c, r] = stack[stack.length - 1], next = [[2, 0], [-2, 0], [0, 2], [0, -2]].filter(([dc, dr]) => c + dc > 0 && r + dr > 0 && c + dc < MN - 1 && r + dr < MN - 1 && g[r + dr][c + dc]);
+function mzBuild(seed) { // a maze with very few dead ends, some big open rooms, and closets to hide in. The same seed builds the same maze for everyone
+  const rnd = seeded(seed || 1), g = Array.from({ length: MN }, () => Array(MN).fill(1)), deg = Array.from({ length: MC }, () => Array(MC).fill(0)), linked = new Set(), stack = [[0, 0]], seen = new Set(['0,0']);
+  const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]], inside = (c, r) => c >= 0 && r >= 0 && c < MC && r < MC, wallKey = (c, r, dc, dr) => Math.min(c, c + dc) + ',' + Math.min(r, r + dr) + (dc ? 'x' : 'z');
+  const link = (c, r, dc, dr) => { // knock out the wall between a cell and its neighbour
+    const k = wallKey(c, r, dc, dr); if (linked.has(k)) return; linked.add(k); deg[r][c]++; deg[r + dr][c + dc]++;
+    for (let i = 1; i <= 2; i++) { if (dc) g[r * 3 + i][Math.max(c, c + dc) * 3] = 0; else g[Math.max(r, r + dr) * 3][c * 3 + i] = 0; }
+  };
+  for (let r = 0; r < MC; r++) for (let c = 0; c < MC; c++) for (let dz = 1; dz <= 2; dz++) for (let dx = 1; dx <= 2; dx++) g[r * 3 + dz][c * 3 + dx] = 0; // the floor of every cell
+  while (stack.length) { // one winding path that reaches every cell
+    const [c, r] = stack[stack.length - 1], next = DIRS.filter(([dc, dr]) => inside(c + dc, r + dr) && !seen.has((c + dc) + ',' + (r + dr)));
     if (!next.length) { stack.pop(); continue; }
-    const [dc, dr] = next[Math.floor(rnd() * next.length)]; g[r + dr / 2][c + dc / 2] = 0; g[r + dr][c + dc] = 0; stack.push([c + dc, r + dr]);
+    const [dc, dr] = next[Math.floor(rnd() * next.length)]; link(c, r, dc, dr); seen.add((c + dc) + ',' + (r + dr)); stack.push([c + dc, r + dr]);
   }
-  for (let i = 0; i < 60; i++) { const c = 1 + Math.floor(rnd() * (MN - 2)), r = 1 + Math.floor(rnd() * (MN - 2)); if (g[r][c] && c % 2 !== r % 2) g[r][c] = 0; } // loops: a dead end is where it gets you
-  for (let r = 1; r < MN; r += 2) for (let c = 1; c < MN; c += 2) if (c + r > 10 && c + r < 2 * MN - 6) cells.push([c, r, rnd()]);
+  for (let r = 0; r < MC; r++) for (let c = 0; c < MC; c++) if (deg[r][c] === 1 && rnd() < .92) { // dead ends: nearly every one gets a second way out
+    const more = DIRS.filter(([dc, dr]) => inside(c + dc, r + dr) && !linked.has(wallKey(c, r, dc, dr))); if (more.length) { const [dc, dr] = more[Math.floor(rnd() * more.length)]; link(c, r, dc, dr); }
+  }
+  for (let i = 0; i < 8; i++) { const c = Math.floor(rnd() * MC), r = Math.floor(rnd() * MC), [dc, dr] = DIRS[Math.floor(rnd() * 4)]; if (inside(c + dc, r + dr)) link(c, r, dc, dr); } // a few more loops, so it can come at you from either side
+  for (let i = 0; i < 4; i++) { // big rooms: a block of 2 by 2 or 3 by 2 cells with every wall inside it gone
+    const w = 2 + Math.floor(rnd() * 2), c0 = Math.floor(rnd() * (MC - w + 1)), r0 = Math.floor(rnd() * (MC - 1)); if (c0 + r0 === 0) continue; // not on top of the start
+    for (let z = r0 * 3 + 1; z <= (r0 + 2) * 3 - 1; z++) for (let x = c0 * 3 + 1; x <= (c0 + w) * 3 - 1; x++) g[z][x] = 0;
+  }
+  const spots = [], cells = []; // closets: a wall tile with floor next to it becomes a cupboard door facing that floor
+  for (let r = 1; r < MN - 1; r++) for (let c = 1; c < MN - 1; c++) if (g[r][c] === 1) { const open = DIRS.filter(([dc, dr]) => g[r + dr][c + dc] === 0); if (open.length) { const o = open[Math.floor(rnd() * open.length)]; spots.push([c, r, o[0], o[1], rnd()]); } }
+  spots.sort((a, b) => a[4] - b[4]); mzClosets = [];
+  for (const [c, r, ox, oz] of spots) { if (mzClosets.length >= 8) break; if (c + r < 7 || mzClosets.some(k => Math.abs(k.c - c) + Math.abs(k.r - r) < 7)) continue; g[r][c] = 2; mzClosets.push({ c, r, x: mzMid(c), z: mzMid(r), ox, oz, door: null }); } // spread out, and none right at the start
+  for (let r = 0; r < MC; r++) for (let c = 0; c < MC; c++) if (c + r > 3 && c + r < 2 * MC - 2) cells.push([c, r, rnd()]);
   cells.sort((a, b) => a[2] - b[2]); mzGrid = g;
-  mzKeys = cells.slice(0, MKEYS).map(([c, r]) => ({ x: mzMid(c), z: mzMid(r) })); mzExit = { x: mzMid(MN - 2), z: mzMid(MN - 2) }; // keys in random cells away from the start; the door in the far corner
+  mzKeys = cells.slice(0, MKEYS).map(([c, r]) => ({ x: mzCell(c), z: mzCell(r) })); mzExit = { x: mzCell(MC - 1), z: mzCell(MC - 1) }; // keys in random cells away from the start; the door in the far corner
 }
 function mzPath(fc, fr, tc, tr) { // the next tile on the shortest way from one tile to another, or null
   if (fc === tc && fr === tr) return null;
   const seen = new Map([[tc + ',' + tr, null]]), todo = [[tc, tr]]; // searched backwards from the target, so the answer for the start tile is the step to take
   for (let i = 0; i < todo.length; i++) {
     const [c, r] = todo[i];
-    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nc = c + dc, nr = r + dr, k = nc + ',' + nr; if (nc < 0 || nr < 0 || nc >= MN || nr >= MN || mzGrid[nr][nc] === 1 || seen.has(k)) continue; seen.set(k, [c, r]); if (nc === fc && nr === fr) return [c, r]; todo.push([nc, nr]); }
+    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nc = c + dc, nr = r + dr, k = nc + ',' + nr; if (nc < 0 || nr < 0 || nc >= MN || nr >= MN || mzGrid[nr][nc] !== 0 || seen.has(k)) continue; seen.set(k, [c, r]); if (nc === fc && nr === fr) return [c, r]; todo.push([nc, nr]); }
   }
   return null;
 }
-function mzSees(ax, az, bx, bz) { const d = Math.hypot(bx - ax, bz - az), n = Math.ceil(d / .5); for (let i = 1; i < n; i++) if (mzWall(ax + (bx - ax) * i / n, az + (bz - az) * i / n)) return false; return true; } // nothing but air between two points
+function mzSees(ax, az, bx, bz) { const d = Math.hypot(bx - ax, bz - az), n = Math.ceil(d / .4); for (let i = 1; i < n; i++) if (mzWall(ax + (bx - ax) * i / n, az + (bz - az) * i / n)) return false; return true; } // nothing but air between two points
 function mzThing() { // the monster: far too tall, far too thin, and its eyes do not fade in the dark
   const T = THREE, g = new T.Group(), dark = new T.MeshLambertMaterial({ color: 0x0b0b0d }), glow = new T.MeshBasicMaterial({ color: 0xffffff, fog: false }), box = (w, h, d, m, x, y, z) => { const b = new T.Mesh(new T.BoxGeometry(w, h, d), m); b.position.set(x, y, z); return b; };
   const limb = (w, h, x, y) => { const p = new T.Group(); p.add(box(w, h, w, dark, 0, -h / 2, 0)); p.position.set(x, y, 0); g.add(p); return p; };
@@ -2452,19 +2590,26 @@ function mzThing() { // the monster: far too tall, far too thin, and its eyes do
 }
 function mzInit() { // build the scene for the round in mzRound
   const T = THREE, old = Z, ren = old ? old.ren : new T.WebGLRenderer({ canvas: mcv, antialias: false, powerPreference: 'high-performance' }), scene = new T.Scene(), cam = new T.PerspectiveCamera(74, 16 / 9, .05, 60);
-  mzBuild(mzRound.seed); ren.setPixelRatio(1); scene.background = new T.Color(0); scene.fog = new T.Fog(0, 1, 16.5);
+  mzBuild(mzRound.seed); ren.setPixelRatio(1); scene.background = new T.Color(0); scene.fog = new T.Fog(0, 1, 17);
   scene.add(new T.AmbientLight(0x2a3040, .95));
-  const stone = new T.MeshPhongMaterial({ color: 0x4a4f5a, shininess: 4 }), size = MN * MT, flat = (col, y, rot) => { const m = new T.Mesh(new T.PlaneGeometry(size, size), new T.MeshPhongMaterial({ color: col, shininess: 2 })); m.rotation.x = rot; m.position.set(size / 2, y, size / 2); scene.add(m); };
+  const stone = new T.MeshPhongMaterial({ color: 0x4a4f5a, shininess: 4 }), wood = new T.MeshPhongMaterial({ color: 0x6b4526, shininess: 8 }), size = MN * MT, flat = (col, y, rot) => { const m = new T.Mesh(new T.PlaneGeometry(size, size), new T.MeshPhongMaterial({ color: col, shininess: 2 })); m.rotation.x = rot; m.position.set(size / 2, y, size / 2); scene.add(m); };
   flat(0x23262c, 0, -Math.PI / 2); flat(0x101114, 3.2, Math.PI / 2); // floor and a low ceiling
   const blocks = []; for (let r = 0; r < MN; r++) for (let c = 0; c < MN; c++) if (mzGrid[r][c]) blocks.push([c, r]);
   const walls = new T.InstancedMesh(new T.BoxGeometry(MT, 3.2, MT), stone, blocks.length), m4 = new T.Matrix4(); blocks.forEach(([c, r], i) => walls.setMatrixAt(i, m4.makeTranslation(mzMid(c), 1.6, mzMid(r)))); scene.add(walls); // every wall in one draw call
+  mzClosets.forEach(k => { // a wooden double door on the wall, facing the floor it opens onto
+    const d = new T.Group(), wide = MT * .88, slab = new T.Mesh(new T.BoxGeometry(k.ox ? .1 : wide, 2.45, k.ox ? wide : .1), wood), gap = new T.Mesh(new T.BoxGeometry(k.ox ? .12 : .04, 2.45, k.ox ? .04 : .12), new T.MeshBasicMaterial({ color: 0x0a0705 }));
+    d.add(slab, gap); [-1, 1].forEach(sd => { const knob = new T.Mesh(new T.BoxGeometry(.07, .16, .07), new T.MeshBasicMaterial({ color: 0xd9b36c })); knob.position.set(k.ox ? k.ox * .08 : sd * .12, -.05, k.oz ? k.oz * .08 : sd * .12); d.add(knob); });
+    d.position.set(k.x + k.ox * (MT / 2 + .04), 1.23, k.z + k.oz * (MT / 2 + .04)); scene.add(d); k.door = d;
+  });
   const lamp = new T.SpotLight(0xfff1d0, 3, 24, .62, .6, 1.2); cam.add(lamp); lamp.position.set(.18, -.18, 0); cam.add(lamp.target); lamp.target.position.set(.1, -.14, -6); cam.rotation.order = 'YXZ'; scene.add(cam); // your flashlight rides on the camera
   const keys = mzKeys.map(k => { const m = new T.Mesh(new T.OctahedronGeometry(.28), new T.MeshBasicMaterial({ color: 0xffd23f })); m.position.set(k.x, 1.1, k.z); scene.add(m); return m; });
-  const door = new T.Mesh(new T.BoxGeometry(MT * .8, 2.8, .25), new T.MeshBasicMaterial({ color: 0x7a1010 })); door.position.set(mzExit.x, 1.4, mzExit.z + MT * .4); scene.add(door);
+  const door = new T.Mesh(new T.BoxGeometry(MT * 1.6, 2.8, .25), new T.MeshBasicMaterial({ color: 0x7a1010 })); door.position.set(mzExit.x, 1.4, MC * 3 * MT - .14); scene.add(door); // the way out, on the far wall of the last cell
   const thing = mzThing(); scene.add(thing);
   for (const id in mzMates) delete mzMates[id];
-  Z = { scene, cam, ren, lamp, keys, door, thing, x: mzMid(1), z: mzMid(1), yaw: mzWall(mzMid(2), mzMid(1)) ? Math.PI : -Math.PI / 2, pitch: 0, stam: 1, bob: 0, dead: false, w: 0, h: 0, wake: performance.now() + (mzRound.grace || 0),
-    mon: { x: mzMid(MN >> 1 | 1), z: mzMid(MN >> 1 | 1), r: 0, tx: 0, tz: 0, plan: 0, next: null, see: false, seen: false }, beat: 0, fps: 60, n: 0, acc: 0, live: !!(old && old.live) }; // live: the drawing loop is already running
+  mzShow(false);
+  Z = { scene, cam, ren, lamp, keys, door, thing, x: mzCell(0), z: mzCell(0), yaw: mzWall(MT * 3.5, MT * 1.5) ? Math.PI : -Math.PI / 2, pitch: 0, stam: 1, bob: 0, dead: false, w: 0, h: 0, wake: performance.now() + (mzRound.grace || 0), // you start facing whichever way out of the first cell is open
+    hide: null, eWas: false, spWas: false, tap: false, note: '', noteTill: 0,
+    mon: { x: mzCell(MC >> 1), z: mzCell(MC >> 1), r: 0, tx: 0, tz: 0, plan: 0, next: null, see: false, seen: false, alert: null, roam: null }, beat: 0, fps: 60, n: 0, acc: 0, live: !!(old && old.live) }; // live: the drawing loop is already running
   Z.mon.tx = Z.mon.x; Z.mon.tz = Z.mon.z; mzApply();
 }
 function mzApply() { // show what the server says about the round: which keys are gone, whether the door is open, whether you were caught
@@ -2472,14 +2617,25 @@ function mzApply() { // show what the server says about the round: which keys ar
   Z.keys.forEach((k, i) => { k.visible = !mzRound.keys[i]; }); Z.door.material.color.setHex(mzRound.keys.every(Boolean) ? 0x2dff88 : 0x7a1010);
   Z.dead = mzRound.caught.includes(myId);
 }
-function mzThink(dt, t) { // host only: the monster walks the shortest way to the nearest player it could reach, and runs when it can see them
-  const m = Z.mon, alive = Object.keys(mzMates).filter(id => !mzRound.caught.includes(+id)).map(id => mzMates[id]); if (!Z.dead) alive.push({ x: Z.x, z: Z.z });
-  if (t < Z.wake || !alive.length || mzRound.state !== 'play') return;
-  const near = alive.reduce((a, b) => (Math.hypot(b.x - m.x, b.z - m.z) < Math.hypot(a.x - m.x, a.z - m.z) ? b : a)), dist = Math.hypot(near.x - m.x, near.z - m.z);
-  m.see = dist < 15 && mzSees(m.x, m.z, near.x, near.z);
-  if (t - m.plan > 300 || !m.next) { m.plan = t; m.next = mzPath(mzTile(m.x), mzTile(m.z), mzTile(near.x), mzTile(near.z)); }
-  const gx = m.see || !m.next ? near.x : mzMid(m.next[0]), gz = m.see || !m.next ? near.z : mzMid(m.next[1]), d = Math.hypot(gx - m.x, gz - m.z) || 1; // in sight: straight at them
-  const speed = (m.see ? 5.2 : 3.2) + mzRound.keys.filter(Boolean).length * .22, step = Math.min(d, speed * dt), nx = m.x + (gx - m.x) / d * step, nz = m.z + (gz - m.z) / d * step; // it gets faster with every key taken
+function mzThink(dt, t) { // host only: the monster hunts the nearest player it knows about, runs when it sees one, goes to noises, and prowls near closets when everyone is hiding
+  const m = Z.mon, hidden = [], alive = [];
+  for (const id in mzMates) if (!mzRound.caught.includes(+id)) (mzMates[id].h === 1 ? hidden : alive).push(mzMates[id]); // h: 0 walking about, 1 hidden in a closet, 2 in a closet it watched them enter
+  if (!Z.dead) (Z.hide && !Z.hide.seen ? hidden : alive).push({ x: Z.x, z: Z.z }); // someone it watched climb into a closet is not hidden from it
+  if (t < Z.wake || mzRound.state !== 'play') return;
+  let goal = null, near = null, fast = false; m.see = false;
+  if (m.alert && (t > m.alert.until || Math.hypot(m.alert.x - m.x, m.alert.z - m.z) < 1.5)) m.alert = null; // it reached the noise, or gave up on it
+  if (alive.length) { near = alive.reduce((a, b) => (Math.hypot(b.x - m.x, b.z - m.z) < Math.hypot(a.x - m.x, a.z - m.z) ? b : a)); m.see = Math.hypot(near.x - m.x, near.z - m.z) < 16 && mzSees(m.x, m.z, near.x, near.z); goal = near; fast = m.see; }
+  if (m.alert && !m.see) { goal = m.alert; fast = true; } // a failed skill check in a closet pulls it straight there
+  if (!goal) { // everyone is hiding: it wanders, never far from one of the closets in use
+    if (!m.roam || t > m.roam.until || Math.hypot(m.roam.x - m.x, m.roam.z - m.z) < 1.2) {
+      const base = hidden.length ? hidden[Math.floor(Math.random() * hidden.length)] : m; m.roam = null;
+      for (let i = 0; i < 25 && !m.roam; i++) { const x = base.x + (Math.random() - .5) * MT * 12, z = base.z + (Math.random() - .5) * MT * 12; if (!mzWall(x, z)) m.roam = { x: mzMid(mzTile(x)), z: mzMid(mzTile(z)), until: t + 7000 }; }
+    }
+    goal = m.roam; if (!goal) return;
+  }
+  if (t - m.plan > 300 || !m.next) { m.plan = t; m.next = mzPath(mzTile(m.x), mzTile(m.z), mzTile(goal.x), mzTile(goal.z)); }
+  const direct = (m.see && goal === near) || !m.next, gx = direct ? goal.x : mzMid(m.next[0]), gz = direct ? goal.z : mzMid(m.next[1]), d = Math.hypot(gx - m.x, gz - m.z) || 1; // in sight: straight at them
+  const speed = (fast ? 5.9 : 3.5) + mzRound.keys.filter(Boolean).length * .22, step = Math.min(d, speed * dt), nx = m.x + (gx - m.x) / d * step, nz = m.z + (gz - m.z) / d * step; // it gets faster with every key taken
   if (mzFree(nx, m.z, .3)) m.x = nx; if (mzFree(m.x, nz, .3)) m.z = nz;
   if (d < .2) m.plan = 0; m.r = Math.atan2(gx - m.x, gz - m.z); m.tx = m.x; m.tz = m.z;
 }
@@ -2491,59 +2647,94 @@ function mzScare() { // caught: the face fills the screen
   box.classList.remove('hidden'); setTimeout(() => box.classList.add('hidden'), 1100);
   if (sfxOn) try { [520, 700, 911, 1180].forEach((f, i) => osc(f, .9, 'sawtooth', .09, 1.9, i * .01)); hiss(.9, .3, 0, 1200); } catch {}
 }
+function mzShow(hiding, check) { // the two overlays: the slats you peer through from inside a closet, and the skill-check bar
+  $('hideView').classList.toggle('hidden', !hiding); $('skill').classList.toggle('hidden', !check);
+  if (check) { $('skillZone').style.left = check.a * 100 + '%'; $('skillZone').style.width = (check.b - check.a) * 100 + '%'; }
+}
+function mzHide(i, t) { // climb into closet i. It only hides you if the monster did not watch you go in
+  const k = mzClosets[i], m = Z.mon;
+  if (Object.values(mzMates).some(o => o.h && Math.hypot(o.x - k.x, o.z - k.z) < 1)) { Z.note = 'Someone is already hiding in there'; Z.noteTill = t + 2000; return; }
+  Z.hide = { i, seen: t >= Z.wake && Math.hypot(m.x - Z.x, m.z - Z.z) < 10 && mzSees(Z.x, Z.z, m.x, m.z), next: t + 2600, check: null };
+  Z.x = k.x + k.ox * .2; Z.z = k.z + k.oz * .2; Z.yaw = Math.atan2(-k.ox, -k.oz); Z.pitch = 0; k.door.visible = false; mzShow(true); // your own door is not drawn, so you can see out through the slats
+  if (sfxOn) try { osc(140, .25, 'sawtooth', .05, .6); } catch {}
+}
+function mzUnhide(noisy, t) { // step (or fall) back out. noisy: you failed a skill check, and it heard
+  const k = mzClosets[Z.hide.i]; Z.x = k.x + k.ox * (MT / 2 + .5); Z.z = k.z + k.oz * (MT / 2 + .5); k.door.visible = true; Z.hide = null; mzShow(false);
+  if (!noisy) return;
+  send({ type: 'maze', act: 'noise', x: Z.x, z: Z.z }); Z.note = 'You made a noise. It heard that. RUN'; Z.noteTill = t + 3000;
+  if (sfxOn) try { hiss(.3, .35, 0, 300); osc(90, .3, 'square', .2, .5); } catch {}
+}
 function mzLoop(t) {
   if (!mazeOpen || !Z) { if (Z) Z.live = false; return; }
   requestAnimationFrame(mzLoop);
-  const dt = Math.min(.05, (t - (mzLast || t)) / 1000), w = mcv.clientWidth, h = mcv.clientHeight, m = Z.mon, play = mzRound.state === 'play'; mzLast = t;
+  const dt = Math.min(.05, (t - (mzLast || t)) / 1000), w = mcv.clientWidth, h = mcv.clientHeight, m = Z.mon, play = mzRound.state === 'play', awake = t >= Z.wake && play; mzLast = t;
   if (w && h && (w !== Z.w || h !== Z.h)) { Z.w = w; Z.h = h; Z.ren.setSize(w, h, false); Z.cam.aspect = w / h; Z.cam.updateProjectionMatrix(); }
   Z.n++; Z.acc += dt; if (Z.n >= 90) { Z.fps = Math.round(Z.n / Z.acc); Z.n = 0; Z.acc = 0; }
   if (document.hasFocus && !document.hasFocus()) keysOff();
-  Z.yaw += ((hk.ArrowLeft || hk.KeyQ ? 1 : 0) - (hk.ArrowRight || hk.KeyE ? 1 : 0)) * 2.4 * dt; // arrow keys or Q and E turn too, for when the mouse is not captured
-  const fwd = (hk.KeyW || hk.ArrowUp ? 1 : 0) - (hk.KeyS || hk.ArrowDown ? 1 : 0), side = (hk.KeyD ? 1 : 0) - (hk.KeyA ? 1 : 0), moving = !!(fwd || side) && !Z.dead && play;
-  const run = moving && (hk.ShiftLeft || hk.ShiftRight) && Z.stam > .02; Z.stam = clamp2(Z.stam + (run ? -.32 : .16) * dt, 0, 1); // running empties your breath in about three seconds
+  const eKey = !!hk.KeyE, spKey = !!hk.Space, ePress = eKey && !Z.eWas, press = (spKey && !Z.spWas) || Z.tap, fear0 = awake ? clamp2(1 - Math.hypot(m.x - Z.x, m.z - Z.z) / 22, 0, 1) : 0; Z.eWas = eKey; Z.spWas = spKey; Z.tap = false; // presses count once, not for as long as the key is held
+  let nearK = -1; // the closet you are standing in front of, if any
+  if (!Z.hide && !Z.dead && play) mzClosets.forEach((k, i) => { if (Math.hypot(Z.x - k.x, Z.z - k.z) < MT * 1.35 && (Z.x - k.x) * k.ox + (Z.z - k.z) * k.oz > .2) nearK = i; });
+  if (Z.hide) { // in a closet: every few seconds a skill check. Hit Space while the line is on the green part or you make a noise and fall out
+    const hd = Z.hide;
+    if (Z.dead || !play || (ePress && !hd.check)) mzUnhide(false, t);
+    else if (!hd.check && t > hd.next) { const wide = .2 - fear0 * .09, a = .3 + Math.random() * (.65 - wide); hd.check = { t0: t, dur: 1500 - fear0 * 550, a, b: a + wide }; mzShow(true, hd.check); tone(660, .08, 'sine', .06); } // the closer it is, the faster the line and the smaller the green
+    else if (hd.check) {
+      const pos = (t - hd.check.t0) / hd.check.dur; $('skillPin').style.left = Math.min(100, pos * 100) + '%';
+      if (press && pos >= hd.check.a && pos <= hd.check.b) { hd.check = null; hd.next = t + 3000 + Math.random() * 3000 - fear0 * 1500; mzShow(true); tone(990, .1, 'sine', .07, 1.3); }
+      else if (press || pos >= 1) mzUnhide(true, t);
+    }
+  } else if (ePress && nearK >= 0) mzHide(nearK, t);
+  if (!Z.hide) Z.yaw += ((hk.ArrowLeft ? 1 : 0) - (hk.ArrowRight ? 1 : 0)) * 2.4 * dt; // the arrow keys turn too, for when the mouse is not captured
+  const fwd = (hk.KeyW || hk.ArrowUp ? 1 : 0) - (hk.KeyS || hk.ArrowDown ? 1 : 0), side = (hk.KeyD ? 1 : 0) - (hk.KeyA ? 1 : 0), moving = !!(fwd || side) && !Z.dead && play && !Z.hide;
+  const run = moving && (hk.ShiftLeft || hk.ShiftRight) && Z.stam > .02; Z.stam = clamp2(Z.stam + (run ? -.28 : .16) * dt, 0, 1); // running empties your breath in about three and a half seconds
   if (moving) {
-    const mx = -Math.sin(Z.yaw) * fwd + Math.cos(Z.yaw) * side, mz = -Math.cos(Z.yaw) * fwd - Math.sin(Z.yaw) * side, len = Math.hypot(mx, mz) || 1, sp = (run ? 6 : 3.6) * dt, nx = Z.x + mx / len * sp, nz = Z.z + mz / len * sp;
+    const mx = -Math.sin(Z.yaw) * fwd + Math.cos(Z.yaw) * side, mz = -Math.cos(Z.yaw) * fwd - Math.sin(Z.yaw) * side, len = Math.hypot(mx, mz) || 1, sp = (run ? 7.6 : 4.4) * dt, nx = Z.x + mx / len * sp, nz = Z.z + mz / len * sp;
     if (mzFree(nx, Z.z, .35)) Z.x = nx; if (mzFree(Z.x, nz, .35)) Z.z = nz; // each direction on its own, so you slide along walls
-    Z.bob += dt * (run ? 14 : 9);
+    Z.bob += dt * (run ? 15 : 9.5);
   }
-  if (!Z.dead && play) {
-    mzKeys.forEach((k, i) => { if (!mzRound.keys[i] && Math.hypot(k.x - Z.x, k.z - Z.z) < 1.2) { mzRound.keys[i] = 1; mzApply(); send({ type: 'maze', act: 'key', i }); tone(1320, .25, 'sine', .08, 1.5); } });
-    if (mzRound.keys.every(Boolean) && Math.hypot(mzExit.x - Z.x, mzExit.z - Z.z) < 1.3) send({ type: 'maze', act: 'escape' });
+  if (!Z.dead && play && !Z.hide) {
+    mzKeys.forEach((k, i) => { if (!mzRound.keys[i] && Math.hypot(k.x - Z.x, k.z - Z.z) < 1.3) { mzRound.keys[i] = 1; mzApply(); send({ type: 'maze', act: 'key', i }); tone(1320, .25, 'sine', .08, 1.5); } });
+    if (mzRound.keys.every(Boolean) && Math.hypot(mzExit.x - Z.x, mzExit.z - Z.z) < 1.7) send({ type: 'maze', act: 'escape' });
   }
   if (mzRound.host === myId) { mzThink(dt, t); if (t - mzSent > 90) send({ type: 'maze', act: 'mon', x: m.x, z: m.z, r: m.r, see: m.see ? 1 : 0 }); }
   else { m.x += (m.tx - m.x) * .25; m.z += (m.tz - m.z) * .25; } // everyone else slides it toward where the host last said it was
-  const md = Math.hypot(m.x - Z.x, m.z - Z.z), sees = md < 15 && mzSees(Z.x, Z.z, m.x, m.z), awake = t >= Z.wake && play, u = Z.thing.userData;
-  if (awake && !Z.dead && md < 1.15) { Z.dead = true; mzRound.caught.push(myId); send({ type: 'maze', act: 'caught' }); mzScare(); if (document.exitPointerLock) document.exitPointerLock(); }
+  const md = Math.hypot(m.x - Z.x, m.z - Z.z), sees = md < 16 && mzSees(Z.x, Z.z, m.x, m.z), safe = Z.hide && !Z.hide.seen, u = Z.thing.userData;
+  if (awake && !Z.dead && !safe && md < (Z.hide ? 2 : 1.15)) { // it reached you (a closet it watched you enter does not stop it)
+    if (Z.hide) { mzClosets[Z.hide.i].door.visible = true; Z.hide = null; mzShow(false); }
+    Z.dead = true; mzRound.caught.push(myId); send({ type: 'maze', act: 'caught' }); mzScare(); if (document.exitPointerLock) document.exitPointerLock();
+  }
   if (awake && sees && !m.seen && sfxOn) try { osc(240, 1.1, 'sawtooth', .1, .45); hiss(.5, .12, 0, 900); } catch {} // the moment it comes into view
   m.seen = sees;
   Z.thing.visible = awake; Z.thing.position.set(m.x, 0, m.z); Z.thing.rotation.y = turnTo(Z.thing.rotation.y, m.r, dt * 8); u.phase += dt * (m.see ? 11 : 6);
   u.legs[0].rotation.x = Math.sin(u.phase) * .6; u.legs[1].rotation.x = -Math.sin(u.phase) * .6; u.arms[0].rotation.x = -.35 - Math.sin(u.phase) * .3; u.arms[1].rotation.x = -.35 + Math.sin(u.phase) * .3;
   u.head.rotation.z = Math.sin(t / 130) * .08 + (Math.random() < .02 ? (Math.random() - .5) * 1.2 : 0); u.arms[0].rotation.z = -.08; u.arms[1].rotation.z = .08; // the head twitches
   const fear = awake ? clamp2(1 - md / 22, 0, 1) : 0; // 0 far away, 1 on top of you: drives the flicker, the heartbeat and the growl
-  Z.lamp.intensity = 3 * (Math.random() < fear * .25 ? .15 + Math.random() * .4 : 1) * (Z.dead ? .25 : 1);
+  Z.lamp.intensity = Z.hide ? .5 : 3 * (Math.random() < fear * .25 ? .15 + Math.random() * .4 : 1) * (Z.dead ? .25 : 1); // you cover your light while you hide
   if (fear > 0 && t > Z.beat && sfxOn) { Z.beat = t + 1150 - fear * 850; try { osc(58, .13, 'sine', .1 + fear * .22, .6); osc(48, .15, 'sine', .08 + fear * .18, .6, .17); } catch {} }
   if (mzDrone) mzDrone.growl.gain.value = awake ? Math.min(.22, .9 / Math.max(2, md)) : 0;
-  for (const id in mzMates) { // the other players
+  for (const id in mzMates) { // the other players. Someone hiding in a closet is not drawn
     const o = mzMates[id], g = o.g; if (Date.now() - o.t > 4000 || !people[id]) { Z.scene.remove(g); delete mzMates[id]; continue; }
-    const far = Math.hypot(o.x - g.position.x, o.z - g.position.z); g.visible = !mzRound.caught.includes(+id); g.position.x += (o.x - g.position.x) * .25; g.position.z += (o.z - g.position.z) * .25; g.rotation.y = turnTo(g.rotation.y, o.r, dt * 10); hangPose(g, far > .05, false, dt, false, -1);
+    const far = Math.hypot(o.x - g.position.x, o.z - g.position.z); g.visible = !mzRound.caught.includes(+id) && !o.h; g.position.x += (o.x - g.position.x) * .25; g.position.z += (o.z - g.position.z) * .25; g.rotation.y = turnTo(g.rotation.y, o.r, dt * 10); hangPose(g, far > .05, false, dt, false, -1);
   }
   Z.keys.forEach(k => { k.rotation.y += dt * 2; });
-  Z.cam.position.set(Z.x, 1.62 + Math.sin(Z.bob) * (moving ? .05 : 0), Z.z); Z.cam.rotation.set(Z.pitch, Z.yaw, 0);
+  Z.cam.position.set(Z.x, (Z.hide ? 1.45 : 1.62) + Math.sin(Z.bob) * (moving ? .05 : 0), Z.z); Z.cam.rotation.set(Z.pitch, Z.yaw, 0);
   if (t - mzSent > 90) { // about ten times a second: report in, redraw the map and the readout
-    mzSent = t; send({ type: 'maze', act: 'pos', x: Z.x, z: Z.z, r: Z.yaw + Math.PI });
+    mzSent = t; send({ type: 'maze', act: 'pos', x: Z.x, z: Z.z, r: Z.yaw + Math.PI, h: Z.hide ? (Z.hide.seen ? 2 : 1) : 0 });
     const got = mzRound.keys.filter(Boolean).length, left = Math.ceil((Z.wake - t) / 1000);
     $('mzHud').textContent = mzRound.state === 'won' ? 'Someone got out. Press New round to go again' : mzRound.state === 'lost' ? 'Nobody got out. Press New round to try again'
-      : Z.dead ? 'It got you. Watch the map: the others can still make it' : left > 0 ? 'It wakes in ' + left + '… find the keys' : (got < MKEYS ? 'Keys ' + got + ' / ' + MKEYS : 'All keys found. Get to the green door!') + ' · breath ' + '█'.repeat(Math.round(Z.stam * 8)).padEnd(8, '░');
+      : Z.dead ? 'It got you. Watch the map: the others can still make it' : t < Z.noteTill ? Z.note
+      : Z.hide ? (Z.hide.seen ? 'It saw you go in!' : Z.hide.check ? 'SPACE when the line is on the green!' : 'Hiding. Stay ready for the skill check · E to step out')
+      : (left > 0 ? 'It wakes in ' + left + '… find the keys' : got < MKEYS ? 'Keys ' + got + ' / ' + MKEYS : 'All keys found. Get to the green door!') + ' · breath ' + '█'.repeat(Math.round(Z.stam * 8)).padEnd(8, '░') + (nearK >= 0 ? ' · E to hide in the closet' : '');
     mzMap();
   }
   Z.ren.render(Z.scene, Z.cam);
 }
-function mzMap() { // the map in the corner: the maze, the keys, the door and where everyone is. The monster is never on it
+function mzMap() { // the map in the corner: the maze, closets, keys, the door and where everyone is. The monster is never on it
   const g = mmg, s = mmap.width / MN, dot = (x, z, col, rad) => { g.fillStyle = col; g.beginPath(); g.arc(x / MT * s, z / MT * s, rad, 0, 6.283); g.fill(); };
-  g.fillStyle = '#050505'; g.fillRect(0, 0, mmap.width, mmap.height); g.fillStyle = '#3a3f4a';
-  for (let r = 0; r < MN; r++) for (let c = 0; c < MN; c++) if (mzGrid[r][c]) g.fillRect(c * s, r * s, s + .5, s + .5);
+  g.fillStyle = '#050505'; g.fillRect(0, 0, mmap.width, mmap.height);
+  for (let r = 0; r < MN; r++) for (let c = 0; c < MN; c++) if (mzGrid[r][c]) { g.fillStyle = mzGrid[r][c] === 2 ? '#a06a35' : '#3a3f4a'; g.fillRect(c * s, r * s, s + .5, s + .5); }
   mzKeys.forEach((k, i) => { if (!mzRound.keys[i]) dot(k.x, k.z, '#ffd23f', 2.5); });
-  g.fillStyle = mzRound.keys.every(Boolean) ? '#2dff88' : '#7a1010'; g.fillRect((MN - 2) * s, (MN - 2) * s, s, s);
+  g.fillStyle = mzRound.keys.every(Boolean) ? '#2dff88' : '#7a1010'; g.fillRect((MN - 3) * s, (MN - 1) * s - 2, s * 2, 3); // the door, on the far wall
   for (const id in mzMates) dot(mzMates[id].x, mzMates[id].z, mzRound.caught.includes(+id) ? '#555' : 'hsl(' + (id * 67) % 360 + ',80%,62%)', 3);
   dot(Z.x, Z.z, Z.dead ? '#777' : accHex, 3.5); g.strokeStyle = accHex; g.lineWidth = 1.5; g.beginPath(); g.moveTo(Z.x / MT * s, Z.z / MT * s); g.lineTo((Z.x - Math.sin(Z.yaw) * 2.2) / MT * s, (Z.z - Math.cos(Z.yaw) * 2.2) / MT * s); g.stroke();
 }
@@ -2564,23 +2755,28 @@ function setMaze(open) {
   if (open === mazeOpen) return;
   mazeOpen = open; keysOff();
   if (open) {
-    setBoard(false); setShoot(false); setHang(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(mzEl); mzEl.classList.remove('hidden'); layout();
+    setBoard(false); setShoot(false); setHang(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(mzEl); mzEl.classList.remove('hidden'); layout(); mzShow(false);
     $('mzHud').textContent = 'Opening the maze…'; mmg.clearRect(0, 0, mmap.width, mmap.height); clearTimeout(mzWait);
     mzWait = setTimeout(() => { if (mazeOpen && !mzRound) $('mzHud').textContent = 'The maze could not start: the server did not answer.' + (isAdmin ? ' server.js on GitHub is probably older than this page.' : ' Tell a moderator.'); }, 6000); // without this a silent server just leaves a black screen
     loadThree().then(() => { if (!mazeOpen) return; mzRound = null; mzHum(true); send({ type: 'maze', act: 'open', on: true }); }, // the server answers with the round, and that builds the maze
       () => { toast('The maze could not load. Check your connection and try again'); setMaze(false); });
-  } else { mzEl.classList.add('hidden'); mzHum(false); if (document.pointerLockElement === mcv) document.exitPointerLock(); send({ type: 'maze', act: 'open', on: false }); layout(); }
+  } else { mzEl.classList.add('hidden'); mzHum(false); mzShow(false); if (Z && Z.hide) { mzClosets[Z.hide.i].door.visible = true; Z.hide = null; } if (document.pointerLockElement === mcv) document.exitPointerLock(); send({ type: 'maze', act: 'open', on: false }); layout(); }
 }
-function mazeQuit() { mazeOpen = false; mzEl.classList.add('hidden'); mzHum(false); mzRound = null; for (const id in mzMates) delete mzMates[id]; if (Z) { Z.ren.dispose(); Z = null; } } // leaving the room
+function mazeQuit() { mazeOpen = false; mzEl.classList.add('hidden'); mzHum(false); mzShow(false); mzRound = null; for (const id in mzMates) delete mzMates[id]; if (Z) { Z.ren.dispose(); Z = null; } } // leaving the room
 function onMazePos(m) {
   if (!Z || !mazeOpen || !people[m.id]) return;
   let o = mzMates[m.id]; if (!o) { o = mzMates[m.id] = { g: hangFigure(new THREE.Color().setHSL((m.id * 67 % 360) / 360, .7, .55), people[m.id].name) }; o.g.position.set(m.x, 0, m.z); Z.scene.add(o.g); }
-  o.x = m.x; o.z = m.z; o.r = m.r; o.t = Date.now();
+  o.x = m.x; o.z = m.z; o.r = m.r; o.h = m.h | 0; o.t = Date.now();
 }
-// looking around: click the picture to capture the mouse (Esc lets it go); dragging works too
+function onMazeNoise(m) { // someone failed a skill check in a closet. Whoever is moving the monster sends it there; anyone close hears the bang
+  if (!Z || !mzRound) return;
+  if (mzRound.host === myId) Z.mon.alert = { x: m.x, z: m.z, until: performance.now() + 9000 };
+  if (sfxOn && Math.hypot(m.x - Z.x, m.z - Z.z) < 18) try { hiss(.25, .15, 0, 300); } catch {}
+}
+// looking around: click the picture to capture the mouse (Esc lets it go); dragging works too. A click also answers a skill check
 mcv.addEventListener('click', () => { if (Z && !Z.dead && document.pointerLockElement !== mcv && mcv.requestPointerLock) try { mcv.requestPointerLock(); } catch {} });
 document.addEventListener('mousemove', e => { if (Z && mazeOpen && document.pointerLockElement === mcv) { Z.yaw -= e.movementX * .0025; Z.pitch = clamp2(Z.pitch - e.movementY * .002, -1.2, 1.2); } });
-mcv.addEventListener('pointerdown', e => { if (document.pointerLockElement !== mcv) mzDrag = [e.clientX, e.clientY]; });
+mcv.addEventListener('pointerdown', e => { if (Z && Z.hide && Z.hide.check) Z.tap = true; if (document.pointerLockElement !== mcv) mzDrag = [e.clientX, e.clientY]; });
 mcv.addEventListener('pointermove', e => { if (!mzDrag || !Z || document.pointerLockElement === mcv) return; Z.yaw -= (e.clientX - mzDrag[0]) * .005; Z.pitch = clamp2(Z.pitch - (e.clientY - mzDrag[1]) * .004, -1.2, 1.2); mzDrag = [e.clientX, e.clientY]; });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => mcv.addEventListener(ev, () => { mzDrag = null; }));
 $('mazeGo').onclick = () => send({ type: 'maze', act: 'start' }); $('mazeX').onclick = () => setMaze(false);
@@ -2625,25 +2821,43 @@ $('openMod').onclick = () => { $('openMod').classList.remove('has-new'); $('modD
 $('modDone').onclick = closeMod; $('modDlg').onclick = e => { if (e.target === $('modDlg')) closeMod(); };
 $('modFind').onsubmit = e => { e.preventDefault(); const u = $('modUser').value.trim().toLowerCase().replace(/^@/, ''); if (u) { closeMod(); openProfile(u); } };
 
-/* ---------- your own font and background image: saved in this browser, only you see them ---------- */
+/* ---------- your own font and background image: saved on your account, only you see them ---------- */
 const FONTS = { Manrope: 'Manrope', Rounded: 'Nunito', Comic: '"Comic Neue"', Typewriter: '"Space Mono"', Serif: 'Georgia', 'Your device font': 'system-ui' };
-function setFont(k) { if (!FONTS[k]) k = 'Manrope'; document.documentElement.style.setProperty('--font', FONTS[k]); $('selFont').value = k; try { localStorage.setItem('font', k); } catch {} }
+function setFont(k) { if (!FONTS[k]) k = 'Manrope'; document.documentElement.style.setProperty('--font', FONTS[k]); $('selFont').value = k; try { saveSet('font', k); } catch {} }
 Object.keys(FONTS).forEach(k => $('selFont').add(new Option(k, k))); $('selFont').onchange = () => setFont($('selFont').value); setFont(localStorage.getItem('font'));
 function setBg(data) { $('bgimg').style.backgroundImage = data ? 'url("' + data + '")' : ''; $('bgimg').classList.toggle('on', !!data); }
 function setBgDim(v) { v = clamp2(+v || 0, 0, 90); document.documentElement.style.setProperty('--bgdim', v / 100); $('bgDim').value = v; }
 $('bgPick').onclick = () => $('bgFile').click();
-$('bgClear').onclick = () => { setBg(''); try { localStorage.removeItem('bgimg'); } catch {} };
-$('bgDim').oninput = () => { setBgDim($('bgDim').value); try { localStorage.setItem('bgdim', $('bgDim').value); } catch {} };
+$('bgClear').onclick = () => { setBg(''); try { localStorage.removeItem('bgimg'); localStorage.removeItem('bgid'); localStorage.removeItem('bgskip'); } catch {} syncSoon(); };
+$('bgDim').oninput = () => { setBgDim($('bgDim').value); try { saveSet('bgdim', $('bgDim').value); } catch {} };
 $('bgFile').onchange = e => {
   const file = e.target.files[0], img = new Image(); e.target.value = ''; if (!file) return;
   img.onload = () => { // shrink it so it fits in the browser's storage
     const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(img.src); const data = c.toDataURL('image/jpeg', .8);
-    setBg(data); try { localStorage.setItem('bgimg', data); } catch { toast('That image is too big to keep after a refresh'); }
+    setBg(data); try { localStorage.setItem('bgimg', data); localStorage.removeItem('bgid'); localStorage.removeItem('bgskip'); } catch { toast('That image is too big to keep after a refresh'); }
+    if (picBase) syncBg(false); else syncSoon(); // with photos switched on it is saved to your account as well; without them it stays on this device
   };
   img.onerror = () => toast('That file is not a usable image'); img.src = URL.createObjectURL(file);
 };
 setBg(localStorage.getItem('bgimg') || ''); setBgDim(localStorage.getItem('bgdim') === null ? 55 : localStorage.getItem('bgdim'));
+
+/* ---------- Draw and guess: one person draws a secret word on the board, everyone else guesses it in chat ---------- */
+let drawing = null, drawTick = 0; // drawing: { drawer, name, len, until, word } while a round is on
+function drawShow() { // the line in the board's header: the word for the drawer, blanks and the clock for everyone else
+  const d = drawing; $('drawInfo').classList.toggle('hidden', !d); $('drawSkip').classList.toggle('hidden', !(d && d.drawer === myId)); if (!d) return;
+  const secs = Math.max(0, Math.ceil((d.until - Date.now()) / 1000));
+  $('drawInfo').textContent = d.drawer === myId ? 'Draw this: ' + (d.word || '…').toUpperCase() + ' · ' + secs + 's' : d.name + ' is drawing · ' + '_ '.repeat(d.len).trim() + ' · ' + secs + 's · guess in chat';
+}
+function onDrawRound(m) { // a new round, or the end of the game (nothing, or over)
+  clearInterval(drawTick);
+  if (!m || m.over) { drawing = null; return drawShow(); }
+  drawing = { drawer: m.drawer, name: m.name, len: m.len, until: Date.now() + m.left, word: '' }; drawTick = setInterval(drawShow, 1000); drawShow();
+  if (shootOpen || hangOpen || mazeOpen) invite(m.name + ' is drawing in Draw and guess', () => { setShoot(false); setHang(false); setMaze(false); setBoard(true); }); // do not yank people out of another game
+  else if (!boardOpen) setBoard(true);
+  if (m.drawer === myId) toast('Your turn to draw!');
+}
+$('drawSkip').onclick = () => send({ type: 'draw', act: 'skip' });
 
 /* ---------- direct message extras, private calls and the rules page ---------- */
 $('dmGif').onclick = () => openGifs($('frSend'), url => { if (dmOpen) send({ type: 'dm', to: dmOpen, gif: url }); });
@@ -2699,7 +2913,6 @@ else {
   $('cloakGo').onclick = () => { if (openBlank()) opened(); else $('cloakMsg').textContent = 'Your browser blocked the new tab. Click the pop-up blocked icon in the address bar and allow pop-ups for this site, then press the button again. Or stay in this tab.'; };
   $('cloakStay').onclick = () => { try { sessionStorage.setItem('stay', '1'); } catch {} $('cloak').classList.add('hidden'); connect(); };
   $('cloak').classList.remove('hidden');
-  try { if (openBlank()) opened(); } catch {} // browsers only allow this without a click if pop-ups are already allowed for the site
 }
 </script>
 </body>

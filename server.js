@@ -3,7 +3,7 @@ const http = require('http'), fs = require('fs'), path = require('path'), crypto
 const { WebSocketServer } = require('ws');
 // Raised whenever the page starts needing something new from the server. index.html carries the number it expects, and tells moderators when
 // the server it reached is older: that means index.html was updated on GitHub but server.js was not. Also shown at /status.
-const VERSION = 22;
+const VERSION = 24;
 
 const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
 // [name, max people]. Small rooms keep full video; bigger rooms get lower per-person video quality (see tune() in index.html).
@@ -267,6 +267,9 @@ function sendFriends(user) { // their saved list, plus the people who added them
   accounts.forEach(o => { if (o.friends.includes(user) && !a.friends.includes(o.username)) reqs.push({ code: o.username, name: o.display, av: avOf(o.username) }); });
   socketsOf(user).forEach(o => send(o, { type: 'friends', list, reqs }));
 }
+// Settings (theme, font, sounds, panel sizes and so on) are kept on the account so they follow you to other devices.
+// Which camera, mic and speaker you picked is never sent here: that belongs to the device.
+const SET_KEYS = [['theme', 24], ['font', 24], ['bgdim', 4], ['sfx', 3], ['fx', 3], ['sizes', 200], ['gun', 16], ['vols', 4000], ['hints', 8]]; // each one is a short piece of text; the number is the longest allowed
 function startSession(ws, a, fresh, dev) { // this socket is now logged in as account a
   if (ws.readyState !== 1 || ws.acct) return;
   let token;
@@ -279,7 +282,7 @@ function startSession(ws, a, fresh, dev) { // this socket is now logged in as ac
   if (dev && !a.devices.includes(dev)) { a.devices.push(dev); if (a.devices.length > 5) a.devices.shift(); saveAcct(a); } // remembered so a block can cover the device too
   if (!online.has(ws.code)) online.set(ws.code, new Set());
   online.get(ws.code).add(ws); seen(ws.code);
-  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, v: VERSION, gifs: !!KLIPY, pics: !!OPENAI, saved: useSB, reports: ADMINS.has(a.username) ? store.reports.length : 0, latest: latest(), picBase: OPENAI && postPics ? PIC_BASE : '', stats: stats(), token, me: meView(a), admin: ADMINS.has(a.username) });
+  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, v: VERSION, gifs: !!KLIPY, pics: !!OPENAI, saved: useSB, reports: ADMINS.has(a.username) ? store.reports.length : 0, latest: latest(), picBase: OPENAI && postPics ? PIC_BASE : '', stats: stats(), token, me: meView(a), settings: a.settings || null, admin: ADMINS.has(a.username) });
   send(ws, { type: 'gpoll', poll: gpollView(ws) }); sendFriends(a.username); pushLobby();
 }
 async function auth(ws, m) { // the only messages a socket may send before it is logged in
@@ -394,7 +397,7 @@ function mentions(r, text) { // names in the room that the text @s; longest firs
   return at;
 }
 // Mini-games live inside a chat message (msg.game) and the server checks every move.
-const GAMES = ['ttt', 'c4', 'rps', 'num', 'react', 'hang'], OPEN = ['num', 'react', 'hang'], RPS = ['rock', 'paper', 'scissors'], secrets = new WeakMap(); // secrets: rock-paper-scissors picks, hidden until both have chosen
+const GAMES = ['ttt', 'c4', 'rps', 'num', 'react', 'hang', 'scram', 'math'], OPEN = ['num', 'react', 'hang', 'scram', 'math'], RPS = ['rock', 'paper', 'scissors'], secrets = new WeakMap(); // secrets: rock-paper-scissors picks, hidden until both have chosen
 const WORDS = 'planet,guitar,castle,rocket,dragon,jungle,pirate,wizard,galaxy,monkey,pencil,tornado,volcano,penguin,dolphin,library,rainbow,blanket,popcorn,sandwich,backpack,football,mountain,keyboard,dinosaur,hamburger,skeleton,treasure,elephant,lightning,pineapple,astronaut,chocolate,butterfly,spaghetti,trampoline'.split(','); // hangman
 const TTT = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 function c4win(b, i) { // b is 7 wide and 6 tall with row 0 at the top; i is the cell that was just filled
@@ -419,17 +422,36 @@ function mazeState(r) { // what every player in the maze needs to know about the
   return { type: 'maze-state', seed: z.seed, keys: z.keys, caught: z.caught, state: z.state, host: z.host, grace: Math.max(0, z.at + 8000 - Date.now()) };
 }
 const mazeNew = () => ({ seed: 1 + Math.floor(Math.random() * 1e9), keys: [0, 0, 0, 0, 0], caught: [], state: 'play', at: Date.now(), host: 0 }); // the monster sleeps for the first 8 seconds
+// Draw and guess: everyone in the room takes one turn drawing a secret word on the board while the others guess it in chat.
+const DRAW_MS = 75000, DRAW_WORDS = 'cat,dog,pizza,house,tree,car,sun,moon,fish,bird,apple,banana,robot,rocket,guitar,ghost,castle,dragon,snowman,rainbow,bicycle,airplane,elephant,spider,cupcake,pencil,umbrella,volcano,pirate,crown,ladder,candle,octopus,penguin,cactus,mushroom,helmet,anchor,balloon,hammer,bridge,camera,clock,flower,glasses,island,key,lamp,mountain,train'.split(',');
+function drawNext(r) { // the next person in the queue draws; when nobody is left the game is over
+  const d = r.draw; clearTimeout(d.timer); let ws = null;
+  while (d.queue.length && !ws) ws = r.members.get(d.queue.shift()) || null; // skip people who have left
+  if (!ws) {
+    const top = Object.entries(d.score).sort((a, b) => b[1] - a[1])[0]; r.draw = null;
+    say(r, top ? 'Draw and guess is over. ' + top[0] + ' won with ' + top[1] + (top[1] === 1 ? ' point' : ' points') : 'Draw and guess is over');
+    return toRoom(r, { type: 'draw-round', over: true });
+  }
+  d.drawer = ws.id; d.name = ws.name; d.word = DRAW_WORDS[Math.floor(Math.random() * DRAW_WORDS.length)]; d.ends = Date.now() + DRAW_MS; r.board = [];
+  toRoom(r, { type: 'board-clear' }); toRoom(r, { type: 'draw-round', drawer: ws.id, name: ws.name, len: d.word.length, left: DRAW_MS });
+  send(ws, { type: 'draw-word', word: d.word }); // only the drawer is told the word
+  d.timer = setTimeout(() => { if (r.draw === d) { say(r, 'Time is up. The word was "' + d.word + '"'); drawNext(r); } }, DRAW_MS);
+}
 function leave(ws) {
   const r = ws.room; if (!r) return;
   r.members.delete(ws.id); ws.room = null;
   if (ws.mazing) { ws.mazing = false; mazers(r).forEach(p => send(p, { type: 'maze-gone', id: ws.id })); if (r.maze && mazers(r).length) mazers(r).forEach(p => send(p, mazeState(r))); }
-  if (ws.hanging) { ws.hanging = false; r.members.forEach(p => p.hanging && send(p, { type: 'hang-gone', id: ws.id })); }
+  if (ws.hanging) { ws.hanging = false; r.members.forEach(p => p.hanging && send(p, { type: 'hang-gone', id: ws.id })); if (r.tag && r.tag.it === ws.id) { r.tag = null; r.members.forEach(p => p.hanging && send(p, { type: 'hang-tag', it: 0 })); } }
   if (ws.shooting) { ws.shooting = false; r.members.forEach(p => p.shooting && send(p, { type: 'shoot-gone', id: ws.id })); }
   toRoom(r, { type: 'peer-left', id: ws.id });
   say(r, `${ws.name} left`);
   if (r.vote) { r.vote.yes.delete(ws.id); r.vote.no.delete(ws.id); checkVote(r); }
+  if (r.draw) { // Draw and guess cannot go on with one person, and moves on if the drawer leaves
+    if (r.members.size < 2) { clearTimeout(r.draw.timer); r.draw = null; toRoom(r, { type: 'draw-round', over: true }); }
+    else if (r.draw.drawer === ws.id) { say(r, ws.name + ' was drawing and left'); drawNext(r); }
+  }
   if (r.private && !r.members.size) privates.delete(r.id); // a private call ends when the last person leaves
-  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; r.shoot = null; r.maze = null; } // empty room resets
+  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; r.shoot = null; r.maze = null; r.tag = null; } // empty room resets
   pushLobby();
 }
 
@@ -451,7 +473,7 @@ wss.on('connection', (ws, req) => {
       leave(ws); ws.st = {};
       const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, avatar: p.avatar, code: p.code, ...p.st }));
       r.members.set(ws.id, ws); ws.room = r;
-      send(ws, { type: 'joined', room: r.id, name: r.name, max: r.max, topic: r.topic, board: r.board, peers, chat: r.chat, vote: voteInfo(r), shoot: r.shoot ? r.shoot.seed : 0 });
+      send(ws, { type: 'joined', room: r.id, name: r.name, max: r.max, topic: r.topic, board: r.board, peers, chat: r.chat, vote: voteInfo(r), shoot: r.shoot ? r.shoot.seed : 0, draw: r.draw ? { drawer: r.draw.drawer, name: r.draw.name, len: r.draw.word.length, left: Math.max(0, r.draw.ends - Date.now()) } : null });
       toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, avatar: ws.avatar, code: ws.code, ...ws.st }, ws.id);
       say(r, `${ws.name} joined`); pushLobby();
     } else if (m.type === 'leave') leave(ws);
@@ -468,12 +490,14 @@ wss.on('connection', (ws, req) => {
       if (slow(ws, 'lastAv', 5000)) return err(ws, 'Wait a few seconds before changing your picture again');
       imageOk(d).then(ok => (ok ? apply() : err(ws, 'That picture is not allowed here')), () => err(ws, 'The picture could not be checked. Try again'));
     } else if (m.type === 'stroke' && ws.room) {
+      if (ws.room.draw && ws.room.draw.drawer !== ws.id) return; // during Draw and guess only the drawer draws
       const sid = String(m.sid || '').slice(0, 24), c = String(m.c || '');
       if (!sid || !/^#[0-9a-fA-F]{6}$/.test(c) || !Array.isArray(m.pts) || m.pts.length > 400) return;
       const pts = m.pts.slice(0, m.pts.length - (m.pts.length % 2)).map(n => Math.max(0, Math.min(1000, Math.round(+n) || 0)));
       const w = Math.max(1, Math.min(90, +m.w || 4));
       addStroke(ws.room, sid, c, w, pts); toRoom(ws.room, { type: 'stroke', sid, c, w, pts }, ws.id);
     } else if (m.type === 'board-clear' && ws.room) {
+      if (ws.room.draw && ws.room.draw.drawer !== ws.id) return;
       ws.room.board = []; toRoom(ws.room, { type: 'board-clear', by: ws.name }, ws.id);
     } else if (m.type === 'mreact' && ws.room && REACTS.includes(m.emoji)) { // toggle your reaction on a chat message
       const msg = findMsg(ws.room, m.mid); if (!msg) return;
@@ -502,6 +526,12 @@ wss.on('connection', (ws, req) => {
       const gif = KLIPY && typeof m.gif === 'string' && m.gif.length < 300 && GIFURL.test(m.gif) ? m.gif : null; // a GIF instead of text
       const up = !gif && typeof m.pic === 'string' && pics.get(m.pic), pic = up && up.by === ws.code && !up.used ? m.pic : null; // an image they uploaded and that passed the check
       const text = gif || pic ? '' : String(m.text || '').trim().slice(0, 500); if (!text && !gif && !pic) return;
+      const dg = ws.room.draw; // Draw and guess: a chat message that is exactly the word is a correct guess, and is not shown to the room
+      if (dg && text && text.toLowerCase().replace(/[^a-z]/g, '') === dg.word) {
+        if (ws.id === dg.drawer) return err(ws, 'Do not give the word away!');
+        const where = ws.room; dg.score[ws.name] = (dg.score[ws.name] || 0) + 1; dg.score[dg.name] = (dg.score[dg.name] || 0) + 1; // a point each for the guesser and the drawer
+        say(where, ws.name + ' guessed it! The word was "' + dg.word + '"'); return drawNext(where);
+      }
       if (gif && slow(ws, 'lastGif', 1000)) return;
       const msg = newMsg(ws, { text }); if (gif) msg.gif = gif; if (pic) { up.used = true; msg.pic = pic; }
       const src = findMsg(ws.room, m.re); // the message this one replies to, if any
@@ -530,6 +560,14 @@ wss.on('connection', (ws, req) => {
       const msg = newMsg(ws, { game: g }), r = ws.room;
       if (m.kind === 'num') { g.lo = 1; g.hi = 100; g.tries = 0; secrets.set(msg, 1 + Math.floor(Math.random() * 100)); } // the number and the word stay on the server
       else if (m.kind === 'hang') { const w = WORDS[Math.floor(Math.random() * WORDS.length)]; secrets.set(msg, w); g.mask = w.replace(/./g, '_'); g.used = ''; g.left = 6; }
+      else if (m.kind === 'scram') { // a word with its letters shuffled; the first to type it wins
+        const w = WORDS[Math.floor(Math.random() * WORDS.length)]; let mix = w;
+        for (let i = 0; i < 10 && mix === w; i++) mix = [...w].sort(() => Math.random() - .5).join('');
+        secrets.set(msg, w); g.scr = mix; g.tries = 0;
+      } else if (m.kind === 'math') { // a sum to do in your head; the first right answer wins
+        const a = 6 + Math.floor(Math.random() * 14), b = 3 + Math.floor(Math.random() * 9), c = 1 + Math.floor(Math.random() * 30), plus = Math.random() < .5;
+        secrets.set(msg, plus ? a * b + c : a * b - c); g.q = a + ' × ' + b + (plus ? ' + ' : ' − ') + c; g.tries = 0;
+      }
       else if (m.kind === 'react') { // turns to "go" after a random wait; clicking before that puts you out
         g.go = false; g.out = [];
         setTimeout(() => { if (g.win === null && r.chat.includes(msg)) { g.go = true; toRoom(r, { type: 'game', mid: msg.id, game: g }); } }, 2000 + Math.random() * 4000);
@@ -547,6 +585,12 @@ wss.on('connection', (ws, req) => {
           const guess = m.n | 0, secret = secrets.get(msg); if (guess < g.lo || guess > g.hi) return;
           g.tries++; g.last = ws.name + ' guessed ' + guess;
           if (guess === secret) g.win = ws.name; else if (guess < secret) g.lo = guess + 1; else g.hi = guess - 1;
+        } else if (g.kind === 'scram' || g.kind === 'math') {
+          if (slow(ws, 'lastGuess', 600)) return;
+          const right = secrets.get(msg), guess = g.kind === 'scram' ? String(m.w || '').toLowerCase().replace(/[^a-z]/g, '').slice(0, 20) : Number(m.n);
+          if (guess === '' || (g.kind === 'math' && !isFinite(guess))) return;
+          g.tries++; g.last = ws.name + ' tried ' + guess;
+          if (guess === right) { g.win = ws.name; g.ans = right; }
         } else if (g.kind === 'react') {
           if (g.out.includes(ws.name)) return;
           if (g.go) g.win = ws.name; else g.out.push(ws.name);
@@ -611,12 +655,23 @@ wss.on('connection', (ws, req) => {
     } else if (m.type === 'hang' && ws.room) { // 3D hangout: each browser moves its own figure and the server passes positions on to the others in the park
       const r = ws.room, others = msg => r.members.forEach((p, id) => { if (id !== ws.id && p.hanging) send(p, msg); }), num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0);
       if (m.act === 'open') {
-        ws.hanging = !!m.on; if (!ws.hanging) return others({ type: 'hang-gone', id: ws.id });
+        ws.hanging = !!m.on;
+        if (!ws.hanging) { others({ type: 'hang-gone', id: ws.id }); if (r.tag && r.tag.it === ws.id) { r.tag = null; others({ type: 'hang-tag', it: 0 }); } return; } // "it" walked out: the game of tag ends
+        if (r.tag) { const it = r.members.get(r.tag.it); if (it && it.hanging) send(ws, { type: 'hang-tag', it: it.id, name: it.name }); }
         if (!slow(ws, 'lastHangIn', 20000)) r.members.forEach((p, id) => { if (id !== ws.id && !p.hanging) send(p, { type: 'hang-open', name: ws.name }); }); // invite the people who are not in it
       } else if (m.act === 'pos' && ws.hanging) { if (!slow(ws, 'lastHPos', 70)) others({ type: 'hang-pos', id: ws.id, x: num(m.x), y: num(m.y), z: num(m.z), r: num(m.r), e: m.e ? 1 : 0, s: m.s ? 1 : 0 }); }
       else if (m.act === 'hit' && ws.hanging) { const t = r.members.get(m.to); if (t && t !== ws && t.hanging && !slow(ws, 'sword' + t.id, 400)) send(t, { type: 'hang-hit', by: ws.id }); } // a sword swing reached them; their own browser takes the heart off
-      else if (m.act === 'ko' && ws.hanging) { const k = r.members.get(m.by); if (k && k !== ws && !slow(ws, 'lastKo', 2000)) say(r, k.name + ' knocked ' + ws.name + ' out of the sword arena'); }
-      else if (m.act === 'goal' && ws.hanging) { const ms = m.ms | 0; if (ms >= 3000 && ms < 3600000 && !slow(ws, 'lastGoal', 5000)) say(r, ws.name + ' finished the 3D parkour in ' + (ms / 1000).toFixed(1) + 's'); }
+      else if (m.act === 'ko' && ws.hanging) { const k = r.members.get(m.by); if (k && k !== ws && !slow(ws, 'lastKo', 2000)) others({ type: 'hang-note', text: k.name + ' knocked ' + ws.name + ' out of the sword arena' }); } // told to the people in the hangout only, never written into the chat
+      else if (m.act === 'tag-start' && ws.hanging) { // tag: one person in the hangout, picked at random, is "it"
+        const ps = [...r.members.values()].filter(p => p.hanging); if (ps.length < 2) return err(ws, 'Tag needs at least 2 people in the hangout');
+        if (slow(ws, 'lastTagGo', 5000)) return;
+        const it = ps[Math.floor(Math.random() * ps.length)]; r.tag = { it: it.id, at: Date.now() };
+        ps.forEach(p => send(p, { type: 'hang-tag', it: it.id, name: it.name }));
+      } else if (m.act === 'tag' && ws.hanging && r.tag) { // "it" touched someone, so now they are it. No tagging straight back for a second and a half
+        const t = r.members.get(m.to); if (r.tag.it !== ws.id || !t || t === ws || !t.hanging || Date.now() - r.tag.at < 1500) return;
+        r.tag = { it: t.id, at: Date.now() }; r.members.forEach(p => p.hanging && send(p, { type: 'hang-tag', it: t.id, name: t.name, by: ws.name }));
+      }
+      else if (m.act === 'goal' && ws.hanging) { const ms = m.ms | 0; if (ms >= 3000 && ms < 3600000 && !slow(ws, 'lastGoal', 5000)) others({ type: 'hang-note', text: ws.name + ' finished the parkour in ' + (ms / 1000).toFixed(1) + 's' }); }
     } else if (m.type === 'maze' && ws.room) { // horror maze: the round lives here; the host's browser moves the monster and everyone reports their own position
       const r = ws.room, num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0), all = msg => mazers(r).forEach(p => send(p, msg)), others = msg => mazers(r).forEach(p => p !== ws && send(p, msg));
       if (m.act === 'open') {
@@ -626,21 +681,31 @@ wss.on('connection', (ws, req) => {
         all(mazeState(r));
         if (!slow(ws, 'lastMazeIn', 20000)) r.members.forEach(p => { if (!p.mazing) send(p, { type: 'maze-open', name: ws.name }); }); // invite the rest of the room
       } else if (!ws.mazing || !r.maze) return;
-      else if (m.act === 'pos') { if (!slow(ws, 'lastMPos', 70)) others({ type: 'maze-pos', id: ws.id, x: num(m.x), z: num(m.z), r: num(m.r) }); }
+      else if (m.act === 'pos') { if (!slow(ws, 'lastMPos', 70)) others({ type: 'maze-pos', id: ws.id, x: num(m.x), z: num(m.z), r: num(m.r), h: m.h === 1 || m.h === 2 ? m.h : 0 }); } // h: 1 hidden in a closet, 2 in a closet the monster watched them enter
       else if (m.act === 'mon') { if (ws.id === r.maze.host && !slow(ws, 'lastMon', 70)) others({ type: 'maze-mon', x: num(m.x), z: num(m.z), r: num(m.r), see: m.see ? 1 : 0 }); }
+      else if (m.act === 'noise') { if (r.maze.state === 'play' && !slow(ws, 'lastNoise', 1500)) all({ type: 'maze-noise', x: num(m.x), z: num(m.z) }); } // someone failed a skill check in a closet: whoever moves the monster sends it there
       else if (m.act === 'key') { const i = m.i | 0; if (r.maze.state === 'play' && i >= 0 && i < 5 && !r.maze.keys[i]) { r.maze.keys[i] = 1; all({ type: 'maze-key', keys: r.maze.keys, name: ws.name }); } }
       else if (m.act === 'caught') {
         if (r.maze.state !== 'play' || r.maze.caught.includes(ws.id) || Date.now() < r.maze.at + 8000) return;
         r.maze.caught.push(ws.id); all({ type: 'maze-caught', caught: r.maze.caught, name: ws.name });
-        if (mazers(r).every(p => r.maze.caught.includes(p.id))) { r.maze.state = 'lost'; say(r, 'Nobody escaped the horror maze'); all(mazeState(r)); }
+        if (mazers(r).every(p => r.maze.caught.includes(p.id))) { r.maze.state = 'lost'; all(mazeState(r)); } // the maze itself says so on screen; the chat only hears about an escape
       } else if (m.act === 'escape') {
         if (r.maze.state !== 'play' || !r.maze.keys.every(Boolean) || r.maze.caught.includes(ws.id)) return;
         r.maze.state = 'won'; say(r, ws.name + ' escaped the horror maze!'); all(mazeState(r));
       } else if (m.act === 'start') { // a new round, but not while people are still alive in this one
         if (r.maze.state === 'play' && mazers(r).length > 1 && Date.now() - r.maze.at < 900000) return err(ws, 'A round is already running. Wait for it to end');
         if (slow(ws, 'lastMazeGo', 5000)) return;
-        r.maze = mazeNew(); all(mazeState(r)); say(r, ws.name + ' started a new horror maze round');
+        r.maze = mazeNew(); all(mazeState(r));
       }
+    } else if (m.type === 'draw' && ws.room) {
+      const r = ws.room;
+      if (m.act === 'start') {
+        if (r.draw) return err(ws, 'A game of Draw and guess is already running');
+        if (r.members.size < 2) return err(ws, 'Draw and guess needs at least 2 people in the room');
+        if (slow(ws, 'lastDrawGo', 5000)) return;
+        r.draw = { queue: [ws.id, ...[...r.members.keys()].filter(id => id !== ws.id)], score: {}, drawer: 0, name: '', word: '', ends: 0, timer: null }; // whoever starts draws first
+        say(r, ws.name + ' started Draw and guess. Type your guesses in chat'); drawNext(r);
+      } else if (m.act === 'skip' && r.draw && r.draw.drawer === ws.id) { say(r, ws.name + ' skipped. The word was "' + r.draw.word + '"'); drawNext(r); }
     } else if (m.type === 'kick' && ws.room) { // start a vote to kick someone; the starter counts as a yes
       const r = ws.room, t = r.members.get(m.id);
       if (!t || t === ws) return;
@@ -653,6 +718,20 @@ wss.on('connection', (ws, req) => {
     } else if (m.type === 'kickv' && ws.room && ws.room.vote) {
       const v = ws.room.vote; if (ws.id === v.target) return;
       v.yes.delete(ws.id); v.no.delete(ws.id); (m.yes ? v.yes : v.no).add(ws.id); checkVote(ws.room);
+    } else if (m.type === 'settings' && ws.acct) { // the browser's settings changed: keep them on the account and hand them to this person's other devices
+      if (slow(ws, 'lastSet', 400)) return;
+      const a = ws.acct, d = m.data && typeof m.data === 'object' ? m.data : {}, st = {}, old = (a.settings && a.settings.bg) || '';
+      for (const [k, max] of SET_KEYS) if (typeof d[k] === 'string' && d[k].length <= max) st[k] = d[k];
+      for (const k of ['joinCam', 'joinMic']) if (typeof d[k] === 'boolean') st[k] = d[k];
+      const done = bg => { // bg: the id of their own background image in storage, or ''
+        st.bg = bg; a.settings = st; saveAcct(a);
+        if (old && old !== bg && postPics) picCall(old, { method: 'DELETE' }).catch(() => {}); // the background it replaces
+        socketsOf(a.username).forEach(o => o !== ws && send(o, { type: 'settings', data: st }));
+      };
+      const up = postPics && typeof d.bg === 'string' && d.bg !== old ? pics.get(d.bg) : null; // a new background: an uploaded image that passed the check
+      if (d.bg === '') return done('');
+      if (!up || up.by !== ws.code || up.used) return done(old);
+      up.used = true; storePic(d.bg, up.buf).then(() => done(d.bg), e => { console.warn(e.message); done(old); err(ws, 'Your background could not be saved to your account. Try again'); });
     } else if (m.type === 'logout') { // forget this browser's stay-logged-in token
       const h = typeof m.token === 'string' && sha(m.token), i = ws.acct.sessions.indexOf(h);
       if (i >= 0) { ws.acct.sessions.splice(i, 1); tokens.delete(h); saveAcct(ws.acct); }
