@@ -363,13 +363,38 @@ button:active:not(:disabled){transform:scale(.95)}
 #modDlg{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgb(var(--bgc)/.65);padding:20px}
 #modDlg h2{font-size:1.5rem}
 #modDlg .panel{width:min(440px,100%);max-height:100%;overflow:auto}
-#modList{display:grid;gap:8px}
+#modList,#modFlags{display:grid;gap:8px}
+#modFlags .frow{align-items:flex-start;cursor:pointer}
+#modFlags .frn b{white-space:normal;overflow-wrap:anywhere}
 #modFind{display:flex;gap:8px}
 #modFind .solid{flex:none;border-radius:10px;padding:0 16px}
 #joinBar{position:fixed;top:128px;left:50%;transform:translateX(-50%);z-index:8;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:10px 14px;width:max-content;max-width:92vw;background:var(--bg);border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}
 #joinBar button{padding:6px 16px}
 .bh .solid{padding:7px 16px}
+.guns{display:flex;gap:6px;flex-wrap:wrap}
+.guns button{padding:5px 11px;font-size:.8rem;border:1px solid var(--line);border-radius:999px;background:transparent}
+.guns .on{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:600}
 #scv{width:min(100cqw,177.7cqh);height:auto;aspect-ratio:16/9;border:1px solid var(--line);border-radius:12px;background:#0a0c12;touch-action:none;cursor:crosshair}
+/* latest posts beside the menu, search, sign-up tips */
+#lobby{max-width:1280px;display:grid;grid-template-columns:minmax(0,1fr) 300px;column-gap:26px;align-content:start}
+#lobby > *{grid-column:1}
+#lobby > .solid{justify-self:start}
+#sideFeed{grid-column:2;grid-row:1/span 30;align-self:start;position:sticky;top:84px;display:grid;gap:10px;padding:16px}
+#sideFeed h2{font-size:1.1rem}
+#sideFeed .sub{font-size:.85rem}
+#sideList{display:grid;gap:8px}
+.sidepost{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;width:100%;text-align:left;padding:10px;border:1px solid var(--line);border-radius:14px;background:rgb(var(--bgc)/.35)}
+.sidepost:hover{border-color:var(--acc)}
+.sidepost .pav{grid-row:span 2;width:32px;height:32px;font-size:.8rem}
+.sidepost b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sidepost span{font-size:.85rem;color:var(--dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.sidepost img{grid-column:1/-1;width:100%;max-height:110px;margin-top:6px;object-fit:cover;border-radius:10px}
+@media(max-width:980px){#lobby{display:block}#sideFeed{position:static;margin-bottom:22px}}
+.searchbar{display:flex;gap:8px;margin-bottom:14px}
+.searchbar input{flex:1;min-width:0;background:var(--bg);color:inherit;font:inherit;border:1px solid var(--line);border-radius:10px;padding:10px}
+.searchbar button{flex:none;border-radius:10px;padding:0 16px}
+#searchPeople{display:grid;gap:8px;margin-bottom:14px}
+#searchPeople .frow{cursor:pointer}
 /* themes */
 #settings .panel{max-height:100%;overflow:auto}
 .themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -414,6 +439,7 @@ button:active:not(:disabled){transform:scale(.95)}
   <div class="panel">
     <h1>Ten rooms</h1>
     <p class="sub" id="cloakMsg">Open Ten Rooms in a blank tab, or use it right here.</p>
+    <p class="sub">Blank tab is recommended to hide from gg.</p>
     <button type="button" class="solid" id="cloakGo">Open in a blank tab</button>
     <button type="button" class="ghost" id="cloakStay">Stay in this tab</button>
   </div>
@@ -429,6 +455,7 @@ button:active:not(:disabled){transform:scale(.95)}
   <form id="authForm" class="panel">
     <h1>Ten rooms</h1>
     <p class="sub" id="authSub">Log in to walk into any open room.</p>
+    <p class="notice hidden" id="regTips">Do not put your actual name.<br>Remember your password, it does not have to be advanced.</p>
     <p class="notice">This site is only for entertainment purposes. If requested by important figures, we will take the website down.</p>
     <label for="u">Username</label><input id="u" maxlength="17" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="letters, numbers or _" required>
     <div id="dnRow" class="hidden" style="display:grid;gap:12px"><label for="dn">Display name</label><input id="dn" maxlength="20" autocomplete="nickname" placeholder="What people see. You can change it later"></div>
@@ -443,6 +470,11 @@ button:active:not(:disabled){transform:scale(.95)}
   <h1>Ten rooms</h1>
   <p class="sub">Walk into any open room to talk on video. Every room has its own chat.</p>
   <p class="notice">Notice: this site is only for entertainment purposes. If requested by important figures, we will take the website down.</p>
+  <aside id="sideFeed" class="mod" aria-label="Latest posts">
+    <h2>Latest posts</h2>
+    <div id="sideList"></div>
+    <button type="button" class="solid" id="sideGo">See all posts</button>
+  </aside>
   <div class="stats">
     <div class="stat"><b id="stLive">0</b><span>live rooms</span></div>
     <div class="stat"><b id="stOnline">0</b><span>people online</span></div>
@@ -465,9 +497,11 @@ button:active:not(:disabled){transform:scale(.95)}
   <form id="postForm" class="postbox mod">
     <textarea id="postText" maxlength="500" rows="3" placeholder="What's going on?" aria-label="Write a post"></textarea>
     <div id="postPrev" class="pprev hidden"><img alt="Image for this post"><button type="button" id="postPicX" aria-label="Remove image">×</button></div>
-    <div class="postbar"><button type="button" class="ghost hidden" id="postPic">Add image</button><button type="button" class="ghost hidden" id="postCam">Camera</button><span class="sub" id="postCount">0 / 500</span><button class="solid">Post</button></div>
+    <div class="postbar"><button type="button" class="ghost" id="postPic">Add photo</button><button type="button" class="ghost" id="postCam">Take photo</button><span class="sub" id="postCount">0 / 500</span><button class="solid">Post</button></div>
     <input type="file" id="postFile" accept="image/*" hidden><input type="file" id="postCamFile" accept="image/*" capture="environment" hidden>
   </form>
+  <form id="searchForm" class="searchbar" role="search"><input id="searchQ" maxlength="40" placeholder="Search posts and people" aria-label="Search posts and people" autocomplete="off"><button class="solid">Search</button><button type="button" class="ghost hidden" id="searchX">Clear</button></form>
+  <div id="searchPeople" class="hidden"></div>
   <div class="ftabs" id="feedTabs"><button type="button" class="on" data-f="all">Everyone</button><button type="button" data-f="friends">Friends</button><button type="button" data-f="mine">Yours</button></div>
   <div id="posts"></div>
 </main>
@@ -551,6 +585,8 @@ button:active:not(:disabled){transform:scale(.95)}
     <form id="modFind"><input id="modUser" maxlength="17" placeholder="Open a profile by @username" aria-label="Username" autocomplete="off"><button class="solid">Open</button></form>
     <p class="sub">Blocked accounts</p>
     <div id="modList"></div>
+    <p class="sub">Messages the filter blocked (newest first)</p>
+    <div id="modFlags"></div>
     <button type="button" class="solid" id="modDone">Done</button>
   </div>
 </div>
@@ -593,7 +629,8 @@ button:active:not(:disabled){transform:scale(.95)}
 <div id="shoot" class="boardmod mod hidden" role="region" aria-label="Shooter arena">
   <div class="bh">
     <h3>Shooter arena</h3>
-    <span class="bsz">WASD to move, aim with the mouse, click to shoot. First to 10 knockouts wins</span>
+    <div id="guns" class="guns" role="group" aria-label="Guns"></div>
+    <span class="bsz">WASD to move, mouse to aim, click to shoot, 1 to 4 to swap guns</span>
     <span style="flex:1"></span>
     <button type="button" class="solid" id="shootGo">Start match</button>
     <button type="button" class="ghost" id="shootX">Close</button>
@@ -702,6 +739,7 @@ function setAuthMode(mode) {
   $('dnRow').classList.toggle('hidden', !reg); $('authGo').textContent = reg ? 'Create account' : 'Log in'; $('authSwap').textContent = reg ? 'I already have an account' : 'Create an account';
   $('pw').autocomplete = reg ? 'new-password' : 'current-password';
   $('authSub').textContent = reg ? 'Pick a username and a password. There is no password reset, so remember it.' : 'Log in to walk into any open room.';
+  $('regTips').classList.toggle('hidden', !reg);
 }
 $('authSwap').onclick = () => setAuthMode(authMode === 'login' ? 'register' : 'login');
 $('authForm').onsubmit = e => {
@@ -733,7 +771,7 @@ function drawMe() { $('me').textContent = acct.display + ' @' + acct.code; }
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; $('authGo').disabled = false; authNote(''); if (isAdmin && !m.saved) setTimeout(() => notify('Warning: accounts are NOT being saved. Supabase is not connected, so everything resets on the next update. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Render.'), 1500); $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); picBase = m.picBase || ''; $('postPic').classList.toggle('hidden', !picBase); $('postCam').classList.toggle('hidden', !picBase); $('openMod').classList.toggle('hidden', !isAdmin); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; $('authGo').disabled = false; authNote(''); if (isAdmin && !m.saved) setTimeout(() => notify('Warning: accounts are NOT being saved. Supabase is not connected, so everything resets on the next update. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Render.'), 1500); $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); picBase = m.picBase || ''; picWhy = !m.pics ? 'OPENAI_API_KEY is not set in Render' : !m.saved ? 'Supabase is not connected in Render' : ''; drawLatest(m.latest || []); $('openMod').classList.toggle('hidden', !isAdmin); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
   else if (m.type === 'lobby') { rooms = m.rooms; drawStats(m.stats); drawLobby(); }
   else if (m.type === 'error') { toast(m.text); if (!inRoom && local) { local.getTracks().forEach(t => t.stop()); local = null; } } // a refused join must not leave the camera on
   else if (m.type === 'joined') onJoined(m);
@@ -742,10 +780,14 @@ function handle(m) {
   else if (m.type === 'friend-post') { sfx.ping(); notify(m.name + ' posted something new', () => { if (!inRoom) $('openFeed').click(); }); }
   else if (m.type === 'race-pos') { const o = racers[m.id] || (racers[m.id] = { dx: m.x, dy: m.y }); o.x = m.x; o.y = m.y; o.t = Date.now(); }
   else if (m.type === 'race-start') onRaceStart(m);
+  else if (m.type === 'race-course') { raceSeed = m.seed; raceAt = Date.now() - m.age; if (raceOpen) { buildLevel(raceSeed); raceState = m.age < 0 ? 'count' : m.done ? 'done' : m.racing ? 'run' : 'free'; } } // the room's shared course and clock
   else if (m.type === 'race-end') { raceMsg = (m.place === 1 ? m.name + ' wins in ' : m.name + ' finished in ') + m.secs + 's'; if (m.id === myId) raceState = 'done'; }
-  else if (m.type === 'shoot-pos') { const o = foes[m.id] || (foes[m.id] = { dx: m.x, dy: m.y }); o.x = m.x; o.y = m.y; o.a = m.a; o.hp = m.hp; o.t = Date.now(); }
-  else if (m.type === 'shoot-fire') { if (shootOpen) shots.push({ x: m.x, y: m.y, vx: Math.cos(m.a) * 9, vy: Math.sin(m.a) * 9, by: m.id }); }
+  else if (m.type === 'shoot-pos') { const o = foes[m.id] || (foes[m.id] = { dx: m.x, dy: m.y }); o.x = m.x; o.y = m.y; o.a = m.a; o.hp = m.hp; o.gun = m.gun; o.safe = m.safe; o.t = Date.now(); }
+  else if (m.type === 'shoot-fire') { if (shootOpen && GUNS[m.gun]) { m.as.forEach(a => shots.push(mkShot(m.x, m.y, a, m.gun, m.id))); if (foes[m.id]) foes[m.id].flash = Date.now(); } }
   else if (m.type === 'shoot-gone') delete foes[m.id];
+  else if (m.type === 'shoot-hit') onShootHit(m);
+  else if (m.type === 'shoot-spawn') { if (m.id === myId) { if (shootOpen) spawnHero(); } else if (foes[m.id]) foes[m.id].hp = 100; }
+  else if (m.type === 'shoot-arena') { shSeed = m.seed; shScore = m.score || {}; if (shootOpen) { buildArena(shSeed); spawnHero(); } }
   else if (m.type === 'shoot-score') { shScore = m.score; shMsg = m.text; shMsgAt = Date.now(); }
   else if (m.type === 'shoot-start') onShootStart(m);
   else if (m.type === 'mod-list') drawMod(m);
@@ -762,6 +804,8 @@ function handle(m) {
   else if (m.type === 'me') { acct = m.me; drawMe(); if (m.saved) { toast(m.mod ? 'A moderator changed your profile' : 'Profile saved'); ws.close(4001); } } // reconnect so the new name is used everywhere
   else if (m.type === 'friends') onFriends(m);
   else if (m.type === 'profile') drawProfile(m);
+  else if (m.type === 'latest') drawLatest(m.posts);
+  else if (m.type === 'search') onSearch(m);
   else if (m.type === 'mod-done') { toast('Done'); if (m.act === 'delete') $('profBack').click(); else send({ type: 'profile', user: profUser }); }
   else if (m.type === 'ability') onAbility(m);
   else if (m.type === 'gpoll') { gpoll = m.poll; drawGpoll(); }
@@ -1181,7 +1225,7 @@ EMOJIS.forEach((e, i) => {
 });
 $('react').title = 'React (or press keys 1-6)';
 addEventListener('keydown', e => { // keys 1-6 send reactions, unless you're typing
-  if (!inRoom || e.repeat || e.ctrlKey || e.metaKey || e.altKey || (e.target.closest && e.target.closest('input,textarea,select'))) return;
+  if (!inRoom || shootOpen || e.repeat || e.ctrlKey || e.metaKey || e.altKey || (e.target.closest && e.target.closest('input,textarea,select'))) return;
   const i = '123456'.indexOf(e.key); if (e.key.length === 1 && i >= 0) react(EMOJIS[i]);
 });
 $('react').onclick = () => reactBar.classList.toggle('hidden');
@@ -1597,13 +1641,14 @@ function addFriend(raw) {
   if (!/^[a-z0-9_]{3,16}$/.test(code)) return toast('Type their username, like @sam_01');
   if (code === myCode) return toast('That is you');
   if (friends.some(f => f.code === code)) return toast('Already on your list');
-  send({ type: 'friend-add', code });
+  send({ type: 'friend-add', code }); toast('Added @' + code + '. They show as online once they add you back');
 }
 function onFriends(m) { // the saved list from the server, plus people waiting to be added back
   const had = reqs.length; friends.length = 0; friends.push(...m.list);
   reqs = m.reqs.filter(r => !ignored.includes(r.code));
   if (reqs.length > had) toast(reqs[reqs.length - 1].name + ' added you as a friend');
   drawFriends(); renderPeople();
+  if (profUser && !$('prof').classList.contains('hidden')) send({ type: 'profile', user: profUser }); // a profile on screen updates its Add / Remove friend button
 }
 function onPresence(list) { pres = {}; list.forEach(p => { pres[p.code] = p; }); drawFriends(); }
 function frBadge() { // the dot on the Friends buttons: a request or an unread message is waiting
@@ -1717,8 +1762,8 @@ function postEl(p) {
   return d;
 }
 function drawPosts() {
-  const box = $('posts'), list = posts.filter(p => feedTab === 'all' || (feedTab === 'mine' ? p.code === myCode : friends.some(f => f.code === p.code))); box.innerHTML = '';
-  if (!list.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = feedTab === 'friends' ? 'Nothing from your friends yet.' : feedTab === 'mine' ? 'You have not posted yet.' : 'No posts yet. Be the first.'; box.appendChild(p); }
+  const box = $('posts'), list = searchRes ? [...searchRes.posts] : posts.filter(p => feedTab === 'all' || (feedTab === 'mine' ? p.code === myCode : friends.some(f => f.code === p.code))); box.innerHTML = '';
+  if (!list.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = searchRes ? 'No posts match that search.' : feedTab === 'friends' ? 'Nothing from your friends yet.' : feedTab === 'mine' ? 'You have not posted yet.' : 'No posts yet. Be the first.'; box.appendChild(p); }
   list.sort((a, b) => b.id - a.id).forEach(p => box.appendChild(postEl(p)));
 }
 function onPost(p) { // a new post, or an existing one that changed (like, comment)
@@ -1731,13 +1776,14 @@ function onPost(p) { // a new post, or an existing one that changed (like, comme
 }
 $('openFeed').onclick = () => { show('feed'); send({ type: 'feed', on: true }); };
 $('feedBack').onclick = () => { show('lobby'); send({ type: 'feed', on: false }); };
-let feedTab = 'all', picBase = '', postPick = null; // postPick: the image chosen for the post being written
-document.querySelectorAll('#feedTabs button').forEach(b => { b.onclick = () => { feedTab = b.dataset.f; document.querySelectorAll('#feedTabs button').forEach(x => x.classList.toggle('on', x === b)); drawPosts(); }; });
+let feedTab = 'all', picBase = '', picWhy = '', postPick = null, searchRes = null; // searchRes: what the last search found, while its results are showing // postPick: the image chosen for the post being written
+document.querySelectorAll('#feedTabs button').forEach(b => { b.onclick = () => { feedTab = b.dataset.f; clearSearch(true); document.querySelectorAll('#feedTabs button').forEach(x => x.classList.toggle('on', x === b)); drawPosts(); }; });
 function setPostPick(file) {
   const img = $('postPrev').querySelector('img'); if (img.src) URL.revokeObjectURL(img.src);
   postPick = file || null; $('postPrev').classList.toggle('hidden', !file); if (file) img.src = URL.createObjectURL(file); else img.removeAttribute('src');
 }
-$('postPic').onclick = () => $('postFile').click(); $('postCam').onclick = () => $('postCamFile').click(); $('postPicX').onclick = () => setPostPick(null);
+const photosOff = () => { if (picBase) return false; toast(isAdmin ? 'Photos are off: ' + picWhy : 'Photos are not switched on yet'); return true; }; // the buttons always show; this says why when they cannot work
+$('postPic').onclick = () => { if (!photosOff()) $('postFile').click(); }; $('postCam').onclick = () => { if (!photosOff()) $('postCamFile').click(); }; $('postPicX').onclick = () => setPostPick(null);
 $('postFile').onchange = $('postCamFile').onchange = e => { const file = e.target.files[0]; e.target.value = ''; if (file) setPostPick(file); };
 $('postText').addEventListener('input', () => { $('postCount').textContent = $('postText').value.length + ' / 500'; });
 $('postForm').onsubmit = async e => {
@@ -1747,6 +1793,37 @@ $('postForm').onsubmit = async e => {
   if (postPick) { pic = await uploadImage(postPick); if (!pic) return; } // refused or failed: the text stays so nothing is lost
   send({ type: 'post-new', text: v, pic }); $('postText').value = ''; $('postCount').textContent = '0 / 500'; setPostPick(null);
 };
+
+/* ---------- search (posts and people) and the latest-posts strip beside the menu ---------- */
+function clearSearch(quiet) {
+  searchRes = null; $('searchQ').value = ''; $('searchX').classList.add('hidden'); $('searchPeople').classList.add('hidden'); $('searchPeople').innerHTML = '';
+  if (!quiet) { document.querySelectorAll('#feedTabs button').forEach(x => x.classList.toggle('on', x.dataset.f === feedTab)); drawPosts(); }
+}
+function onSearch(m) {
+  const box = $('searchPeople'); searchRes = m; box.innerHTML = ''; box.classList.toggle('hidden', !m.people.length); $('searchX').classList.remove('hidden');
+  document.querySelectorAll('#feedTabs button').forEach(x => x.classList.remove('on'));
+  m.people.forEach(u => { // people first: click one to open their profile, or add them right here
+    const r = document.createElement('div'); r.className = 'frow' + (u.online ? ' on' : ''); r.innerHTML = '<div class="pav"></div><div class="frn"><b></b><small></small></div>';
+    setAv(r.querySelector('.pav'), u.name, avUrl(u.code, u.av)); r.querySelector('b').textContent = u.name; r.querySelector('small').textContent = '@' + u.code + (u.online ? ' · online' : '');
+    r.onclick = () => openProfile(u.code);
+    if (u.code !== myCode && !friends.some(f => f.code === u.code)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'solid'; b.textContent = 'Add friend'; b.onclick = e => { e.stopPropagation(); addFriend(u.code); b.remove(); }; r.appendChild(b); }
+    box.appendChild(r);
+  });
+  drawPosts();
+}
+$('searchForm').onsubmit = e => { e.preventDefault(); const q = $('searchQ').value.trim(); if (q) send({ type: 'search', q }); else clearSearch(); };
+$('searchX').onclick = () => clearSearch();
+function drawLatest(list) { // the newest few posts, shown beside the menu; clicking anything there opens the Posts page
+  const box = $('sideList'); box.innerHTML = '';
+  if (!list.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'No posts yet. Be the first to post something!'; box.appendChild(p); }
+  list.forEach(p => {
+    const b = document.createElement('button'), av = document.createElement('div'), name = document.createElement('b'), text = document.createElement('span'); b.type = 'button'; b.className = 'sidepost'; av.className = 'pav';
+    setAv(av, p.name, avUrl(p.code, p.av)); name.textContent = p.name; text.textContent = p.text || 'Posted a photo'; b.append(av, name, text);
+    if (picBase && /^[a-f0-9]{24}$/.test(p.img || '')) { const im = document.createElement('img'); im.alt = ''; im.loading = 'lazy'; im.src = picBase + p.img + '.jpg'; b.appendChild(im); }
+    b.onclick = () => $('openFeed').click(); box.appendChild(b);
+  });
+}
+$('sideGo').onclick = () => $('openFeed').click();
 
 /* ---------- profile page: anyone's display name, bio and posts; your own is editable here ---------- */
 let profUser = '', profFrom = 'lobby';
@@ -1758,12 +1835,15 @@ function openProfile(user) {
 function drawProfile(m) {
   if (m.user.code !== profUser) return;
   const u = m.user, mine = u.code === myCode, box = $('profBtns'), list = $('profPosts');
-  const btn = (text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = text; b.onclick = fn; box.appendChild(b); };
+  const btn = (text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = text; b.onclick = fn; box.appendChild(b); return b; };
   setAv($('profAv'), u.name, mine ? myAvatar : avUrl(u.code, u.av)); $('profName').textContent = u.name; $('profUser').textContent = '@' + u.code + (u.admin ? ' · moderator' : '');
   $('profBio').textContent = u.bio || (mine ? 'No bio yet. Add one below.' : 'No bio yet.');
   $('profMeta').textContent = (u.online ? 'Online now' : 'Offline') + ' · joined ' + new Date(u.joined).toLocaleDateString();
   box.innerHTML = '';
-  if (!mine) { if (friends.some(f => f.code === u.code)) btn('Message', () => { $('openFr').click(); openDm(u.code); }); else btn('Add friend', () => addFriend(u.code)); }
+  if (!mine) {
+    if (friends.some(f => f.code === u.code)) { btn('Message', () => { $('openFr').click(); openDm(u.code); }); btn('Remove friend', () => send({ type: 'friend-del', code: u.code })); }
+    else btn('Add friend', () => addFriend(u.code)).className = 'solid';
+  }
   if (isAdmin && !mine) { // moderator tools
     btn('Reset display name', () => send({ type: 'mod', act: 'reset-name', user: u.code }));
     btn('Clear bio', () => send({ type: 'mod', act: 'clear-bio', user: u.code }));
@@ -1962,7 +2042,7 @@ function drawRace() {
   g.font = '600 14px Manrope,sans-serif';
   if (raceState === 'run') g.fillText(((now - raceAt) / 1000).toFixed(1) + 's', RW / 2, 46);
   if (raceMsg) g.fillText(raceMsg, RW / 2, 70);
-  if (raceState === 'free') { g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(RW / 2 - 250, RH - 44, 500, 28); g.fillStyle = '#fff'; g.fillText('Practice run. Press "Start race" and everyone here can join the same course.', RW / 2, RH - 25); }
+  if (raceState === 'free') { g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(RW / 2 - 250, RH - 44, 500, 28); g.fillStyle = '#fff'; g.fillText('Practice on the room\'s course. Press "Start race" for a new one with a countdown.', RW / 2, RH - 25); }
 }
 function raceLoop(t) {
   if (!raceOpen) return;
@@ -1978,8 +2058,7 @@ function setRace(open) {
   raceOpen = open;
   if (open) {
     setBoard(false); setShoot(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(raceEl); raceEl.classList.remove('hidden');
-    buildLevel(raceSeed || 1 + Math.floor(Math.random() * 1e9)); // no race yet in this room: a random course to practise on
-    raceState = Date.now() < raceAt ? 'count' : 'free'; raceLast = 0; raceAcc = 0; requestAnimationFrame(raceLoop); send({ type: 'race', act: 'open', on: true });
+    buildLevel(raceSeed || 1); raceState = 'free'; // a stand-in for a moment: the server answers the 'open' below with the course this room is really on raceLast = 0; raceAcc = 0; requestAnimationFrame(raceLoop); send({ type: 'race', act: 'open', on: true });
   } else { raceEl.classList.add('hidden'); for (const k in held) held[k] = false; send({ type: 'race', act: 'open', on: false }); }
   layout();
 }
@@ -1998,63 +2077,130 @@ document.querySelectorAll('.rtouch button').forEach(b => { // on-screen buttons 
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, () => { held[b.dataset.k] = false; }));
 });
 
-/* ---------- shooter arena: top-down, WASD and mouse. You simulate yourself; a hit is decided by the player who got hit ---------- */
-const shEl = $('shoot'), scv = $('scv'), sg = scv.getContext('2d'), PR = 13, aim = { x: RW / 2, y: RH / 2, down: false };
-let shSeed = 0, walls = [], hero = null, foes = {}, shots = [], shScore = {}, shMsg = '', shMsgAt = 0, shLast = 0, shAcc = 0, shSent = 0, shFired = 0, shBack = 0, shFlash = 0; // shBack: when you respawn after a knockout
+/* ---------- shooter arena: top-down, WASD and mouse. You move yourself and report when your bullets land; the server keeps everyone's health ---------- */
+const shEl = $('shoot'), scv = $('scv'), sg = scv.getContext('2d'), PR = 13, CELL = 50, aim = { x: RW / 2, y: RH / 2, down: false };
+// dmg, gap (ms between shots) and n (bullets per shot) must match the server's table; the rest is how the gun feels and looks
+const GUNS = {
+  pistol: { name: 'Pistol', dmg: 25, gap: 280, n: 1, speed: 10, spread: .02, life: 70, len: 11, w: 4 },
+  smg: { name: 'SMG', dmg: 12, gap: 90, n: 1, speed: 11, spread: .09, life: 50, len: 15, w: 4 },
+  shotgun: { name: 'Shotgun', dmg: 14, gap: 750, n: 5, speed: 9, spread: .24, life: 24, len: 16, w: 6 },
+  sniper: { name: 'Sniper', dmg: 80, gap: 1100, n: 1, speed: 20, spread: 0, life: 60, len: 25, w: 3 }
+};
+let shSeed = 0, walls = [], openCells = [], hero = null, foes = {}, shots = [], sparks = [], shScore = {}, shMsg = '', shMsgAt = 0, shLast = 0, shAcc = 0, shSent = 0, shFired = 0, shFlash = 0, gun = GUNS[localStorage.getItem('gun')] ? localStorage.getItem('gun') : 'pistol';
 const walled = (x, y, r) => x < r || y < r || x > RW - r || y > RH - r || walls.some(w => x + r > w.x && x - r < w.x + w.w && y + r > w.y && y - r < w.y + w.h);
-function buildArena(seed) { // six random walls, each copied to the opposite corner so no side has the better cover
-  const rnd = seeded(seed || 1); walls = [];
-  for (let i = 0; i < 6; i++) { const w = rnd() < .5 ? 26 : 50 + rnd() * 100, h = w === 26 ? 60 + rnd() * 90 : 26, x = 50 + rnd() * (RW / 2 - 90 - w), y = 40 + rnd() * (RH - 80 - h); walls.push({ x, y, w, h }, { x: RW - x - w, y: RH - y - h, w, h }); }
+const mkShot = (x, y, a, g, by) => ({ x, y, vx: Math.cos(a) * GUNS[g].speed, vy: Math.sin(a) * GUNS[g].speed, life: GUNS[g].life, g, by });
+const foeCol = id => 'hsl(' + (id * 67) % 360 + ',80%,62%)'; // every other player gets their own colour
+function spark(x, y, col, count, text) { for (let i = 0; i < count && sparks.length < 160; i++) sparks.push({ x, y, vx: (Math.random() - .5) * 5, vy: (Math.random() - .5) * 5, life: 1, col }); if (text) sparks.push({ x, y: y - 18, vx: 0, vy: -.7, life: 1, col: '#fff', text }); }
+function buildArena(seed) { // a 16 by 9 grid of 50px cells. Wall shapes are dropped in and copied to the opposite corner so the map is fair; a layout is only used if every open cell can be reached
+  const rnd = seeded(seed || 1), C = 16, R = 9; let grid = null;
+  for (let tries = 0; tries < 40 && !grid; tries++) {
+    const g = Array.from({ length: R }, () => Array(C).fill(false)), put = (c, r) => { if (c >= 0 && c < C && r >= 0 && r < R) g[r][c] = g[R - 1 - r][C - 1 - c] = true; };
+    for (let i = 5 + Math.floor(rnd() * 4); i > 0; i--) {
+      const c = 1 + Math.floor(rnd() * 7), r = Math.floor(rnd() * R), kind = rnd(), len = 2 + Math.floor(rnd() * 2);
+      if (kind < .3) for (let k = 0; k < len; k++) put(c + k, r); // a bar across
+      else if (kind < .6) for (let k = 0; k < len; k++) put(c, r + k); // a bar down
+      else if (kind < .8) { put(c, r); put(c + 1, r); put(c, r + 1); } // a corner
+      else if (kind < .92) put(c, r); // a pillar
+      else { put(c, r); put(c + 1, r); put(c, r + 1); put(c + 1, r + 1); } // a block
+    }
+    const free = []; for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) if (!g[r][c]) free.push([c, r]);
+    if (free.length < 100) continue; // too cramped
+    const seen = new Set([free[0].join()]), todo = [free[0]];
+    while (todo.length) { const [c, r] = todo.pop(); [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dc, dr]) => { const nc = c + dc, nr = r + dr, k = nc + ',' + nr; if (nc >= 0 && nc < C && nr >= 0 && nr < R && !g[nr][nc] && !seen.has(k)) { seen.add(k); todo.push([nc, nr]); } }); }
+    if (seen.size === free.length) grid = g; // no sealed-off pockets
+  }
+  walls = []; openCells = [];
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) { if (grid && grid[r][c]) walls.push({ x: c * CELL, y: r * CELL, w: CELL, h: CELL }); else openCells.push({ x: c * CELL + CELL / 2, y: r * CELL + CELL / 2 }); }
 }
-function spawnHero() { let x, y, tries = 0; do { x = 30 + Math.random() * (RW - 60); y = 30 + Math.random() * (RH - 60); } while (walled(x, y, PR + 6) && ++tries < 200); hero = { x, y, a: 0, hp: 3 }; }
+function spawnHero() { // the open cell, out of a dozen random ones, that is furthest from every other player
+  let bestD = -1, at = openCells[0] || { x: RW / 2, y: RH / 2 };
+  for (let i = 0; i < 12 && openCells.length; i++) { const c = openCells[Math.floor(Math.random() * openCells.length)], d = Math.min(9999, ...Object.values(foes).filter(o => o.hp > 0).map(o => Math.hypot(o.x - c.x, o.y - c.y))); if (d > bestD) { bestD = d; at = c; } }
+  hero = { x: at.x, y: at.y, a: 0, hp: 100, safe: Date.now() + 1500, flash: 0 };
+}
+function setGun(k) { if (!GUNS[k]) return; gun = k; try { localStorage.setItem('gun', k); } catch {} document.querySelectorAll('#guns button').forEach(b => b.classList.toggle('on', b.dataset.g === k)); }
+Object.keys(GUNS).forEach((k, i) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.g = k; b.dataset.sfx = 'none'; b.textContent = (i + 1) + ' ' + GUNS[k].name; b.onclick = () => setGun(k); $('guns').appendChild(b); });
+setGun(gun);
+addEventListener('keydown', e => { const i = '1234'.indexOf(e.key); if (shootOpen && i >= 0 && e.key.length === 1 && !typing(e)) setGun(Object.keys(GUNS)[i]); });
 function shootStep() {
-  const now = Date.now();
-  if (hero.hp <= 0) { if (now >= shBack) spawnHero(); }
-  else {
+  const now = Date.now(), G = GUNS[gun], landed = {};
+  if (hero.hp > 0) {
     const mx = (held.right ? 1 : 0) - (held.left ? 1 : 0), my = (held.down ? 1 : 0) - (held.up ? 1 : 0), sp = mx && my ? 2.3 : 3.2;
     if (mx && !walled(hero.x + mx * sp, hero.y, PR)) hero.x += mx * sp;
     if (my && !walled(hero.x, hero.y + my * sp, PR)) hero.y += my * sp;
     hero.a = Math.atan2(aim.y - hero.y, aim.x - hero.x);
-    if (aim.down && now - shFired > 260) { // hold the button to keep firing
-      shFired = now; const x = hero.x + Math.cos(hero.a) * (PR + 4), y = hero.y + Math.sin(hero.a) * (PR + 4);
-      shots.push({ x, y, vx: Math.cos(hero.a) * 9, vy: Math.sin(hero.a) * 9, by: 'me' }); send({ type: 'shoot', act: 'fire', x, y, a: hero.a }); tone(520, .05, 'square', .03, .5);
+    if (aim.down && now - shFired > G.gap) { // hold the button to keep firing
+      const x = hero.x + Math.cos(hero.a) * (PR + G.len), y = hero.y + Math.sin(hero.a) * (PR + G.len), as = [];
+      for (let i = 0; i < G.n; i++) as.push(hero.a + (Math.random() - .5) * 2 * G.spread);
+      shFired = now; hero.flash = now; as.forEach(a => shots.push(mkShot(x, y, a, gun, 'me'))); send({ type: 'shoot', act: 'fire', x, y, as, gun });
+      if (gun === 'shotgun') tone(150, .14, 'sawtooth', .08, .4); else if (gun === 'sniper') tone(900, .2, 'sawtooth', .06, .15); else tone(gun === 'smg' ? 700 : 520, .05, 'square', .03, .5);
     }
   }
   shots = shots.filter(b => {
-    b.x += b.vx; b.y += b.vy; if (walled(b.x, b.y, 2)) return false;
-    if (b.by === 'me') return !Object.values(foes).some(o => o.hp > 0 && Math.hypot(o.dx - b.x, o.dy - b.y) < PR + 3); // your own shots just vanish on a hit; the other player decides if it counted
-    if (hero.hp > 0 && Math.hypot(hero.x - b.x, hero.y - b.y) < PR + 3) {
-      hero.hp--; shFlash = now; tone(160, .12, 'sawtooth', .08, .5);
-      if (hero.hp <= 0) { shBack = now + 2000; send({ type: 'shoot', act: 'dead', by: b.by }); }
-      return false;
+    const steps = Math.ceil(GUNS[b.g].speed / 6); // fast bullets move in small steps so they cannot skip over anyone
+    for (let i = 0; i < steps; i++) {
+      b.x += b.vx / steps; b.y += b.vy / steps;
+      if (walled(b.x, b.y, 2)) { spark(b.x, b.y, '#ffd23f', 3); return false; }
+      for (const id in foes) {
+        const o = foes[id]; if (+id === b.by || o.hp <= 0 || Math.hypot(o.dx - b.x, o.dy - b.y) >= PR + 3) continue;
+        if (b.by === 'me' && !o.safe) (landed[id] = landed[id] || { g: b.g, n: 0 }).n++; // your bullet reached them on your screen: that is what counts
+        return false;
+      }
+      if (b.by !== 'me' && hero.hp > 0 && Math.hypot(hero.x - b.x, hero.y - b.y) < PR + 3) return false; // drawn as a hit; the damage itself comes from the server
     }
-    return true;
+    return --b.life > 0;
   });
+  for (const id in landed) send({ type: 'shoot', act: 'hit', to: +id, gun: landed[id].g, n: landed[id].n });
+}
+function onShootHit(m) { // the server's word on a hit: who, by whom, and the health left
+  const mine = m.to === myId, o = mine ? hero : foes[m.to]; if (!o) return;
+  o.hp = m.hp; if (!shootOpen) return;
+  const x = mine ? hero.x : o.dx, y = mine ? hero.y : o.dy;
+  spark(x, y, mine ? accHex : foeCol(m.to), m.hp > 0 ? 6 : 26, '-' + m.dmg);
+  if (mine) { shFlash = Date.now(); tone(160, .12, 'sawtooth', .08, .5); } else if (m.by === myId) tone(m.hp > 0 ? 1100 : 1500, .05, 'sine', .06);
 }
 function drawShoot() {
-  const g = sg, now = Date.now();
-  g.setTransform(2, 0, 0, 2, 0, 0); g.shadowBlur = 0; g.fillStyle = '#0a0c12'; g.fillRect(0, 0, RW, RH);
-  g.strokeStyle = 'rgba(255,255,255,.05)'; g.lineWidth = 1; g.beginPath(); for (let x = 0; x <= RW; x += 40) { g.moveTo(x, 0); g.lineTo(x, RH); } for (let y = 0; y <= RH; y += 40) { g.moveTo(0, y); g.lineTo(RW, y); } g.stroke();
-  g.fillStyle = '#2a3142'; g.strokeStyle = accHex; for (const w of walls) { g.fillRect(w.x, w.y, w.w, w.h); g.strokeRect(w.x + .5, w.y + .5, w.w - 1, w.h - 1); }
-  const man = (x, y, a, hp, col, name) => { // a player: circle, gun barrel, name, three health pips
-    if (hp <= 0) return;
-    g.strokeStyle = col; g.lineWidth = 5; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * (PR + 9), y + Math.sin(a) * (PR + 9)); g.stroke();
-    g.fillStyle = col; g.beginPath(); g.arc(x, y, PR, 0, 6.283); g.fill();
-    g.font = '600 11px Manrope,sans-serif'; g.textAlign = 'center'; g.fillStyle = '#fff'; g.fillText(name, x, y - PR - 12);
-    for (let i = 0; i < 3; i++) { g.fillStyle = i < hp ? '#2dff88' : 'rgba(255,255,255,.2)'; g.fillRect(x - 13 + i * 9, y - PR - 8, 7, 4); }
+  const g = sg, now = Date.now(), G = GUNS[gun];
+  g.setTransform(2, 0, 0, 2, 0, 0); g.shadowBlur = 0; g.globalAlpha = 1;
+  g.fillStyle = '#10141d'; g.fillRect(0, 0, RW, RH);
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 16; c++) { g.fillStyle = (r + c) % 2 ? 'rgba(255,255,255,.025)' : 'rgba(0,0,0,.12)'; g.fillRect(c * CELL, r * CELL, CELL, CELL); } // floor tiles
+  for (const w of walls) { g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(w.x + 5, w.y + 7, w.w, w.h); } // wall shadows first, so they fall on the floor only
+  for (const w of walls) { g.fillStyle = '#39445c'; g.fillRect(w.x, w.y, w.w, w.h); g.fillStyle = '#4c5a78'; g.fillRect(w.x, w.y, w.w, w.h - 9); g.fillStyle = accHex; g.globalAlpha = .5; g.fillRect(w.x, w.y, w.w, 2); g.globalAlpha = 1; }
+  const man = (x, y, a, hp, col, name, gk, safe, flash) => { // a player seen from above: backpack, shoulders, arms, the gun they hold, helmet
+    if (hp <= 0) return; const W = GUNS[gk] || GUNS.pistol;
+    g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(x + 3, y + 5, PR + 2, PR, 0, 0, 6.283); g.fill();
+    g.save(); g.translate(x, y); g.rotate(a);
+    g.fillStyle = '#20242e'; g.fillRect(-PR - 3, -6, 6, 12); // backpack
+    g.fillStyle = col; g.beginPath(); g.ellipse(0, 0, PR - 3, PR, 0, 0, 6.283); g.fill(); // shoulders
+    g.fillStyle = '#14171d'; g.fillRect(PR - 5, -W.w / 2, W.len + 5, W.w); g.fillStyle = '#666f80'; g.fillRect(PR + W.len - 3, -W.w / 2, 3, W.w); // the gun
+    g.fillStyle = col; g.beginPath(); g.arc(PR - 3, -5, 3.5, 0, 6.283); g.arc(PR + 3, 4, 3.5, 0, 6.283); g.fill(); // hands
+    g.fillStyle = '#e9edf5'; g.beginPath(); g.arc(1, 0, 6.5, 0, 6.283); g.fill(); g.fillStyle = '#14171d'; g.fillRect(4, -4, 3, 8); // helmet and visor
+    if (now - (flash || 0) < 70) { g.fillStyle = '#ffe9a0'; g.beginPath(); g.moveTo(PR + W.len, 0); g.lineTo(PR + W.len + 14, -6); g.lineTo(PR + W.len + 20, 0); g.lineTo(PR + W.len + 14, 6); g.fill(); } // muzzle flash
+    g.restore();
+    if (safe) { g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 1.5; g.setLineDash([4, 4]); g.beginPath(); g.arc(x, y, PR + 6, 0, 6.283); g.stroke(); g.setLineDash([]); } // just appeared: cannot be hit yet
+    g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(x - 17, y - PR - 13, 34, 5); g.fillStyle = hp > 50 ? '#2dff88' : hp > 25 ? '#ffd23f' : '#ff4040'; g.fillRect(x - 16, y - PR - 12, 32 * hp / 100, 3);
+    g.font = '600 11px Manrope,sans-serif'; g.textAlign = 'center'; g.fillStyle = '#fff'; g.fillText(name, x, y - PR - 17);
   };
   for (const id in foes) {
     const o = foes[id]; if (now - o.t > 3000 || !people[id]) { delete foes[id]; continue; }
-    o.dx += (o.x - o.dx) * .35; o.dy += (o.y - o.dy) * .35; man(o.dx, o.dy, o.a, o.hp, '#ff5f6d', people[id].name);
+    o.dx += (o.x - o.dx) * .35; o.dy += (o.y - o.dy) * .35; man(o.dx, o.dy, o.a, o.hp, foeCol(id), people[id].name, o.gun, o.safe, o.flash);
   }
-  man(hero.x, hero.y, hero.a, hero.hp, accHex, 'You');
-  g.shadowColor = '#ffd23f'; g.shadowBlur = 8; g.fillStyle = '#ffd23f'; for (const b of shots) { g.beginPath(); g.arc(b.x, b.y, 3, 0, 6.283); g.fill(); } g.shadowBlur = 0;
+  man(hero.x, hero.y, hero.a, hero.hp, accHex, 'You', gun, now < hero.safe, hero.flash);
+  g.lineCap = 'round'; for (const b of shots) { g.strokeStyle = b.g === 'sniper' ? '#fff' : '#ffd23f'; g.lineWidth = b.g === 'sniper' ? 3 : 2; g.beginPath(); g.moveTo(b.x, b.y); g.lineTo(b.x - b.vx * 1.2, b.y - b.vy * 1.2); g.stroke(); } // bullets as short streaks
+  sparks = sparks.filter(q => {
+    q.x += q.vx; q.y += q.vy; q.life -= q.text ? .025 : .06; if (q.life <= 0) return false; g.globalAlpha = q.life; g.fillStyle = q.col;
+    if (q.text) { g.font = '700 13px Manrope,sans-serif'; g.textAlign = 'center'; g.fillText(q.text, q.x, q.y); } else g.fillRect(q.x, q.y, 3, 3);
+    g.globalAlpha = 1; return true;
+  });
   if (now - shFlash < 120) { g.fillStyle = 'rgba(255,40,40,.25)'; g.fillRect(0, 0, RW, RH); } // you were hit
-  g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.beginPath(); g.arc(aim.x, aim.y, 7, 0, 6.283); g.moveTo(aim.x - 11, aim.y); g.lineTo(aim.x + 11, aim.y); g.moveTo(aim.x, aim.y - 11); g.lineTo(aim.x, aim.y + 11); g.stroke();
+  const ready = Math.min(1, (now - shFired) / G.gap); // crosshair, with a ring that fills as the gun gets ready to fire again
+  g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(aim.x - 11, aim.y); g.lineTo(aim.x - 4, aim.y); g.moveTo(aim.x + 4, aim.y); g.lineTo(aim.x + 11, aim.y); g.moveTo(aim.x, aim.y - 11); g.lineTo(aim.x, aim.y - 4); g.moveTo(aim.x, aim.y + 4); g.lineTo(aim.x, aim.y + 11); g.stroke();
+  g.strokeStyle = ready < 1 ? '#ffd23f' : 'rgba(255,255,255,.5)'; g.beginPath(); g.arc(aim.x, aim.y, 9, -1.571, -1.571 + 6.283 * ready); g.stroke();
   g.textAlign = 'left'; g.font = '600 12px Manrope,sans-serif'; g.fillStyle = '#fff'; // scoreboard
   Object.keys(shScore).map(id => [+id === myId ? 'You' : people[id] ? people[id].name : 'Left', shScore[id]]).sort((a, b) => b[1] - a[1]).slice(0, 6).forEach(([name, pts], i) => g.fillText(pts + '  ' + name, 12, 20 + i * 16));
+  g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(12, RH - 26, 154, 14); g.fillStyle = hero.hp > 50 ? '#2dff88' : hero.hp > 25 ? '#ffd23f' : '#ff4040'; g.fillRect(14, RH - 24, 150 * Math.max(0, hero.hp) / 100, 10); // your health
+  g.fillStyle = '#fff'; g.fillText(G.name, 174, RH - 15);
   g.textAlign = 'center'; g.font = '600 14px Manrope,sans-serif';
-  if (hero.hp <= 0) g.fillText('Knocked out. Back in ' + Math.max(1, Math.ceil((shBack - now) / 1000)), RW / 2, RH / 2);
+  if (hero.hp <= 0) g.fillText('Knocked out. Back in a moment…', RW / 2, RH / 2);
   if (shMsg && now - shMsgAt < 4000) g.fillText(shMsg, RW / 2, 24);
 }
 function shootLoop(t) {
@@ -2062,7 +2208,7 @@ function shootLoop(t) {
   requestAnimationFrame(shootLoop);
   shAcc += Math.min(100, t - (shLast || t)); shLast = t;
   while (shAcc >= 16.67) { shootStep(); shAcc -= 16.67; }
-  if (t - shSent > 60) { shSent = t; send({ type: 'shoot', act: 'pos', x: hero.x, y: hero.y, a: hero.a, hp: hero.hp }); }
+  if (t - shSent > 60) { shSent = t; send({ type: 'shoot', act: 'pos', x: hero.x, y: hero.y, a: hero.a, gun }); }
   drawShoot();
 }
 function setShoot(open) {
@@ -2070,18 +2216,19 @@ function setShoot(open) {
   shootOpen = open;
   if (open) {
     setBoard(false); setRace(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(shEl); shEl.classList.remove('hidden');
-    buildArena(shSeed); spawnHero(); shots = []; shLast = 0; shAcc = 0; requestAnimationFrame(shootLoop); send({ type: 'shoot', act: 'open', on: true });
+    buildArena(shSeed); spawnHero(); shots = []; sparks = []; shLast = 0; shAcc = 0; requestAnimationFrame(shootLoop); send({ type: 'shoot', act: 'open', on: true }); // the server answers with the room's real map
   } else { shEl.classList.add('hidden'); aim.down = false; for (const k in held) held[k] = false; send({ type: 'shoot', act: 'open', on: false }); }
   layout();
 }
-function onShootStart(m) { // a new match: fresh walls, scores back to zero
+function onShootStart(m) { // a new match: a new map, scores back to zero
   shSeed = m.seed; shScore = {}; shMsg = m.by + ' started a match. First to 10 knockouts'; shMsgAt = Date.now();
-  if (shootOpen) { buildArena(shSeed); spawnHero(); shots = []; } else invite(m.by + ' started a shooter match', () => setShoot(true));
+  if (shootOpen) { for (const id in foes) foes[id].hp = 100; buildArena(shSeed); spawnHero(); shots = []; } else invite(m.by + ' started a shooter match', () => setShoot(true));
 }
 const aimAt = e => { const r = scv.getBoundingClientRect(); aim.x = (e.clientX - r.left) / r.width * RW; aim.y = (e.clientY - r.top) / r.height * RH; };
 scv.addEventListener('pointermove', aimAt);
 scv.addEventListener('pointerdown', e => { scv.setPointerCapture(e.pointerId); aimAt(e); aim.down = true; });
 ['pointerup', 'pointercancel'].forEach(ev => scv.addEventListener(ev, () => { aim.down = false; }));
+scv.addEventListener('wheel', e => { e.preventDefault(); const ks = Object.keys(GUNS); setGun(ks[(ks.indexOf(gun) + (e.deltaY > 0 ? 1 : ks.length - 1)) % ks.length]); }, { passive: false }); // the wheel swaps guns too
 $('shootGo').onclick = () => send({ type: 'shoot', act: 'start' }); $('shootX').onclick = () => setShoot(false);
 
 /* ---------- moderation panel (moderators only): blocked accounts, and a quick way to open any profile ---------- */
@@ -2089,6 +2236,13 @@ const closeMod = () => $('modDlg').classList.add('hidden');
 function drawMod(m) {
   const box = $('modList'); box.innerHTML = ''; $('modInfo').textContent = m.accounts + ' accounts exist. Open a profile to reset a name, clear a bio, block or delete. Posts and comments have their own Delete buttons.';
   if (!m.users.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'Nobody is blocked.'; box.appendChild(p); }
+  const fl = $('modFlags'); fl.innerHTML = ''; // what the text filter stopped, and who sent it; click one to open their profile
+  if (!m.flags.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = m.checking ? 'Nothing blocked yet.' : 'The filter is off: OPENAI_API_KEY is not set in Render.'; fl.appendChild(p); }
+  m.flags.forEach(x => {
+    const r = document.createElement('div'); r.className = 'frow'; r.innerHTML = '<div class="frn"><b></b><small></small></div>';
+    r.querySelector('b').textContent = x.text || '(text not kept)'; r.querySelector('small').textContent = '@' + x.u + ' · ' + x.where + ' · ' + x.why + ' · ' + when(x.t);
+    if (x.u) r.onclick = () => { closeMod(); openProfile(x.u); }; fl.appendChild(r);
+  });
   m.users.forEach(u => {
     const r = document.createElement('div'), b = document.createElement('button'); r.className = 'frow'; b.type = 'button'; b.className = 'ghost'; b.textContent = 'Unblock';
     r.innerHTML = '<div class="pav"></div><div class="frn"><b></b><small></small></div>'; r.querySelector('.pav').textContent = (u.name[0] || '?').toUpperCase();
