@@ -102,7 +102,7 @@ const SB_URL = envVal('SUPABASE_URL').replace(/\/+$/, ''), SB_KEY = envVal('SUPA
 if (!useSB) console.warn('WARNING: Supabase is not connected (' + (SB_URL ? 'SUPABASE_SECRET_KEY' : 'SUPABASE_URL') + ' is not set). Accounts and posts are kept in a local file and will be LOST on the next deploy or restart.');
 const DATA = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'tenrooms.json'), ACC = path.join(path.dirname(DATA), 'accounts.json');
 const ADMINS = new Set((process.env.ADMIN_USERS || 'diddydespacito').split(',').map(s => s.trim().toLowerCase().replace(/^@/, '')).filter(Boolean)); // usernames that can moderate: delete posts and accounts, reset names, run the global poll
-const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0, blocked: { users: [], devices: [] } }; // blocked.devices: [{ id, user }]
+const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0, blocked: { users: [], devices: [] }, flags: [] }; // blocked.devices: [{ id, user }]
 const ever = new Set(), today = new Set(); // usernames seen ever, and seen on store.day
 const accounts = new Map(), tokens = new Map(); // username -> account; hash of a login token -> username
 const dirty = new Set(), gone = new Set(); // accounts waiting to be written, and deleted ones waiting to be removed
@@ -110,6 +110,7 @@ function adopt(d) { // take loaded data as the current state
   if (!d || typeof d !== 'object') return;
   Object.assign(store, d); if (!Array.isArray(store.posts)) store.posts = [];
   if (!store.blocked || !Array.isArray(store.blocked.users) || !Array.isArray(store.blocked.devices)) store.blocked = { users: [], devices: [] };
+  if (!Array.isArray(store.flags)) store.flags = [];
   ever.clear(); (store.ever || []).forEach(c => ever.add(c)); today.clear(); (store.today || []).forEach(c => today.add(c));
 }
 function adoptAccounts(list) {
@@ -183,6 +184,8 @@ const avOf = code => { const a = accounts.get(code); return a && a.av ? a.avv ||
 const postView = (p, ws) => ({ id: p.id, code: p.code, name: p.name, av: avOf(p.code), text: p.text, img: p.img, t: p.t, likes: p.likes.length, liked: p.likes.includes(ws.code), comments: p.comments.map(c => ({ ...c, av: avOf(c.code) })) });
 const toFeed = make => wss.clients.forEach(c => c.feed && send(c, make(c))); // only people with the Posts page open get updates
 const pushPost = p => toFeed(c => ({ type: 'post', post: postView(p, c) }));
+const latest = () => store.posts.slice(-5).reverse().map(p => ({ id: p.id, code: p.code, name: p.name, av: avOf(p.code), text: p.text.slice(0, 120), img: p.img, t: p.t })); // the newest few posts, for the strip beside the menu
+const pushLatest = () => { const l = latest(); wss.clients.forEach(c => c.name && send(c, { type: 'latest', posts: l })); };
 const gpollView = ws => store.gpoll && { id: store.gpoll.id, q: store.gpoll.q, opts: store.gpoll.opts.map(o => ({ t: o.t, n: o.v.length })), mine: store.gpoll.opts.findIndex(o => o.v.includes(ws.code)) };
 const pushGpoll = () => wss.clients.forEach(c => c.name && send(c, { type: 'gpoll', poll: gpollView(c) }));
 
@@ -192,24 +195,34 @@ const pushGpoll = () => wss.clients.forEach(c => c.name && send(c, { type: 'gpol
 const USER_RE = /^[a-z0-9_]{3,16}$/;
 // Text moderation, used on names, bios, chat, topics, polls, posts and comments. Two layers:
 // 1. BLOCKED_WORDS (Render: Environment, comma-separated): matched after undoing the usual tricks (l33t, spaces and dots between letters, repeated letters).
-// 2. OpenAI's moderation model, when OPENAI_API_KEY is set: blocks hate speech and slurs, threats, and anything sexual about minors. Ordinary rudeness is let through.
+// 2. OpenAI's moderation model, when OPENAI_API_KEY is set. Only the extreme end is blocked: slurs and hate speech, and anything sexual involving minors.
+//    Swearing, insults, arguments and everything else are let through.
+// Whatever gets blocked is noted in store.flags so a moderator can see who tried it.
 const squash = t => String(t).toLowerCase().replace(/[@4]/g, 'a').replace(/[1!|]/g, 'i').replace(/3/g, 'e').replace(/0/g, 'o').replace(/[5$]/g, 's').replace(/7/g, 't').replace(/[^a-z]/g, '').replace(/(.)\1+/g, '$1');
 const BLOCKED = (process.env.BLOCKED_WORDS || '').split(',').map(squash).filter(w => w.length > 2);
 const badName = t => { const l = squash(t); return BLOCKED.some(w => l.includes(w)); };
-const okCache = new Map(); // text already checked -> allowed or not
-async function textOk(text) { // false means: block it
+const okCache = new Map(); // text already checked -> '' if fine, or the reason it is blocked
+function flag(who, where, why, text) { // remember the last 60 blocked messages for the moderation panel. Child-safety blocks keep no copy of the text
+  store.flags.push({ u: who || '', t: Date.now(), where: where || '', why, text: why === 'child safety' ? '' : String(text).slice(0, 120) });
+  if (store.flags.length > 60) store.flags.shift();
+  save(); console.warn('blocked text (' + why + ') from @' + who + ' in ' + where);
+}
+async function textOk(text, who, where) { // false means: block it
   if (!text) return true;
-  if (badName(text)) return false;
+  if (badName(text)) { flag(who, where, 'your blocked words', text); return false; }
   if (!OPENAI) return true;
-  const key = text.toLowerCase(); if (okCache.has(key)) return okCache.get(key);
-  try {
-    const r = await fetch('https://api.openai.com/v1/moderations', { method: 'POST', signal: AbortSignal.timeout(4000), headers: { Authorization: 'Bearer ' + OPENAI, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'omni-moderation-latest', input: text }) });
-    if (!r.ok) throw new Error('OpenAI answered ' + r.status);
-    const res = (await r.json()).results[0], c = res.categories || {}, sc = res.category_scores || {};
-    const ok = !(c.hate || c['hate/threatening'] || c['harassment/threatening'] || c['sexual/minors'] || sc.hate > .35);
-    if (okCache.size > 3000) okCache.clear(); okCache.set(key, ok);
-    return ok;
-  } catch (e) { console.warn('text check failed:', e.message); return true; } // if the checker is down, the site keeps working
+  const key = text.toLowerCase(); let why = okCache.get(key);
+  if (why === undefined) {
+    try {
+      const r = await fetch('https://api.openai.com/v1/moderations', { method: 'POST', signal: AbortSignal.timeout(4000), headers: { Authorization: 'Bearer ' + OPENAI, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'omni-moderation-latest', input: text }) });
+      if (!r.ok) throw new Error('OpenAI answered ' + r.status);
+      const res = (await r.json()).results[0], c = res.categories || {}, sc = res.category_scores || {};
+      why = c['sexual/minors'] || sc['sexual/minors'] > .2 ? 'child safety' : c.hate || c['hate/threatening'] ? 'slur or hate' : ''; // nothing else is blocked
+      if (okCache.size > 3000) okCache.clear(); okCache.set(key, why);
+    } catch (e) { console.warn('text check failed:', e.message); return true; } // if the checker is down, the site keeps working
+  }
+  if (why) flag(who, where, why, text);
+  return !why;
 }
 const sha = t => crypto.createHash('sha256').update(t).digest('hex');
 const hashPass = (pass, salt) => new Promise((ok, no) => crypto.scrypt(pass, salt, 64, (e, k) => (e ? no(e) : ok(k.toString('hex')))));
@@ -253,7 +266,7 @@ function startSession(ws, a, fresh, dev) { // this socket is now logged in as ac
   if (dev && !a.devices.includes(dev)) { a.devices.push(dev); if (a.devices.length > 5) a.devices.shift(); saveAcct(a); } // remembered so a block can cover the device too
   if (!online.has(ws.code)) online.set(ws.code, new Set());
   online.get(ws.code).add(ws); seen(ws.code);
-  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY, pics: !!OPENAI, saved: useSB, picBase: OPENAI && postPics ? PIC_BASE : '', stats: stats(), token, me: meView(a), admin: ADMINS.has(a.username) });
+  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY, pics: !!OPENAI, saved: useSB, latest: latest(), picBase: OPENAI && postPics ? PIC_BASE : '', stats: stats(), token, me: meView(a), admin: ADMINS.has(a.username) });
   send(ws, { type: 'gpoll', poll: gpollView(ws) }); sendFriends(a.username); pushLobby();
 }
 async function auth(ws, m) { // the only messages a socket may send before it is logged in
@@ -275,11 +288,14 @@ async function auth(ws, m) { // the only messages a socket may send before it is
       const display = clean(m.display, 20) || user;
       if (accounts.has(user)) return fail('That username is taken');
       if (badName(user) || badName(display)) return fail('Pick a different name');
+      if (!dev) return fail('Refresh the page and try again');
+      let made = 0; accounts.forEach(x => { if (x.madeOn === dev) made++; }); // madeOn: the device an account was created on
+      if (made >= 3) return fail('This device has already made 3 accounts. Log in to one of those');
       if (tooMany('reg' + ws.ip, 5, 3600000)) return fail('Too many new accounts from here. Try again later');
-      if (!await textOk(user + ' ' + display)) return fail('Pick a different name');
+      if (!await textOk(user + ' ' + display, user, 'a new account name')) return fail('Pick a different name');
       const salt = crypto.randomBytes(16).toString('hex'), hash = await hashPass(pass, salt);
       if (accounts.has(user)) return fail('That username is taken'); // someone else may have taken it while the password was being hashed
-      const a = { username: user, display, bio: '', salt, hash, friends: [], sessions: [], devices: [], created: Date.now() };
+      const a = { username: user, display, bio: '', salt, hash, friends: [], sessions: [], devices: [], madeOn: dev, created: Date.now() };
       accounts.set(user, a); gone.delete(user); startSession(ws, a, true, dev);
     } else {
       const key = 'log' + ws.ip, f = tries.get(key);
@@ -303,7 +319,7 @@ function deleteAccount(a) { // moderation: the account, its posts, comments and 
   a.sessions.forEach(h => tokens.delete(h)); accounts.delete(u); dirty.delete(u); gone.add(u);
   accounts.forEach(o => { const i = o.friends.indexOf(u); if (i >= 0) { o.friends.splice(i, 1); saveAcct(o); sendFriends(o.username); } });
   store.posts.filter(p => p.code === u).forEach(p => { dropPic(p); toFeed(() => ({ type: 'post-del', id: p.id })); });
-  store.posts = store.posts.filter(p => p.code !== u);
+  store.posts = store.posts.filter(p => p.code !== u); pushLatest();
   store.posts.forEach(p => {
     const i = p.likes.indexOf(u); if (i >= 0) p.likes.splice(i, 1);
     if (p.comments.some(c => c.code === u)) { p.comments = p.comments.filter(c => c.code !== u); pushPost(p); }
@@ -379,6 +395,8 @@ function c4win(b, i) { // b is 7 wide and 6 tall with row 0 at the top; i is the
     return n >= 4;
   });
 }
+// Shooter arena guns: damage per bullet, milliseconds between shots, bullets per shot. The page has the same table plus how each one looks.
+const SHGUNS = { pistol: { dmg: 25, gap: 280, n: 1 }, smg: { dmg: 12, gap: 90, n: 1 }, shotgun: { dmg: 14, gap: 750, n: 5 }, sniper: { dmg: 80, gap: 1100, n: 1 } };
 function leave(ws) {
   const r = ws.room; if (!r) return;
   r.members.delete(ws.id); ws.room = null; ws.racing = false;
@@ -440,7 +458,7 @@ wss.on('connection', (ws, req) => {
     } else if (m.type === 'topic' && ws.room) {
       const t = String(m.text || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 40);
       const room = ws.room;
-      textOk(t).then(ok => {
+      textOk(t, ws.code, 'a room topic').then(ok => {
         if (!ok) return err(ws, 'That topic was blocked'); if (ws.room !== room) return;
         room.topic = t; toRoom(room, { type: 'topic', text: t });
         say(room, t ? ws.name + ' set the topic: ' + t : ws.name + ' cleared the topic'); pushLobby();
@@ -464,11 +482,11 @@ wss.on('connection', (ws, req) => {
       if (src) msg.re = { id: src.id, name: src.name, text: src.text ? src.text.slice(0, 80) : src.gif ? 'GIF' : src.pic ? 'Image' : src.poll ? 'Poll' : 'Game' };
       const at = mentions(ws.room, text); if (at.length) msg.at = at;
       const room = ws.room; if (!text) return post(room, msg);
-      textOk(text).then(ok => { if (!ok) return err(ws, 'That message was blocked'); if (ws.room === room) post(room, msg); });
+      textOk(text, ws.code, 'room chat').then(ok => { if (!ok) return err(ws, 'That message was blocked'); if (ws.room === room) post(room, msg); });
     } else if (m.type === 'poll' && ws.room) { // a poll is a chat message with options people vote on
       const q = clean(m.q, 100), opts = (Array.isArray(m.opts) ? m.opts.slice(0, 6) : []).map(o => clean(o, 50)).filter(Boolean);
       if (!q || opts.length < 2 || slow(ws, 'lastPoll', 3000)) return;
-      const room = ws.room; textOk(q + ' ' + opts.join(' ')).then(ok => { if (!ok) return err(ws, 'That poll was blocked'); if (ws.room === room) post(room, newMsg(ws, { poll: { q, opts: opts.map(t => ({ t, v: [] })) } })); });
+      const room = ws.room; textOk(q + ' ' + opts.join(' '), ws.code, 'a poll').then(ok => { if (!ok) return err(ws, 'That poll was blocked'); if (ws.room === room) post(room, newMsg(ws, { poll: { q, opts: opts.map(t => ({ t, v: [] })) } })); });
     } else if (m.type === 'vote' && ws.room) { // one vote each: picking another option moves it, picking yours again removes it
       const msg = findMsg(ws.room, m.mid), p = msg && msg.poll, o = p && p.opts[m.opt | 0]; if (!o) return;
       const had = o.v.includes(ws.name);
@@ -540,34 +558,48 @@ wss.on('connection', (ws, req) => {
       if (m.act === 'pos') { // where this player is, passed on to the others about 12 times a second
         const x = +m.x, y = +m.y; if (!isFinite(x) || !isFinite(y) || slow(ws, 'lastPos', 60)) return;
         r.members.forEach((p, id) => { if (id !== ws.id && p.racing) send(p, { type: 'race-pos', id: ws.id, x: Math.round(x), y: Math.round(y) }); }); // only people with the race open
-      } else if (m.act === 'open') ws.racing = !!m.on; // they opened or closed the race panel
-      else if (m.act === 'start') {
+      } else if (m.act === 'open') { // they opened or closed the race panel
+        ws.racing = !!m.on; if (!ws.racing) return;
+        if (!r.race) r.race = { seed: 1 + Math.floor(Math.random() * 1e9), at: Date.now(), done: new Set(), free: true }; // nobody has started a race yet: one shared practice course for the room
+        send(ws, { type: 'race-course', seed: r.race.seed, age: Date.now() - r.race.at, racing: !r.race.free, done: r.race.done.has(ws.id) }); // age: how long the course has been running, so moving platforms line up for everyone
+      } else if (m.act === 'start') {
         if (slow(ws, 'lastRace', 8000)) return err(ws, 'Wait a few seconds before starting another race');
         r.race = { seed: 1 + Math.floor(Math.random() * 1e9), at: Date.now() + 3500, done: new Set() }; // the seed builds the same course for everyone
         toRoom(r, { type: 'race-start', seed: r.race.seed, wait: 3500, by: ws.name });
         say(r, ws.name + ' started a platformer race. Press Join on the banner to race');
-      } else if (m.act === 'finish' && r.race && !r.race.done.has(ws.id)) {
+      } else if (m.act === 'finish' && r.race && !r.race.free && !r.race.done.has(ws.id)) {
         const ms = Date.now() - r.race.at; if (ms < 4000) return; // nobody finishes that fast
         r.race.done.add(ws.id); const secs = (ms / 1000).toFixed(1);
         say(r, r.race.done.size === 1 ? ws.name + ' won the platformer race in ' + secs + 's' : ws.name + ' finished the race in ' + secs + 's');
         toRoom(r, { type: 'race-end', id: ws.id, name: ws.name, place: r.race.done.size, secs });
       }
-    } else if (m.type === 'shoot' && ws.room) { // shooter arena: each browser moves its own player; the server passes positions and shots on and keeps the score
-      const r = ws.room, others = make => r.members.forEach((p, id) => { if (id !== ws.id && p.shooting) send(p, make); }), num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0);
-      if (m.act === 'open') { ws.shooting = !!m.on; if (!ws.shooting) others({ type: 'shoot-gone', id: ws.id }); }
-      else if (m.act === 'pos') { if (!slow(ws, 'lastSPos', 45)) others({ type: 'shoot-pos', id: ws.id, x: num(m.x), y: num(m.y), a: num(m.a), hp: m.hp | 0 }); }
-      else if (m.act === 'fire') { if (!slow(ws, 'lastFire', 200)) others({ type: 'shoot-fire', id: ws.id, x: num(m.x), y: num(m.y), a: num(m.a) }); }
-      else if (m.act === 'start') {
+    } else if (m.type === 'shoot' && ws.room) { // shooter arena: each browser moves its own player and reports when its bullets land; health and score are kept here
+      const r = ws.room, now = Date.now(), gun = SHGUNS[m.gun] ? m.gun : 'pistol', num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0);
+      const all = msg => r.members.forEach(p => p.shooting && send(p, msg)), others = msg => r.members.forEach((p, id) => { if (id !== ws.id && p.shooting) send(p, msg); });
+      const fresh = () => ({ hp: 100, safe: Date.now() + 1500, wt: 0, wd: 0 }); // safe: a moment after appearing when you cannot be hit; wt/wd: damage dealt in the current shot
+      if (m.act === 'open') { // they opened or closed the arena
+        ws.shooting = !!m.on; if (!ws.shooting) return others({ type: 'shoot-gone', id: ws.id });
+        if (!r.shoot) r.shoot = { seed: 1 + Math.floor(Math.random() * 1e9), score: {}, over: false }; // the seed builds the same map for everyone in the room
+        ws.sh = fresh(); send(ws, { type: 'shoot-arena', seed: r.shoot.seed, score: r.shoot.score });
+      } else if (m.act === 'start') {
         if (slow(ws, 'lastMatch', 8000)) return err(ws, 'Wait a few seconds before starting another match');
-        r.shoot = { seed: 1 + Math.floor(Math.random() * 1e9), score: {}, over: false }; // the seed builds the same walls for everyone
+        r.shoot = { seed: 1 + Math.floor(Math.random() * 1e9), score: {}, over: false };
+        r.members.forEach(p => { if (p.shooting) p.sh = fresh(); });
         toRoom(r, { type: 'shoot-start', seed: r.shoot.seed, by: ws.name });
         say(r, ws.name + ' started a shooter match. Press Join on the banner to play');
-      } else if (m.act === 'dead') { // sent by the player who got knocked out, naming who did it
-        const k = r.members.get(m.by); if (!k || k === ws || slow(ws, 'lastDead', 1500)) return;
-        r.shoot = r.shoot || { seed: 1, score: {}, over: false }; if (r.shoot.over) return;
-        const sc = r.shoot.score; sc[k.id] = (sc[k.id] || 0) + 1;
-        toRoom(r, { type: 'shoot-score', score: sc, text: k.name + ' knocked out ' + ws.name });
-        if (sc[k.id] >= 10) { r.shoot.over = true; say(r, k.name + ' won the shooter match'); toRoom(r, { type: 'shoot-score', score: sc, text: k.name + ' wins the match!' }); }
+      } else if (!ws.shooting || !ws.sh) return;
+      else if (m.act === 'pos') { if (!slow(ws, 'lastSPos', 45)) others({ type: 'shoot-pos', id: ws.id, x: num(m.x), y: num(m.y), a: num(m.a), hp: ws.sh.hp, gun, safe: ws.sh.safe > now }); }
+      else if (m.act === 'fire') { if (ws.sh.hp > 0 && Array.isArray(m.as) && !slow(ws, 'lastFire', 60)) others({ type: 'shoot-fire', id: ws.id, x: num(m.x), y: num(m.y), as: m.as.slice(0, 6).map(num), gun }); }
+      else if (m.act === 'hit') { // the shooter's browser saw its bullet land. Trusted, but capped at what that gun can do in one shot
+        const t = r.members.get(m.to), g = SHGUNS[gun], me = ws.sh;
+        if (!t || t === ws || !t.shooting || !t.sh || t.sh.hp <= 0 || t.sh.safe > now || me.hp <= 0 || !r.shoot || r.shoot.over) return;
+        if (now - me.wt > g.gap * .8) { me.wt = now; me.wd = 0; }
+        const dmg = Math.min(g.dmg * Math.max(1, Math.min(g.n, m.n | 0)), g.dmg * g.n - me.wd); if (dmg <= 0) return;
+        me.wd += dmg; t.sh.hp = Math.max(0, t.sh.hp - dmg); all({ type: 'shoot-hit', to: t.id, by: ws.id, hp: t.sh.hp, dmg });
+        if (t.sh.hp > 0) return;
+        const sc = r.shoot.score; sc[ws.id] = (sc[ws.id] || 0) + 1; all({ type: 'shoot-score', score: sc, text: ws.name + ' knocked out ' + t.name });
+        if (sc[ws.id] >= 10) { r.shoot.over = true; say(r, ws.name + ' won the shooter match'); all({ type: 'shoot-score', score: sc, text: ws.name + ' wins! Press Start match to play again' }); }
+        setTimeout(() => { if (t.shooting && t.sh && t.room === r) { t.sh = fresh(); all({ type: 'shoot-spawn', id: t.id }); } }, 2000); // back in after 2 seconds
       }
     } else if (m.type === 'kick' && ws.room) { // start a vote to kick someone; the starter counts as a yes
       const r = ws.room, t = r.members.get(m.id);
@@ -597,9 +629,20 @@ wss.on('connection', (ws, req) => {
     } else if (m.type === 'dm') { // direct message: passed straight on, never stored here
       const text = String(m.text || '').trim().slice(0, 500); if (!text || slow(ws, 'lastDm', 300)) return;
       if (!mutual(ws.code, m.to) || !online.has(m.to)) return send(ws, { type: 'dm-fail', text: 'Not sent: they are offline or have not added you back' });
-      const t = Date.now();
-      socketsOf(m.to).forEach(o => send(o, { type: 'dm', from: ws.code, name: ws.name, text, t }));
-      socketsOf(ws.code).forEach(o => send(o, { type: 'dm', to: m.to, text, t }));
+      const to = m.to;
+      textOk(text, ws.code, 'a direct message').then(ok => {
+        if (!ok) return send(ws, { type: 'dm-fail', text: 'That message was blocked' });
+        const t = Date.now();
+        socketsOf(to).forEach(o => send(o, { type: 'dm', from: ws.code, name: ws.name, text, t }));
+        socketsOf(ws.code).forEach(o => send(o, { type: 'dm', to, text, t }));
+      });
+    } else if (m.type === 'search') { // everyone can search: people by @username or display name, posts by their text or author
+      const q = clean(m.q, 40).toLowerCase().replace(/^@/, ''); if (q.length < 2) return err(ws, 'Type at least 2 letters to search');
+      if (slow(ws, 'lastSearch', 400)) return;
+      const people = [];
+      for (const a of accounts.values()) { if (a.username.includes(q) || a.display.toLowerCase().includes(q)) { people.push({ code: a.username, name: a.display, av: avOf(a.username), online: online.has(a.username) }); if (people.length >= 12) break; } }
+      const posts = store.posts.filter(p => p.text.toLowerCase().includes(q) || p.name.toLowerCase().includes(q) || p.code.includes(q)).slice(-30).map(p => postView(p, ws));
+      send(ws, { type: 'search', people, posts });
     } else if (m.type === 'profile') { // someone's profile page: who they are and their posts
       const a = accounts.get(String(m.user || '').toLowerCase()); if (!a) return err(ws, 'That account no longer exists');
       send(ws, { type: 'profile', user: { ...pubView(a), blocked: ADMINS.has(ws.code) ? store.blocked.users.includes(a.username) : undefined }, posts: store.posts.filter(p => p.code === a.username).slice(-50).map(p => postView(p, ws)) });
@@ -607,7 +650,7 @@ wss.on('connection', (ws, req) => {
       const display = clean(m.display, 20) || ws.code, bio = String(m.bio || '').replace(/[\u0000-\u0009\u000b-\u001f]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 200);
       if (badName(display)) return err(ws, 'Pick a different display name');
       if (slow(ws, 'lastProf', 3000)) return err(ws, 'Wait a few seconds before saving again');
-      textOk(display + '\n' + bio).then(ok => {
+      textOk(display + '\n' + bio, ws.code, 'a display name or bio').then(ok => {
         if (!ok) return err(ws, 'That name or bio was blocked');
         setProfile(ws.acct, display, bio); socketsOf(ws.code).forEach(o => send(o, { type: 'me', me: meView(ws.acct), saved: o === ws }));
       });
@@ -628,7 +671,7 @@ wss.on('connection', (ws, req) => {
       if (m.act === 'reset-name' || m.act === 'clear-bio') socketsOf(a.username).forEach(o => send(o, { type: 'me', me: meView(a), saved: true, mod: true }));
       send(ws, { type: 'mod-done', act: m.act, user: a.username });
     } else if (m.type === 'mod-list' && ADMINS.has(ws.code)) { // the moderation panel: who is blocked
-      send(ws, { type: 'mod-list', users: store.blocked.users.map(u => ({ code: u, name: accounts.has(u) ? accounts.get(u).display : u, devices: store.blocked.devices.filter(d => d.user === u).length })), accounts: accounts.size });
+      send(ws, { type: 'mod-list', users: store.blocked.users.map(u => ({ code: u, name: accounts.has(u) ? accounts.get(u).display : u, devices: store.blocked.devices.filter(d => d.user === u).length })), accounts: accounts.size, flags: store.flags.slice(-30).reverse(), checking: !!OPENAI });
     } else if (m.type === 'ability' && ws.room) { // throw a tomato at someone in the room; everyone there sees it land
       const t = ws.room.members.get(m.to); if (m.id !== 'a_tomato' || !t || t === ws) return;
       if (slow(ws, 'lastAbil', 10000)) return err(ws, 'Wait 10 seconds between tomatoes');
@@ -658,10 +701,10 @@ wss.on('connection', (ws, req) => {
       const p = { id: ++store.seq, code: ws.code, name: ws.acct.display, text, t: Date.now(), likes: [], comments: [] };
       const publish = () => {
         store.posts.push(p); if (store.posts.length > 200) dropPic(store.posts.shift());
-        save(); pushPost(p);
+        save(); pushPost(p); pushLatest();
         ws.acct.friends.forEach(c => { if (isFriend(c, ws.code)) socketsOf(c).forEach(o => send(o, { type: 'friend-post', name: p.name, code: p.code })); }); // friends get a notification
       };
-      textOk(text).then(ok => {
+      textOk(text, ws.code, 'a post').then(ok => {
         if (!ok) return err(ws, 'That post was blocked');
         if (!pic) return publish();
         up.used = true; storePic(pic, up.buf).then(() => { p.img = pic; publish(); }, e => { console.warn(e.message); err(ws, 'The image could not be saved. Try again'); });
@@ -673,7 +716,7 @@ wss.on('connection', (ws, req) => {
     } else if (m.type === 'post-comment' && ws.code) {
       const p = store.posts.find(x => x.id === m.id), text = clean(m.text, 300); if (!p || !text || p.comments.length >= 100) return;
       if (slow(ws, 'lastCom', 3000)) return send(ws, { type: 'error', text: 'Wait a few seconds before commenting again' });
-      textOk(text).then(ok => {
+      textOk(text, ws.code, 'a comment').then(ok => {
         if (!ok) return err(ws, 'That comment was blocked');
         p.comments.push({ id: ++store.seq, code: ws.code, name: ws.acct.display, text, t: Date.now() }); save(); pushPost(p);
       });
@@ -682,7 +725,7 @@ wss.on('connection', (ws, req) => {
       if (m.cid) {
         const c = p.comments.find(x => x.id === m.cid); if (!c || !(boss || c.code === ws.code || p.code === ws.code)) return;
         p.comments.splice(p.comments.indexOf(c), 1); save(); pushPost(p);
-      } else if (boss || p.code === ws.code) { store.posts.splice(store.posts.indexOf(p), 1); dropPic(p); save(); toFeed(() => ({ type: 'post-del', id: p.id })); }
+      } else if (boss || p.code === ws.code) { store.posts.splice(store.posts.indexOf(p), 1); dropPic(p); save(); toFeed(() => ({ type: 'post-del', id: p.id })); pushLatest(); }
     }
   });
   ws.on('close', () => {
