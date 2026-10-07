@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ten Rooms</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&family=Unbounded:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&family=Unbounded:wght@500;700&family=Nunito:wght@400;700&family=Comic+Neue:wght@400;700&family=Space+Mono:wght@400;700&display=swap">
 <style>
 :root{--bgc:0 0 0;--fgc:255 255 255;--bg:rgb(var(--bgc));--fg:rgb(var(--fgc));--acc:#2dff88;--vid:grayscale(1) contrast(1.05);--line:rgb(var(--fgc)/.22);--dim:rgb(var(--fgc)/.62);--glass:rgb(var(--bgc)/.6)}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--fg);font-family:Manrope,system-ui,sans-serif;overflow-x:hidden}
+body{background:var(--bg);color:var(--fg);font-family:var(--font,Manrope),system-ui,sans-serif;overflow-x:hidden}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--fg);outline-offset:3px}
@@ -281,7 +281,7 @@ button:active:not(:disabled){transform:scale(.95)}
 .pcom button{border:0;background:transparent;color:var(--dim);padding:0 6px}
 .pcform{display:flex;gap:8px}
 .pcform .solid{flex:none;border-radius:10px;padding:0 14px}
-/* accounts, profile page, shop, soundboard, abilities, start screen */
+/* accounts, profile page, thrown tomatoes, start screen */
 .bar{flex-wrap:wrap;justify-content:flex-end;max-width:100%;border-radius:26px}
 #cloak{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:20px}
 #prof{max-width:760px;margin:0 auto;padding:28px 22px 70px}
@@ -293,20 +293,10 @@ button:active:not(:disabled){transform:scale(.95)}
 #profForm .solid{justify-self:start}
 .profh{font-size:1.2rem;margin-bottom:12px}
 #profPosts{display:grid;gap:12px}
-#shopDlg{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgb(var(--bgc)/.65);padding:20px}
-#shopDlg h2{font-size:1.5rem}
-#shopDlg .panel{width:min(440px,100%);max-height:100%;overflow:auto}
-#shopList{display:grid;gap:8px}
-.shoph{font:700 .95rem Unbounded,sans-serif;margin-top:8px}
-#soundBar{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);display:grid;gap:2px;padding:8px;width:max-content;max-width:92vw;z-index:5}
-#soundBar button{background:transparent;border:0;border-radius:10px;padding:8px 12px;text-align:left}
-#soundBar button:hover{background:rgb(var(--fgc)/.15)}
 #imgBtn{font-size:.78rem;font-weight:600}
 .proj{position:fixed;left:0;top:0;margin:-22px 0 0 -22px;font-size:2.6rem;line-height:1;z-index:15;pointer-events:none}
 .splat{position:absolute;inset:0;display:grid;place-items:center;font-size:5rem;pointer-events:none;animation:splat 2.6s ease-out forwards}
 @keyframes splat{0%{transform:scale(.3);opacity:0}8%{transform:scale(1.15);opacity:1}70%{opacity:1}100%{transform:translateY(30px);opacity:0}}
-.tile.shake{animation:shake .9s}
-@keyframes shake{0%,100%{transform:none}10%,30%,50%,70%,90%{transform:translate(-8px,3px) rotate(-1.5deg)}20%,40%,60%,80%{transform:translate(8px,-3px) rotate(1.5deg)}}
 /* notice, notifications, hints */
 .notice{max-width:560px;margin:0 0 22px;padding:10px 14px;font-size:.82rem;color:var(--dim);border:1px solid var(--line);border-radius:12px;background:var(--glass)}
 .panel .notice{margin:0}
@@ -353,14 +343,33 @@ button:active:not(:disabled){transform:scale(.95)}
 .rtouch span{display:flex;gap:10px}
 .rtouch button{pointer-events:auto;width:58px;height:58px;padding:0;border-radius:50%;border:1px solid var(--line);background:rgb(var(--bgc)/.6);font-size:1.3rem;touch-action:none}
 @media(hover:none){.rtouch{display:flex}}
-#arcDlg{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgb(var(--bgc)/.65);padding:20px}
-#arcDlg h2{font-size:1.5rem}
-#arcDlg .panel{width:min(440px,100%);max-height:100%;overflow:auto}
-#arcDlg .ftabs{margin:0}
-#acv{width:100%;aspect-ratio:1;border:1px solid var(--line);border-radius:12px;background:rgb(var(--bgc)/.6);touch-action:none}
-.amem{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.mcard{aspect-ratio:1;padding:0;font-size:1.8rem;border:1px solid var(--line);border-radius:12px;background:rgb(var(--fgc)/.1)}
-.mcard.up{background:transparent;border-color:var(--acc)}
+/* top navigation, shown on the menu, Posts and Profile pages */
+#nav{position:sticky;top:0;z-index:6;padding:12px 22px 0}
+.navin{display:flex;align-items:center;gap:6px;max-width:1120px;margin:0 auto;padding:6px;border-radius:999px;overflow-x:auto}
+.navme{flex:none;display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--dim);border-radius:999px;padding:3px 14px 3px 3px}
+.navme .pav{width:34px;height:34px;font-size:.9rem}
+.navme:hover,.navme.on{background:rgb(var(--fgc)/.14);color:var(--fg)}
+.navsp{flex:1}
+.ntab{flex:none;border:0;background:transparent;color:var(--dim);border-radius:999px;padding:9px 16px}
+.ntab:hover{background:rgb(var(--fgc)/.1);color:var(--fg)}
+.ntab.on{background:var(--fg);color:var(--bg);font-weight:600}
+.ntab.has-new::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc);margin-left:8px}
+/* your own background image, profile pictures you can click, moderation panel, join banner, shooter */
+#bgimg{position:fixed;inset:0;z-index:0;background:center/cover no-repeat;pointer-events:none}
+#bgimg.on::after{content:"";position:absolute;inset:0;background:rgb(var(--bgc)/var(--bgdim,.55))}
+.clicky{cursor:pointer}
+.clicky:hover{border-color:var(--acc)}
+.post .pav.cav{display:inline-grid;width:24px;height:24px;font-size:.65rem;vertical-align:middle;margin-right:6px;border-color:var(--line)}
+#modDlg{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgb(var(--bgc)/.65);padding:20px}
+#modDlg h2{font-size:1.5rem}
+#modDlg .panel{width:min(440px,100%);max-height:100%;overflow:auto}
+#modList{display:grid;gap:8px}
+#modFind{display:flex;gap:8px}
+#modFind .solid{flex:none;border-radius:10px;padding:0 16px}
+#joinBar{position:fixed;top:128px;left:50%;transform:translateX(-50%);z-index:8;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:10px 14px;width:max-content;max-width:92vw;background:var(--bg);border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}
+#joinBar button{padding:6px 16px}
+.bh .solid{padding:7px 16px}
+#scv{width:min(100cqw,177.7cqh);height:auto;aspect-ratio:16/9;border:1px solid var(--line);border-radius:12px;background:#0a0c12;touch-action:none;cursor:crosshair}
 /* themes */
 #settings .panel{max-height:100%;overflow:auto}
 .themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -398,6 +407,7 @@ button:active:not(:disabled){transform:scale(.95)}
 </style>
 </head>
 <body>
+<div id="bgimg"></div>
 <canvas id="bg"></canvas>
 
 <div id="cloak" class="hidden">
@@ -408,6 +418,12 @@ button:active:not(:disabled){transform:scale(.95)}
     <button type="button" class="ghost" id="cloakStay">Stay in this tab</button>
   </div>
 </div>
+
+<nav id="nav" class="hidden"><div class="navin mod">
+  <button type="button" class="navme" id="openProf" title="Your profile"><span id="meAv" class="pav"></span><span id="me"></span></button>
+  <span class="navsp"></span>
+  <button type="button" class="ntab" id="feedBack">Rooms</button><button type="button" class="ntab" id="openFeed">Posts</button><button type="button" class="ntab" id="openFr">Friends</button><button type="button" class="ntab" id="openSet">Settings</button><button type="button" class="ntab hidden" id="openMod">Moderation</button><button type="button" class="ntab" id="logout">Log out</button>
+</div></nav>
 
 <section id="auth" class="view hidden">
   <form id="authForm" class="panel">
@@ -423,7 +439,6 @@ button:active:not(:disabled){transform:scale(.95)}
 </section>
 
 <main id="lobby" class="view hidden">
-  <div class="bar mod"><div id="meAv" class="pav"></div><span id="me"></span><button class="ghost" id="openProf">Profile</button><button class="ghost" id="openShop">Shop · <b id="coinsA">0</b> coins</button><button class="ghost" id="openFeed">Posts</button><button class="ghost" id="openFr">Friends</button><button class="ghost" id="openArc">Arcade</button><button class="ghost" id="openSet">Settings</button><button class="ghost" id="logout">Log out</button></div>
   <h1>Ten rooms</h1>
   <p class="sub">Walk into any open room to talk on video. Every room has its own chat.</p>
   <p class="notice">Notice: this site is only for entertainment purposes. If requested by important figures, we will take the website down.</p>
@@ -444,7 +459,6 @@ button:active:not(:disabled){transform:scale(.95)}
 </main>
 
 <main id="feed" class="view hidden">
-  <div class="bar mod"><span>Posts</span><button class="ghost" id="feedBack">Back to rooms</button></div>
   <h1>Posts</h1>
   <p class="sub">Post something for everyone on Ten Rooms. Your display name and @username show on it.</p>
   <form id="postForm" class="postbox mod">
@@ -458,7 +472,7 @@ button:active:not(:disabled){transform:scale(.95)}
 </main>
 
 <main id="prof" class="view hidden">
-  <div class="bar mod"><span>Profile</span><button class="ghost" id="profBack">Back</button></div>
+  <button type="button" class="ghost" id="profBack" style="margin-bottom:14px">Back</button>
   <div class="profcard mod">
     <div class="phead"><div id="profAv" class="pav"></div><div><h2 id="profName"></h2><span id="profUser" class="sub"></span></div></div>
     <p id="profBio" class="ptext"></p>
@@ -475,7 +489,7 @@ button:active:not(:disabled){transform:scale(.95)}
 </main>
 
 <section id="call" class="hidden">
-  <header class="mod"><h2 id="roomTitle"></h2><input id="topicIn" maxlength="40" placeholder="Add a topic" aria-label="Room topic" autocomplete="off"><span class="chip"><i class="dot"></i>Live</span><span id="roomCount" class="chip"></span><span class="chip" title="You earn coins for every minute in a call"><b id="coinsB">0</b> coins</span></header>
+  <header class="mod"><h2 id="roomTitle"></h2><input id="topicIn" maxlength="40" placeholder="Add a topic" aria-label="Room topic" autocomplete="off"><span class="chip"><i class="dot"></i>Live</span><span id="roomCount" class="chip"></span></header>
   <div class="stage" id="stage"></div>
   <div class="controls mod">
     <button class="ghost" id="mic" data-sfx="none">Mute mic</button>
@@ -486,14 +500,12 @@ button:active:not(:disabled){transform:scale(.95)}
     <button class="ghost" id="react">React</button>
     <button class="ghost" id="pollBtn">Poll</button>
     <button class="ghost" id="gamesBtn">Games</button>
-    <button class="ghost" id="soundsBtn">Sounds</button>
     <span class="sep"></span>
     <button class="ghost" id="openFr2">Friends</button>
     <button class="ghost" id="openSet2">Settings</button>
     <button class="solid" id="leave">Leave room</button>
     <div id="reactBar" class="mod hidden" role="group" aria-label="Reactions"></div>
     <div id="gameBar" class="mod hidden" role="group" aria-label="Games"></div>
-    <div id="soundBar" class="mod hidden" role="group" aria-label="Soundboard"></div>
   </div>
   <aside class="chat mod">
     <div id="chatGrip" class="grip" role="separator" aria-label="Resize chat" title="Drag to resize. Double-click to reset"></div>
@@ -519,13 +531,28 @@ button:active:not(:disabled){transform:scale(.95)}
     <div id="spkRow" style="display:grid;gap:12px"><label for="selSpk">Speakers</label><select id="selSpk"></select></div>
     <label id="thLbl">Theme</label>
     <div id="themes" class="themes" role="group" aria-labelledby="thLbl"></div>
+    <label for="selFont">Font</label><select id="selFont"></select>
+    <label id="bgLbl">Your own background (only you see it)</label>
+    <div class="avbtns"><button type="button" class="ghost" id="bgPick">Choose image</button><button type="button" class="ghost" id="bgClear">Remove</button></div>
+    <input type="file" id="bgFile" accept="image/*" hidden>
+    <label for="bgDim">Background dimming</label><input type="range" id="bgDim" min="0" max="90" value="55">
     <label class="chk"><input type="checkbox" id="selSfx"> Interface sounds</label>
-    <label class="chk"><input type="checkbox" id="selSb"> Soundboard and ability sounds</label>
     <label class="chk"><input type="checkbox" id="selFx"> Animated background effects</label>
     <button class="solid" id="setDone">Done</button>
   </div>
 </div>
 
+<div id="joinBar" class="mod hidden" role="alert"><span id="joinText"></span><button type="button" class="solid" id="joinGo">Join</button><button type="button" class="ghost" id="joinX" aria-label="Dismiss">×</button></div>
+<div id="modDlg" class="hidden">
+  <div class="panel" role="dialog" aria-label="Moderation">
+    <h2>Moderation</h2>
+    <p class="sub" id="modInfo"></p>
+    <form id="modFind"><input id="modUser" maxlength="17" placeholder="Open a profile by @username" aria-label="Username" autocomplete="off"><button class="solid">Open</button></form>
+    <p class="sub">Blocked accounts</p>
+    <div id="modList"></div>
+    <button type="button" class="solid" id="modDone">Done</button>
+  </div>
+</div>
 <div id="kickBar" class="mod hidden" role="alert"><span id="kickText"></span><button type="button" class="solid" id="kickYes">Kick</button><button type="button" class="ghost" id="kickNo">Keep</button></div>
 
 <div id="frDlg" class="hidden">
@@ -546,40 +573,31 @@ button:active:not(:disabled){transform:scale(.95)}
   </div>
 </div>
 
-<div id="shopDlg" class="hidden">
-  <div class="panel" role="dialog" aria-label="Shop">
-    <h2>Shop</h2>
-    <p class="sub">You have <b id="coinsS">0</b> coins. You earn <span id="earnS">5</span> for every minute you spend in a call.</p>
-    <div id="shopList"></div>
-    <button type="button" class="solid" id="shopDone">Done</button>
-  </div>
-</div>
-
 <div id="notes" aria-live="polite"></div>
 <div id="hint" class="mod hidden" role="dialog" aria-label="Tip"><b id="hintText"></b><div><button type="button" class="ghost" id="hintSkip">Skip tips</button><button type="button" class="solid" id="hintNext">Next</button></div></div>
-
-<div id="arcDlg" class="hidden">
-  <div class="panel" role="dialog" aria-label="Arcade">
-    <h2>Arcade</h2>
-    <div class="ftabs" id="arcTabs"><button type="button" data-g="snake">Snake</button><button type="button" data-g="g48">2048</button><button type="button" data-g="mem">Memory</button></div>
-    <canvas id="acv" width="400" height="400"></canvas>
-    <div id="amem" class="amem hidden"></div>
-    <p class="sub" id="aInfo"></p>
-    <div class="avbtns"><button type="button" class="ghost" id="arcNew">New game</button><button type="button" class="solid" id="arcDone">Done</button></div>
-  </div>
-</div>
 
 <div id="race" class="boardmod mod hidden" role="region" aria-label="Platformer race">
   <div class="bh">
     <h3>Platformer race</h3>
-    <span class="bsz">A / D or arrows to run, W or Space to jump</span>
+    <span class="bsz">A / D to run, W or Space to jump. Pink pads bounce you, red spikes send you back</span>
     <span style="flex:1"></span>
-    <button type="button" class="ghost" id="raceGo">Start race</button>
+    <button type="button" class="solid" id="raceGo">Start race</button>
     <button type="button" class="ghost" id="raceX">Close</button>
   </div>
   <div class="bwrap"><canvas id="rcv" width="1600" height="900"></canvas>
     <div class="rtouch"><span><button type="button" data-k="left" aria-label="Left">◀</button><button type="button" data-k="right" aria-label="Right">▶</button></span><button type="button" data-k="up" aria-label="Jump">▲</button></div>
   </div>
+</div>
+
+<div id="shoot" class="boardmod mod hidden" role="region" aria-label="Shooter arena">
+  <div class="bh">
+    <h3>Shooter arena</h3>
+    <span class="bsz">WASD to move, aim with the mouse, click to shoot. First to 10 knockouts wins</span>
+    <span style="flex:1"></span>
+    <button type="button" class="solid" id="shootGo">Start match</button>
+    <button type="button" class="ghost" id="shootX">Close</button>
+  </div>
+  <div class="bwrap"><canvas id="scv" width="1600" height="900"></canvas></div>
 </div>
 
 <div id="pollDlg" class="hidden">
@@ -611,7 +629,7 @@ button:active:not(:disabled){transform:scale(.95)}
 
 <script>
 const $ = id => document.getElementById(id);
-let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, dotRGB = '255,255,255', accRGB = '45,255,136', accHex = '#2dff88', fxOn = localStorage.getItem('fx') !== 'off', raceOpen = false;
+let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, dotRGB = '255,255,255', accRGB = '45,255,136', accHex = '#2dff88', fxOn = localStorage.getItem('fx') !== 'off', raceOpen = false, shootOpen = false;
 
 /* ---------- floating dot web (always running; slower if reduced motion is on) ---------- */
 (() => {
@@ -667,10 +685,15 @@ let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, 
 })();
 
 /* ---------- views + name ---------- */
-function show(v) { ['auth', 'lobby', 'feed', 'prof', 'call'].forEach(x => $(x).classList.toggle('hidden', x !== v)); if (v !== 'lobby' && hintAt >= 0) showHint(-1); } // leaving the menu ends the tips
+function show(v) { ['auth', 'lobby', 'feed', 'prof', 'call'].forEach(x => $(x).classList.toggle('hidden', x !== v)); $('nav').classList.toggle('hidden', v === 'auth' || v === 'call'); [['feedBack', 'lobby'], ['openFeed', 'feed'], ['openProf', 'prof']].forEach(([id, view]) => $(id).classList.toggle('on', v === view)); if (v !== 'lobby' && hintAt >= 0) showHint(-1); } // leaving the menu ends the tips
 // Accounts: you log in with a username and password. The server answers with a token that keeps this browser logged in.
-let acct = null, token = localStorage.getItem('token') || '', authMode = 'login', SHOP = [], EARN = 5; // acct: { code (your @username), display, bio, coins, owned }
-const owns = it => !!acct && (it.price === 0 || acct.owned.includes(it.id));
+let acct = null, token = localStorage.getItem('token') || '', authMode = 'login'; // acct: { code (your @username), display, bio, av }
+const dev = (() => { // a random id for this browser, so a moderator's block can cover the device as well as the account
+  let k = localStorage.getItem('dev');
+  if (!/^[a-f0-9]{32}$/.test(k || '')) { k = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join(''); try { localStorage.setItem('dev', k); } catch {} }
+  return k;
+})();
+const avUrl = (code, v) => (v ? '/av/' + code + '?v=' + v : ''); // where someone's saved profile picture lives; v is 0 when they have none
 function setAuthMode(mode) {
   authMode = mode; const reg = mode === 'register';
   $('dnRow').classList.toggle('hidden', !reg); $('authGo').textContent = reg ? 'Create account' : 'Log in'; $('authSwap').textContent = reg ? 'I already have an account' : 'Create an account';
@@ -681,13 +704,13 @@ $('authSwap').onclick = () => setAuthMode(authMode === 'login' ? 'register' : 'l
 $('authForm').onsubmit = e => {
   e.preventDefault();
   if (!ws || ws.readyState !== 1) return toast('Still connecting. Try again in a moment');
-  send({ type: authMode, user: $('u').value, pass: $('pw').value, display: $('dn').value });
+  send({ type: authMode, user: $('u').value, pass: $('pw').value, display: $('dn').value, dev });
 };
 $('logout').onclick = () => { send({ type: 'logout', token }); token = ''; localStorage.removeItem('token'); exitRoom(); show('auth'); ws.close(4001); };
 
 function connect() {
   ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/');
-  ws.onopen = () => { if (token) send({ type: 'auth', token }); else show('auth'); };
+  ws.onopen = () => { if (token) send({ type: 'auth', token, dev }); else show('auth'); };
   ws.onmessage = e => handle(JSON.parse(e.data));
   ws.onclose = e => { // 4001: we closed it on purpose (log out, or a profile change that needs a fresh connection)
     if (inRoom) exitRoom();
@@ -695,11 +718,11 @@ function connect() {
     setTimeout(connect, e.code === 4001 ? 150 : 2000);
   };
 }
-function drawMe() { $('me').textContent = acct.display + ' @' + acct.code; ['coinsA', 'coinsB', 'coinsS'].forEach(id => { $(id).textContent = acct.coins; }); }
+function drawMe() { $('me').textContent = acct.display + ' @' + acct.code; }
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; SHOP = m.shop || []; EARN = m.earn || EARN; $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); picBase = m.picBase || ''; $('postPic').classList.toggle('hidden', !picBase); $('postCam').classList.toggle('hidden', !picBase); loadDms(); drawMe(); lockThemes(); drawSounds(); drawShop(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar) send({ type: 'avatar', data: myAvatar }); }
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); picBase = m.picBase || ''; $('postPic').classList.toggle('hidden', !picBase); $('postCam').classList.toggle('hidden', !picBase); $('openMod').classList.toggle('hidden', !isAdmin); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
   else if (m.type === 'lobby') { rooms = m.rooms; drawStats(m.stats); drawLobby(); }
   else if (m.type === 'error') { toast(m.text); if (!inRoom && local) { local.getTracks().forEach(t => t.stop()); local = null; } } // a refused join must not leave the camera on
   else if (m.type === 'joined') onJoined(m);
@@ -709,6 +732,12 @@ function handle(m) {
   else if (m.type === 'race-pos') { const o = racers[m.id] || (racers[m.id] = { dx: m.x, dy: m.y }); o.x = m.x; o.y = m.y; o.t = Date.now(); }
   else if (m.type === 'race-start') onRaceStart(m);
   else if (m.type === 'race-end') { raceMsg = (m.place === 1 ? m.name + ' wins in ' : m.name + ' finished in ') + m.secs + 's'; if (m.id === myId) raceState = 'done'; }
+  else if (m.type === 'shoot-pos') { const o = foes[m.id] || (foes[m.id] = { dx: m.x, dy: m.y }); o.x = m.x; o.y = m.y; o.a = m.a; o.hp = m.hp; o.t = Date.now(); }
+  else if (m.type === 'shoot-fire') { if (shootOpen) shots.push({ x: m.x, y: m.y, vx: Math.cos(m.a) * 9, vy: Math.sin(m.a) * 9, by: m.id }); }
+  else if (m.type === 'shoot-gone') delete foes[m.id];
+  else if (m.type === 'shoot-score') { shScore = m.score; shMsg = m.text; shMsgAt = Date.now(); }
+  else if (m.type === 'shoot-start') onShootStart(m);
+  else if (m.type === 'mod-list') drawMod(m);
   else if (m.type === 'state') setState(m.id, m);
   else if (m.type === 'avatar') { if (people[m.id]) upsert(m.id, { avatar: safeAv(m.data) }); }
   else if (m.type === 'stroke') onStroke(m);
@@ -720,11 +749,9 @@ function handle(m) {
   else if (m.type === 'signal') onSignal(m.from, m.data);
   else if (m.type === 'auth-fail') { if (m.expired) { token = ''; localStorage.removeItem('token'); } if (m.text) toast(m.text); if (inRoom) exitRoom(); show('auth'); }
   else if (m.type === 'me') { acct = m.me; drawMe(); if (m.saved) { toast(m.mod ? 'A moderator changed your profile' : 'Profile saved'); ws.close(4001); } } // reconnect so the new name is used everywhere
-  else if (m.type === 'coins') { acct.coins = m.coins; acct.owned = m.owned; drawMe(); drawShop(); drawSounds(); lockThemes(); renderPeople(); }
   else if (m.type === 'friends') onFriends(m);
   else if (m.type === 'profile') drawProfile(m);
   else if (m.type === 'mod-done') { toast('Done'); if (m.act === 'delete') $('profBack').click(); else send({ type: 'profile', user: profUser }); }
-  else if (m.type === 'sound') playSound(m.id, m.from);
   else if (m.type === 'ability') onAbility(m);
   else if (m.type === 'gpoll') { gpoll = m.poll; drawGpoll(); }
   else if (m.type === 'feed') { posts = m.posts; drawPosts(); }
@@ -783,7 +810,7 @@ async function joinRoom(id) {
 }
 function onJoined(m) {
   inRoom = true; roomMax = m.max || 6; show('call');
-  $('roomTitle').textContent = m.name; raceSeed = m.race || 1; $('stage').innerHTML = ''; $('log').innerHTML = ''; setReply(null); drawKick(m.vote || { over: true });
+  $('roomTitle').textContent = m.name; raceSeed = m.race || 0; shSeed = m.shoot || 0; $('stage').innerHTML = ''; $('log').innerHTML = ''; setReply(null); drawKick(m.vote || { over: true });
   m.chat.forEach(x => addMsg(x));
   addTile('me', myName, local, true, { avatar: myAvatar });
   updateBtns(); pin(null); $('topicIn').value = m.topic || '';
@@ -940,19 +967,27 @@ const THEMES = {
   forest: { name: 'Forest', bg: '6 20 14', fg: '226 247 232', acc: '#7dff6a' },
   candy: { name: 'Candy', bg: '30 8 34', fg: '255 228 248', acc: '#ff5fd2' },
   paper: { name: 'Paper', bg: '244 240 232', fg: '24 22 20', acc: '#0a8f4e' },
-  neon: { name: 'Neon', bg: '6 2 20', fg: '240 230 255', acc: '#39ff14', shop: 't_neon' }, // shop: bought with coins, hidden in Settings until owned
-  ocean: { name: 'Ocean', bg: '2 18 30', fg: '220 244 255', acc: '#19d3da', shop: 't_ocean' },
-  lava: { name: 'Lava', bg: '24 4 2', fg: '255 232 214', acc: '#ff3b1f', shop: 't_lava' },
-  gold: { name: 'Gold', bg: '18 14 4', fg: '255 244 204', acc: '#ffc93c', shop: 't_gold' },
+  neon: { name: 'Neon', bg: '6 2 20', fg: '240 230 255', acc: '#39ff14' },
+  ocean: { name: 'Ocean', bg: '2 18 30', fg: '220 244 255', acc: '#19d3da' },
+  lava: { name: 'Lava', bg: '24 4 2', fg: '255 232 214', acc: '#ff3b1f' },
+  gold: { name: 'Gold', bg: '18 14 4', fg: '255 244 204', acc: '#ffc93c' },
   slate: { name: 'Slate', bg: '18 22 28', fg: '225 232 240', acc: '#7cc4ff' },
   rose: { name: 'Rose', bg: '26 6 14', fg: '255 226 234', acc: '#ff4d7e' },
   arcade: { name: 'Arcade', bg: '14 4 36', fg: '238 230 255', acc: '#ffe45c' },
   toxic: { name: 'Toxic', bg: '8 16 4', fg: '230 255 210', acc: '#b6ff00' },
   mint: { name: 'Mint', bg: '232 248 240', fg: '14 40 30', acc: '#00a86b' },
-  sky: { name: 'Sky', bg: '230 242 255', fg: '12 30 60', acc: '#1f7ae0' }
+  sky: { name: 'Sky', bg: '230 242 255', fg: '12 30 60', acc: '#1f7ae0' },
+  cyber: { name: 'Cyber', bg: '4 10 24', fg: '200 255 250', acc: '#00f0ff' },
+  matrix: { name: 'Matrix', bg: '0 8 0', fg: '170 255 170', acc: '#00ff41' },
+  blood: { name: 'Blood', bg: '16 0 2', fg: '255 225 225', acc: '#e50914' },
+  grape: { name: 'Grape', bg: '22 8 40', fg: '240 228 255', acc: '#b76bff' },
+  coffee: { name: 'Coffee', bg: '28 20 14', fg: '245 232 214', acc: '#d99a4e' },
+  void: { name: 'Void', bg: '0 0 0', fg: '190 190 200', acc: '#7a5cff' },
+  bubblegum: { name: 'Bubblegum', bg: '255 236 246', fg: '70 20 50', acc: '#ff3d9a' },
+  ice: { name: 'Ice', bg: '236 248 255', fg: '10 40 60', acc: '#00b3d6' }
 };
 function setTheme(k) {
-  if (!THEMES[k] || (THEMES[k].shop && acct && !acct.owned.includes(THEMES[k].shop))) k = 'mono';
+  if (!THEMES[k]) k = 'mono';
   const t = THEMES[k], s = document.documentElement.style;
   s.setProperty('--bgc', t.bg); s.setProperty('--fgc', t.fg); s.setProperty('--acc', t.acc); s.setProperty('--vid', t.vid || 'none');
   dotRGB = t.fg.replace(/ /g, ',');
@@ -961,16 +996,12 @@ function setTheme(k) {
   document.querySelectorAll('.th').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
 }
 Object.entries(THEMES).forEach(([k, t]) => {
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'th'; b.dataset.k = k; b.dataset.shop = t.shop || '';
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'th'; b.dataset.k = k;
   const sw = document.createElement('i'); sw.style.background = `linear-gradient(135deg,rgb(${t.bg}) 50%,${t.acc} 50%)`;
   b.append(sw, t.name); b.onclick = () => setTheme(k);
   $('themes').appendChild(b);
 });
 setTheme(localStorage.getItem('theme'));
-function lockThemes() { // after logging in: show only the shop themes this account owns
-  document.querySelectorAll('.th').forEach(b => b.classList.toggle('hidden', !!b.dataset.shop && !acct.owned.includes(b.dataset.shop)));
-  setTheme(localStorage.getItem('theme'));
-}
 
 /* ---------- mic icons, talking outline ---------- */
 const IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
@@ -1197,7 +1228,7 @@ function makeRow(id) {
     fb.type = kb.type = 'button'; fb.className = 'ghost addfr hidden'; kb.className = 'ghost'; fb.textContent = 'Add friend'; kb.textContent = 'Vote kick';
     fb.onclick = () => addFriend(people[id].code, people[id].name); kb.onclick = () => send({ type: 'kick', id: +id });
     acts.append(fb, kb); r.querySelector('.pmeta').appendChild(acts);
-    const ab = document.createElement('div'); ab.className = 'pacts abils'; r.querySelector('.pmeta').appendChild(ab);
+    const tb = document.createElement('button'); tb.type = 'button'; tb.className = 'ghost'; tb.textContent = '🍅 Throw a tomato'; tb.dataset.sfx = 'none'; tb.onclick = () => send({ type: 'ability', id: 'a_tomato', to: +id }); acts.appendChild(tb);
   }
   return r;
 }
@@ -1211,8 +1242,6 @@ function renderPeople() {
     r.classList.toggle('muted', !!p.muted); r.querySelector('.pic').innerHTML = p.muted ? MICOFF : MIC;
     r.querySelector('.badge').classList.toggle('hidden', !p.sharing);
     const fb = r.querySelector('.addfr'); if (fb) fb.classList.toggle('hidden', !p.code || p.code === myCode || friends.some(f => f.code === p.code));
-    const ab = r.querySelector('.abils'); // one button per ability you own, to use it on this person
-    if (ab) { ab.innerHTML = ''; SHOP.filter(it => it.kind === 'ability' && owns(it)).forEach(it => { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = it.icon; b.title = it.name; b.setAttribute('aria-label', it.name); b.onclick = () => send({ type: 'ability', id: it.id, to: +id }); ab.appendChild(b); }); }
     const sv = r.querySelector('.vol.screen'); if (sv) sv.classList.toggle('hidden', !(p.sharing && p.screenAudio));
   });
   $('peopleCount').textContent = Object.keys(people).length;
@@ -1247,9 +1276,9 @@ let boardOpen = false, strokes = [], brush = '#ffffff', mySeq = 0, cur = null, p
 const boardEl = $('board'), bcv = $('bcv'), bx = bcv.getContext('2d');
 const SW = ['#ffffff', '#2dff88', '#ffd23f', '#ff5fa2', '#3fd0ff', '#0b0b0b']; // last one is the eraser
 function layout() {
-  const st = $('stage'); st.classList.toggle('pinned', !!pinId || boardOpen || raceOpen); st.classList.toggle('boardopen', boardOpen || raceOpen);
+  const st = $('stage'); st.classList.toggle('pinned', !!pinId || boardOpen || raceOpen || shootOpen); st.classList.toggle('boardopen', boardOpen || raceOpen || shootOpen);
   if (sideGrip.parentNode !== st) st.appendChild(sideGrip); // the stage is emptied on every join, so put the handle back
-  sideGrip.classList.toggle('hidden', !pinId && !boardOpen && !raceOpen);
+  sideGrip.classList.toggle('hidden', !pinId && !boardOpen && !raceOpen && !shootOpen);
 }
 
 /* ---------- resizable panels: drag the chat's edge, or the gap beside the pinned tile or board. Sizes are saved in this browser ---------- */
@@ -1300,7 +1329,7 @@ function setBoard(open) {
   else boardEl.classList.add('hidden');
   layout();
 }
-$('boardBtn').onclick = () => { if (!boardOpen) setRace(false); setBoard(!boardOpen); }; $('bclose').onclick = () => setBoard(false);
+$('boardBtn').onclick = () => { if (!boardOpen) { setRace(false); setShoot(false); } setBoard(!boardOpen); }; $('bclose').onclick = () => setBoard(false);
 $('bclear').onclick = () => { strokes = []; redraw(); send({ type: 'board-clear' }); };
 const bpt = e => { const r = bcv.getBoundingClientRect(); return [Math.max(0, Math.min(1000, Math.round((e.clientX - r.left) / r.width * 1000))), Math.max(0, Math.min(625, Math.round((e.clientY - r.top) / r.height * 625)))]; };
 function extend(x, y) { const from = cur.pts.length; cur.pts.push(x, y); pend.push(x, y); drawStroke(cur, from); }
@@ -1466,9 +1495,9 @@ function drawOpenGame(el, g, mid) { // games the whole room plays at once: no se
   }
 }
 const gameBar = $('gameBar');
-[['race', 'Platformer race'], ['ttt', 'Tic-Tac-Toe'], ['c4', 'Connect Four'], ['rps', 'Rock Paper Scissors'], ['num', 'Guess the number'], ['react', 'Reaction race'], ['hang', 'Hangman'], ['roll', 'Roll a dice'], ['flip', 'Flip a coin']].forEach(([k, label]) => {
+[['race', 'Platformer race'], ['shoot', 'Shooter arena'], ['ttt', 'Tic-Tac-Toe'], ['c4', 'Connect Four'], ['rps', 'Rock Paper Scissors'], ['num', 'Guess the number'], ['react', 'Reaction race'], ['hang', 'Hangman'], ['roll', 'Roll a dice'], ['flip', 'Flip a coin']].forEach(([k, label]) => {
   const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
-  b.onclick = () => { gameBar.classList.add('hidden'); if (k === 'race') return setRace(true); send(GAMES[k] ? { type: 'game', kind: k } : { type: 'luck', kind: k }); tab('chat'); };
+  b.onclick = () => { gameBar.classList.add('hidden'); if (k === 'race') return setRace(true); if (k === 'shoot') return setShoot(true); send(GAMES[k] ? { type: 'game', kind: k } : { type: 'luck', kind: k }); tab('chat'); };
   gameBar.appendChild(b);
 });
 $('gamesBtn').onclick = () => gameBar.classList.toggle('hidden');
@@ -1588,6 +1617,7 @@ function drawFriends() {
   [...friends].sort((a, b) => !!pres[b.code] - !!pres[a.code]).forEach(f => {
     const p = pres[f.code], room = p && rooms.find(x => x.id === p.room);
     const r = row(f.name, '@' + f.code + ' · ' + (p ? (room ? 'In ' + room.name : 'Online') : 'Offline, or has not added you back'), !!p);
+    const fav = r.querySelector('.pav'); setAv(fav, f.name, avUrl(f.code, f.av)); fav.classList.add('clicky'); fav.onclick = () => openProfile(f.code);
     if (room && !(inRoom && $('roomTitle').textContent === room.name)) btn(r, 'solid', 'Join', () => {
       closeFr(); if (inRoom) { send({ type: 'leave' }); exitRoom(); }
       joinRoom(room.id);
@@ -1655,7 +1685,7 @@ const when = t => new Date(t).toLocaleString([], { month: 'short', day: 'numeric
 function postEl(p) {
   const d = document.createElement('article'); d.className = 'post mod'; d.dataset.pid = p.id;
   const mk = (par, tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; if (tag === 'button') x.type = 'button'; par.appendChild(x); return x; };
-  const head = mk(d, 'div', 'phead'); mk(head, 'div', 'pav', (p.name[0] || '?').toUpperCase()); mk(head, 'b', '', p.name);
+  const head = mk(d, 'div', 'phead'); const pav = mk(head, 'div', 'pav clicky'); setAv(pav, p.name, avUrl(p.code, p.av)); pav.title = 'Open profile'; pav.onclick = () => openProfile(p.code); mk(head, 'b', '', p.name);
   const code = mk(head, 'button', 'pcode', '@' + p.code); code.title = 'Open profile'; code.onclick = () => openProfile(p.code);
   mk(head, 'time', '', when(p.t)); if (p.text) mk(d, 'div', 'ptext', p.text);
   if (picBase && /^[a-f0-9]{24}$/.test(p.img || '')) { const im = mk(d, 'img', 'pimg'); im.alt = 'Image in this post'; im.loading = 'lazy'; im.src = picBase + p.img + '.jpg'; }
@@ -1666,7 +1696,7 @@ function postEl(p) {
   if (openCom.has(p.id)) {
     const cs = mk(d, 'div', 'pcoms');
     p.comments.forEach(c => {
-      const row = mk(cs, 'div', 'pcom'); mk(row, 'b', '', c.name); mk(row, 'small', '', '@' + c.code); mk(row, 'span', '', c.text);
+      const row = mk(cs, 'div', 'pcom'), cav = mk(row, 'span', 'pav cav clicky'); setAv(cav, c.name, avUrl(c.code, c.av)); cav.onclick = () => openProfile(c.code); mk(row, 'b', '', c.name); mk(row, 'small', '', '@' + c.code); mk(row, 'span', '', c.text);
       if (isAdmin || c.code === myCode || p.code === myCode) { const x = mk(row, 'button', '', '×'); x.setAttribute('aria-label', 'Delete comment'); x.onclick = () => send({ type: 'post-del', id: p.id, cid: c.id }); }
     });
     const form = mk(cs, 'form', 'pcform'), inp = mk(form, 'input'); inp.maxLength = 300; inp.placeholder = 'Write a comment'; inp.autocomplete = 'off'; inp.setAttribute('aria-label', 'Write a comment');
@@ -1718,14 +1748,15 @@ function drawProfile(m) {
   if (m.user.code !== profUser) return;
   const u = m.user, mine = u.code === myCode, box = $('profBtns'), list = $('profPosts');
   const btn = (text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = text; b.onclick = fn; box.appendChild(b); };
-  setAv($('profAv'), u.name, mine ? myAvatar : ''); $('profName').textContent = u.name; $('profUser').textContent = '@' + u.code + (u.admin ? ' · moderator' : '');
+  setAv($('profAv'), u.name, mine ? myAvatar : avUrl(u.code, u.av)); $('profName').textContent = u.name; $('profUser').textContent = '@' + u.code + (u.admin ? ' · moderator' : '');
   $('profBio').textContent = u.bio || (mine ? 'No bio yet. Add one below.' : 'No bio yet.');
-  $('profMeta').textContent = (u.online ? 'Online now' : 'Offline') + ' · joined ' + new Date(u.joined).toLocaleDateString() + ' · ' + u.coins + ' coins';
+  $('profMeta').textContent = (u.online ? 'Online now' : 'Offline') + ' · joined ' + new Date(u.joined).toLocaleDateString();
   box.innerHTML = '';
   if (!mine) { if (friends.some(f => f.code === u.code)) btn('Message', () => { $('openFr').click(); openDm(u.code); }); else btn('Add friend', () => addFriend(u.code)); }
   if (isAdmin && !mine) { // moderator tools
     btn('Reset display name', () => send({ type: 'mod', act: 'reset-name', user: u.code }));
     btn('Clear bio', () => send({ type: 'mod', act: 'clear-bio', user: u.code }));
+    btn(u.blocked ? 'Unblock' : 'Block account and devices', () => { if (u.blocked || confirm('Block @' + u.code + ' and every device they have logged in from?')) send({ type: 'mod', act: u.blocked ? 'unblock' : 'block', user: u.code }); });
     btn('Delete account', () => { if (confirm('Delete @' + u.code + ' and all their posts? This cannot be undone.')) send({ type: 'mod', act: 'delete', user: u.code }); });
   }
   $('profForm').classList.toggle('hidden', !mine); if (mine) { $('profDn').value = u.name; $('profBioIn').value = u.bio; }
@@ -1737,78 +1768,29 @@ $('openProf').onclick = () => openProfile(myCode);
 $('profBack').onclick = () => { show(profFrom); if (profFrom !== 'feed') send({ type: 'feed', on: false }); };
 $('profForm').onsubmit = e => { e.preventDefault(); send({ type: 'profile-set', display: $('profDn').value, bio: $('profBioIn').value }); };
 
-/* ---------- shop: spend coins on soundboard sounds, themes and abilities ---------- */
-function drawShop() {
-  const box = $('shopList'); box.innerHTML = ''; $('earnS').textContent = EARN;
-  [['sound', 'Soundboard sounds', '🔊'], ['theme', 'Themes', '🎨'], ['ability', 'Abilities', '✨']].forEach(([kind, title, icon]) => {
-    const h = document.createElement('div'); h.className = 'shoph'; h.textContent = title; box.appendChild(h);
-    SHOP.filter(it => it.kind === kind).forEach(it => {
-      const r = document.createElement('div'), b = document.createElement('button'), has = owns(it); r.className = 'frow' + (has ? ' on' : ''); b.type = 'button';
-      r.innerHTML = '<div class="pav"></div><div class="frn"><b></b><small></small></div>';
-      r.querySelector('.pav').textContent = it.icon || icon; r.querySelector('b').textContent = it.name;
-      r.querySelector('small').textContent = has ? (kind === 'theme' ? 'Owned. Pick it in Settings' : kind === 'ability' ? 'Owned. Use it from the People tab in a room' : 'Owned. Play it from Sounds in a room') : it.price + ' coins';
-      if (!has) { b.className = 'solid'; b.textContent = 'Buy'; b.onclick = () => { if (acct.coins < it.price) return toast('You need ' + (it.price - acct.coins) + ' more coins'); send({ type: 'buy', id: it.id }); }; r.appendChild(b); }
-      else if (kind === 'sound') { b.className = 'ghost'; b.textContent = 'Play'; b.dataset.sfx = 'none'; b.onclick = () => playSound(it.id); r.appendChild(b); }
-      box.appendChild(r);
-    });
-  });
-}
-const closeShop = () => $('shopDlg').classList.add('hidden');
-$('openShop').onclick = () => { drawShop(); $('shopDlg').classList.remove('hidden'); };
-$('shopDone').onclick = closeShop; $('shopDlg').onclick = e => { if (e.target === $('shopDlg')) closeShop(); };
-addEventListener('keydown', e => { if (e.key === 'Escape') closeShop(); });
-
-/* ---------- soundboard: every sound is made in the browser, there are no sound files ---------- */
-let sbOn = localStorage.getItem('sb') !== 'off';
-$('selSb').checked = sbOn; $('selSb').onchange = () => { sbOn = $('selSb').checked; localStorage.setItem('sb', sbOn ? 'on' : 'off'); };
+/* ---------- small sound helpers (made in the browser, no files) ---------- */
 function osc(f, d, type, vol, slide, delay) { // one note: frequency, length, wave shape, volume, pitch slide, start delay
   const c = ctx(), o = c.createOscillator(), g = c.createGain(), t = c.currentTime + (delay || 0);
   o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t + d);
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g).connect(c.destination); o.start(t); o.stop(t + d);
 }
-function hiss(d, vol, delay, hp) { // a burst of noise, for claps, cymbals and splats
+function hiss(d, vol, delay, hp) { // a burst of noise
   const c = ctx(), len = Math.floor(c.sampleRate * d), buf = c.createBuffer(1, len, c.sampleRate), ch = buf.getChannelData(0), t = c.currentTime + (delay || 0);
   for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
   const src = c.createBufferSource(), g = c.createGain(), flt = c.createBiquadFilter(); src.buffer = buf; flt.type = 'highpass'; flt.frequency.value = hp || 1000;
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + d); src.connect(flt).connect(g).connect(c.destination); src.start(t);
 }
-const SOUNDS = {
-  s_ding: () => { osc(1320, .5, 'sine', .2); osc(1980, .5, 'sine', .08); },
-  s_boing: () => { osc(180, .5, 'sine', .25, 3.2); osc(360, .5, 'triangle', .08, 3.2); },
-  s_laser: () => osc(1800, .35, 'square', .1, .08),
-  s_buzzer: () => { osc(110, .6, 'sawtooth', .2); osc(116, .6, 'square', .1); },
-  s_airhorn: () => [[0, .22], [.28, .22], [.56, .7]].forEach(([at, len]) => { osc(466, len, 'sawtooth', .16, 1, at); osc(587, len, 'sawtooth', .12, 1, at); }),
-  s_trombone: () => [311, 293, 277, 261].forEach((f, i) => osc(f, i === 3 ? .9 : .32, 'sawtooth', .14, i === 3 ? .85 : .97, i * .35)),
-  s_rimshot: () => { osc(180, .12, 'triangle', .3, .5); osc(150, .12, 'triangle', .3, .5, .18); hiss(.5, .25, .36, 5000); },
-  s_applause: () => { for (let i = 0; i < 28; i++) hiss(.06, .12 + Math.random() * .1, Math.random() * 1.8, 1500 + Math.random() * 2000); hiss(2, .05, 0, 800); }
-};
-function playSound(id, from) { // from: who played it in the room; left out for a preview in the shop
-  if (from !== undefined) floatEmoji(from === myId ? 'me' : from, '🔊');
-  if (sbOn && SOUNDS[id]) try { SOUNDS[id](); } catch {}
-}
-const soundBar = $('soundBar');
-function drawSounds() {
-  const add = (text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = text; b.dataset.sfx = 'none'; b.onclick = fn; soundBar.appendChild(b); };
-  soundBar.innerHTML = '';
-  SHOP.filter(it => it.kind === 'sound' && owns(it)).forEach(it => add(it.name, () => send({ type: 'sound', id: it.id })));
-  add('Get more in the shop', () => { soundBar.classList.add('hidden'); $('openShop').click(); });
-}
-$('soundsBtn').onclick = () => soundBar.classList.toggle('hidden');
-document.addEventListener('click', e => { if (!soundBar.contains(e.target) && e.target.id !== 'soundsBtn') soundBar.classList.add('hidden'); });
 
-/* ---------- abilities: something flies from your tile to theirs and lands on it ---------- */
-const ABIL = { a_tomato: ['🍅', 'rgba(200,20,20,.5)'], a_pie: ['🥧', 'rgba(255,238,205,.6)'], a_snowball: ['⚪', 'rgba(205,232,255,.55)'], a_hearts: ['💖'], a_shake: ['🫨'] }; // [what flies, splat colour]
+/* ---------- throwing a tomato: it flies from the thrower's tile to the target's and splats there ---------- */
 function onAbility(m) {
-  const a = ABIL[m.id], key = m.to === myId ? 'me' : m.to, from = $('t-' + (m.from === myId ? 'me' : m.from)), to = $('t-' + key); if (!a || !to) return;
+  const from = $('t-' + (m.from === myId ? 'me' : m.from)), to = $('t-' + (m.to === myId ? 'me' : m.to)); if (m.id !== 'a_tomato' || !to) return;
   const hit = () => {
-    if (m.id === 'a_shake') { to.classList.add('shake'); setTimeout(() => to.classList.remove('shake'), 900); return; }
-    if (m.id === 'a_hearts') { for (let i = 0; i < 8; i++) setTimeout(() => floatEmoji(key, '💖'), i * 120); return; }
-    const sp = document.createElement('div'); sp.className = 'splat'; sp.textContent = a[0]; sp.style.background = 'radial-gradient(circle,' + a[1] + ' 0 38%,transparent 62%)';
+    const sp = document.createElement('div'); sp.className = 'splat'; sp.textContent = '🍅'; sp.style.background = 'radial-gradient(circle,rgba(200,20,20,.5) 0 38%,transparent 62%)';
     to.appendChild(sp); setTimeout(() => sp.remove(), 2600);
-    if (sbOn) try { hiss(.18, .3, 0, 400); osc(120, .15, 'sine', .3, .4); } catch {}
+    if (sfxOn) try { hiss(.18, .3, 0, 400); osc(120, .15, 'sine', .3, .4); } catch {}
   };
-  if (!from || m.id === 'a_shake') return hit();
-  const A = from.getBoundingClientRect(), B = to.getBoundingClientRect(), p = document.createElement('div'); p.className = 'proj'; p.textContent = a[0]; document.body.appendChild(p);
+  if (!from) return hit();
+  const A = from.getBoundingClientRect(), B = to.getBoundingClientRect(), p = document.createElement('div'); p.className = 'proj'; p.textContent = '🍅'; document.body.appendChild(p);
   const x0 = A.left + A.width / 2, y0 = A.top + A.height / 2, x1 = B.left + B.width / 2, y1 = B.top + B.height / 2, at = (x, y, r, k) => 'translate(' + x + 'px,' + y + 'px) rotate(' + r + 'deg) scale(' + k + ')';
   p.animate([{ transform: at(x0, y0, 0, .7) }, { transform: at((x0 + x1) / 2, Math.min(y0, y1) - 90, 360, 1.3), offset: .5 }, { transform: at(x1, y1, 720, 1) }], { duration: 650, easing: 'ease-in' }).onfinish = () => { p.remove(); hit(); };
 }
@@ -1868,56 +1850,108 @@ const KEYMAP = { a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right', 
 const typing = e => !!(e.target.closest && e.target.closest('input,textarea,select'));
 const fgc = al => 'rgba(' + dotRGB + ',' + al + ')';
 
-/* ---------- platformer race: everyone in the room runs the same course; you simulate yourself and see the others' positions ---------- */
-const raceEl = $('race'), rcv = $('rcv'), rg = rcv.getContext('2d'), RW = 800, RH = 450, PW = 22, PH = 30, held = {};
-let raceSeed = 1, racers = {}, raceState = 'free', raceAt = 0, raceMsg = '', level = [], finishX = 0, runner = null, raceLast = 0, raceAcc = 0, raceSent = 0; // raceState: free roam, count (3-2-1), run, done
-function buildLevel(seed) { // the same seed always builds the same course, so everyone races on identical platforms
-  let a = seed >>> 0, x = 320, y = 360;
-  const rnd = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  level = [{ x: -300, y: 360, w: 620, h: 300 }];
-  while (x < 5200) {
-    const gap = 50 + rnd() * 90, w = 90 + rnd() * 190, ny = Math.max(190, Math.min(390, y + (rnd() - .5) * 150));
-    y = Math.max(ny, y - 70); x += gap; level.push({ x, y, w, h: rnd() < .3 ? 300 : 18 }); x += w; // never more than 70 up: that is what a jump can reach
+/* ---------- stage games (platformer race, shooter arena): shared keys and the Join banner ---------- */
+const held = {}; // which direction keys are down
+addEventListener('keydown', e => { const k = KEYMAP[e.key.toLowerCase()]; if (!k || !(raceOpen || shootOpen) || typing(e) || e.ctrlKey || e.metaKey || e.altKey) return; e.preventDefault(); held[k] = true; });
+addEventListener('keyup', e => { const k = KEYMAP[e.key.toLowerCase()]; if (k) held[k] = false; });
+addEventListener('blur', () => { for (const k in held) held[k] = false; });
+const seeded = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }; // the same seed gives everyone the same random numbers
+const clamp2 = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+let joinFn = null, joinTimer = 0;
+function invite(text, fn) { // "Sam started a race [Join]": one click puts you in the game
+  $('joinText').textContent = text; joinFn = fn; $('joinBar').classList.remove('hidden');
+  clearTimeout(joinTimer); joinTimer = setTimeout(() => $('joinBar').classList.add('hidden'), 25000);
+}
+$('joinGo').onclick = () => { $('joinBar').classList.add('hidden'); if (joinFn && inRoom) joinFn(); };
+$('joinX').onclick = () => $('joinBar').classList.add('hidden');
+
+/* ---------- platformer race: everyone runs the same random course; you simulate yourself and see where the others are ---------- */
+const raceEl = $('race'), rcv = $('rcv'), rg = rcv.getContext('2d'), RW = 800, RH = 450, PW = 22, PH = 30;
+let raceSeed = 0, racers = {}, raceState = 'free', raceAt = 0, raceMsg = '', level = [], spikes = [], pads = [], parts = [], finishX = 0, hue = 200, runner = null, raceLast = 0, raceAcc = 0, raceSent = 0; // raceState: free roam, count (3-2-1), run, done
+function buildLevel(seed) { // platforms, moving platforms, bounce pads and spikes, all decided by the seed
+  const rnd = seeded(seed); let x = 320, y = 360, tight = false;
+  hue = Math.floor(rnd() * 360); level = [{ x: -300, y: 360, w: 620, h: 300 }]; spikes = []; pads = []; parts = [];
+  while (x < 5600) {
+    const prev = level[level.length - 1], kind = rnd();
+    if (kind < .16 && prev.w >= 140 && !prev.amp) { // a bounce pad at the end of the last platform, then a step too tall for a normal jump
+      pads.push({ x: prev.x + prev.w - 46, y: prev.y - 8, w: 40 });
+      y = Math.max(140, y - 110 - rnd() * 40); x += 50 + rnd() * 40; const w = 130 + rnd() * 120; level.push({ x, y, w, h: 18 }); x += w; tight = true;
+    } else {
+      const mover = kind > .82 && !tight, gap = 50 + rnd() * (mover ? 20 : tight ? 20 : 90), w = mover ? 110 : 90 + rnd() * 190, ny = clamp2(y + (rnd() - .5) * 150, 190, 390);
+      y = Math.max(ny, y - 70); x += gap + (mover ? 36 : 0); // never more than 70 up: that is what a jump can reach
+      const b = { x, y, w, h: !mover && rnd() < .3 ? 300 : 18 };
+      if (mover) { b.x0 = x; b.amp = 36; b.sp = .0012 + rnd() * .001; b.ph = rnd() * 6.28; } // slides 36 either way
+      else if (w > 170 && rnd() < .45) spikes.push({ x: x + w * (.4 + rnd() * .2), y: y - 14, w: 26, h: 14 });
+      level.push(b); x += w; tight = mover;
+    }
   }
   level.push({ x: x + 70, y: 360, w: 600, h: 300 }); finishX = x + 70 + 260;
-  runner = { x: 40, y: 360 - PH, vx: 0, vy: 0, ground: false, coyote: 0, sx: 40, sy: 360 - PH };
+  runner = { x: 40, y: 360 - PH, vx: 0, vy: 0, ground: false, coyote: 0, sx: 40, sy: 360 - PH, on: null, face: 1, boost: false };
 }
 const touching = (p, b) => p.x < b.x + b.w && p.x + PW > b.x && p.y < b.y + b.h && p.y + PH > b.y;
+function puff(x, y, count, col) { for (let i = 0; i < count && parts.length < 140; i++) parts.push({ x, y, vx: (Math.random() - .5) * 4, vy: -Math.random() * 3, life: 1, col }); }
 function raceStep() { // one sixtieth of a second of running and jumping
-  const p = runner, frozen = raceState === 'count';
-  p.vx = frozen ? 0 : ((held.right ? 1 : 0) - (held.left ? 1 : 0)) * 5;
-  if (!frozen && held.up && p.coyote > 0) { p.vy = -11.5; p.coyote = 0; }
-  if (!held.up && p.vy < -4) p.vy = -4; // letting go early makes a shorter hop
-  p.vy = Math.min(p.vy + .6 + (held.down ? .5 : 0), 14);
-  p.x += p.vx; for (const b of level) if (touching(p, b)) p.x = p.vx > 0 ? b.x - PW : b.x + b.w;
-  p.y += p.vy; p.ground = false;
-  for (const b of level) if (touching(p, b)) {
-    if (p.vy > 0) { p.y = b.y - PH; p.ground = true; p.sx = Math.max(b.x + 4, Math.min(p.x, b.x + b.w - PW - 4)); p.sy = p.y; } else p.y = b.y + b.h;
-    p.vy = 0;
-  }
+  const p = runner, frozen = raceState === 'count', T = Date.now() - raceAt, wasAir = !p.ground;
+  for (const b of level) if (b.amp) { const nx = b.x0 + Math.sin(T * b.sp + b.ph) * b.amp; b.dx = nx - b.x; b.x = nx; }
+  if (p.on && p.on.amp) p.x += p.on.dx; // a moving platform carries you
+  p.vx = frozen ? 0 : ((held.right ? 1 : 0) - (held.left ? 1 : 0)) * 5; if (p.vx) p.face = p.vx > 0 ? 1 : -1;
+  if (!frozen && held.up && p.coyote > 0) { p.vy = -11.5; p.coyote = 0; puff(p.x + PW / 2, p.y + PH, 5); }
+  if (!held.up && p.vy < -4 && !p.boost) p.vy = -4; // letting go early makes a shorter hop
+  p.vy = Math.min(p.vy + .6 + (held.down ? .5 : 0), 14); if (p.vy >= 0) p.boost = false;
+  p.x += p.vx; for (const b of level) if (touching(p, b)) p.x = p.x + PW / 2 < b.x + b.w / 2 ? b.x - PW : b.x + b.w; // pushed out of whichever side is nearer
+  p.y += p.vy; p.ground = false; p.on = null;
+  for (const b of level) if (touching(p, b)) { if (p.vy > 0) { p.y = b.y - PH; p.ground = true; p.on = b; } else p.y = b.y + b.h; p.vy = 0; }
+  if (p.ground && wasAir) puff(p.x + PW / 2, p.y + PH, 6);
   p.coyote = p.ground ? 6 : p.coyote - 1; // a few frames of grace after running off an edge
-  if (p.y > 760) { p.x = p.sx; p.y = p.sy; p.vy = 0; } // fell: back to the last platform you stood on
-  if (raceState === 'run' && p.x > finishX) { raceState = 'done'; send({ type: 'race', act: 'finish' }); }
+  for (const pd of pads) if (p.vy >= 0 && touching(p, { x: pd.x, y: pd.y, w: pd.w, h: 10 })) { p.vy = -16.5; p.boost = true; p.ground = false; p.coyote = 0; puff(pd.x + pd.w / 2, pd.y, 12, '#ff5fa2'); }
+  let dead = p.y > 760; for (const sp of spikes) if (touching(p, { x: sp.x + 5, y: sp.y + 4, w: sp.w - 10, h: sp.h })) dead = true;
+  if (dead) { puff(p.x + PW / 2, Math.min(p.y, RH), 18, '#ff4040'); p.x = p.sx; p.y = p.sy; p.vy = 0; } // back to the last safe spot you stood on
+  else if (p.ground && !p.on.amp) { p.sx = clamp2(p.x, p.on.x + 4, p.on.x + p.on.w - PW - 4); p.sy = p.y; }
+  if (raceState === 'run' && p.x > finishX) { raceState = 'done'; puff(p.x, p.y, 40, '#ffd23f'); send({ type: 'race', act: 'finish' }); }
 }
 function drawRace() {
-  const p = runner, cam = Math.max(-300, Math.min(p.x - RW * .4, finishX + 340 - RW)), now = Date.now();
-  rg.setTransform(2, 0, 0, 2, 0, 0); rg.clearRect(0, 0, RW, RH);
-  rg.fillStyle = fgc(.05); for (let i = 0; i < 12; i++) rg.fillRect(((i * 190 - cam * .3) % (RW + 200) + RW + 200) % (RW + 200) - 100, 60 + (i * 53) % 220, 90, 26); // far clouds, drifting slower than the ground
-  for (const b of level) { if (b.x + b.w < cam || b.x > cam + RW) continue; rg.fillStyle = fgc(.16); rg.fillRect(b.x - cam, b.y, b.w, b.h); rg.fillStyle = accHex; rg.fillRect(b.x - cam, b.y, b.w, 4); }
-  rg.fillStyle = fgc(.9); rg.fillRect(finishX - cam, 360 - 120, 4, 120); rg.fillStyle = accHex; rg.fillRect(finishX - cam + 4, 360 - 120, 46, 28); // finish flag
-  rg.font = '600 12px Manrope,sans-serif'; rg.textAlign = 'center';
+  const p = runner, cam = clamp2(p.x - RW * .4, -300, finishX + 340 - RW), now = Date.now(), g = rg, h = k => (hue + k) % 360, total = finishX - 40;
+  g.setTransform(2, 0, 0, 2, 0, 0); g.shadowBlur = 0;
+  const sky = g.createLinearGradient(0, 0, 0, RH); sky.addColorStop(0, 'hsl(' + hue + ',65%,13%)'); sky.addColorStop(1, 'hsl(' + h(50) + ',70%,32%)'); g.fillStyle = sky; g.fillRect(0, 0, RW, RH);
+  g.fillStyle = 'rgba(255,255,255,.7)'; for (let i = 0; i < 40; i++) g.fillRect(((i * 97 - cam * .05) % RW + RW) % RW, (i * 53) % 210, 1.5, 1.5); // stars
+  g.fillStyle = 'hsla(' + h(40) + ',90%,72%,.3)'; g.beginPath(); g.arc(RW * .75 - cam * .02, 110, 62, 0, 6.283); g.fill(); // a big pale sun
+  [[.15, 300, 60], [.35, 356, 40]].forEach(([par, base, amp], k) => { // two rows of hills that slide slower than the ground
+    g.fillStyle = 'hsl(' + h(200 + k * 20) + ',40%,' + (11 + k * 5) + '%)'; g.beginPath(); g.moveTo(0, RH);
+    for (let x = 0; x <= RW; x += 20) { const wx = x + cam * par; g.lineTo(x, base - Math.sin(wx * .006 + k) * amp - Math.sin(wx * .017 + k * 3) * amp * .4); }
+    g.lineTo(RW, RH); g.fill();
+  });
+  for (const b of level) {
+    if (b.x + b.w < cam || b.x > cam + RW) continue;
+    g.fillStyle = 'hsl(' + h(210) + ',30%,' + (b.amp ? 32 : 20) + '%)'; g.fillRect(b.x - cam, b.y, b.w, b.h);
+    g.fillStyle = b.amp ? '#ffd23f' : 'hsl(' + h(120) + ',85%,58%)'; g.fillRect(b.x - cam, b.y, b.w, 5); // moving platforms get a yellow top
+  }
+  g.shadowColor = '#ff5fa2'; g.shadowBlur = 14; g.fillStyle = '#ff5fa2'; for (const pd of pads) g.fillRect(pd.x - cam, pd.y, pd.w, 8); g.shadowBlur = 0;
+  g.fillStyle = '#ff4040'; for (const sp of spikes) { for (let k = 0; k < 2; k++) { g.beginPath(); g.moveTo(sp.x - cam + k * 13, sp.y + sp.h); g.lineTo(sp.x - cam + k * 13 + 6.5, sp.y); g.lineTo(sp.x - cam + k * 13 + 13, sp.y + sp.h); g.fill(); } }
+  g.fillStyle = '#fff'; g.fillRect(finishX - cam, 360 - 130, 4, 130); // finish pole and chequered flag
+  for (let i = 0; i < 12; i++) { g.fillStyle = (i + Math.floor(i / 4)) % 2 ? '#fff' : '#111'; g.fillRect(finishX - cam + 4 + (i % 4) * 13, 360 - 130 + Math.floor(i / 4) * 11, 13, 11); }
+  parts = parts.filter(q => { q.x += q.vx; q.y += q.vy; q.vy += .15; q.life -= .04; if (q.life <= 0) return false; g.fillStyle = q.col || 'rgba(255,255,255,' + q.life * .7 + ')'; g.globalAlpha = q.col ? q.life : 1; g.fillRect(q.x - cam, q.y, 3, 3); g.globalAlpha = 1; return true; });
+  const body = (x, y, col, face, name, glow) => { // a racer: a block with eyes and a name tag
+    if (glow) { g.shadowColor = col; g.shadowBlur = 16; } g.fillStyle = col; g.beginPath(); if (g.roundRect) g.roundRect(x - cam, y, PW, PH, 6); else g.rect(x - cam, y, PW, PH); g.fill(); g.shadowBlur = 0;
+    g.fillStyle = '#fff'; g.fillRect(x - cam + (face > 0 ? 11 : 3), y + 7, 4, 6); g.fillRect(x - cam + (face > 0 ? 17 : 9) - 2, y + 7, 4, 6);
+    g.font = '600 11px Manrope,sans-serif'; g.textAlign = 'center'; g.fillStyle = 'rgba(0,0,0,.55)'; const tw = g.measureText(name).width + 10; g.fillRect(x - cam + PW / 2 - tw / 2, y - 20, tw, 15);
+    g.fillStyle = '#fff'; g.fillText(name, x - cam + PW / 2, y - 9);
+  };
   for (const id in racers) {
     const o = racers[id]; if (now - o.t > 3000 || !people[id]) { delete racers[id]; continue; }
-    o.dx += (o.x - o.dx) * .3; o.dy += (o.y - o.dy) * .3; // glide toward the last reported spot
-    rg.fillStyle = fgc(.55); rg.fillRect(o.dx - cam, o.dy, PW, PH); rg.fillText(people[id].name, o.dx - cam + PW / 2, o.dy - 6);
+    o.face = o.x > o.dx + .5 ? 1 : o.x < o.dx - .5 ? -1 : o.face || 1; o.dx += (o.x - o.dx) * .3; o.dy += (o.y - o.dy) * .3; // glide toward the last reported spot
+    body(o.dx, o.dy, 'rgba(255,255,255,.55)', o.face, people[id].name);
   }
-  rg.fillStyle = accHex; rg.fillRect(p.x - cam, p.y, PW, PH); rg.fillStyle = fgc(1); rg.fillText('You', p.x - cam + PW / 2, p.y - 6);
-  rg.font = '700 26px Unbounded,sans-serif';
-  const left = raceAt - now, text = raceState === 'count' ? String(Math.max(1, Math.ceil(left / 1000))) : raceState === 'run' && left > -900 ? 'GO!' : raceState === 'free' ? 'Press Start race, or just practise' : '';
-  if (text) rg.fillText(text, RW / 2, 70);
-  rg.font = '600 14px Manrope,sans-serif'; rg.textAlign = 'left';
-  if (raceState === 'run') rg.fillText(((now - raceAt) / 1000).toFixed(1) + 's', 14, 24);
-  if (raceMsg) { rg.textAlign = 'center'; rg.fillText(raceMsg, RW / 2, 100); }
+  body(p.x, p.y, accHex, p.face, 'You', true);
+  g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(40, 14, RW - 80, 6); // progress bar: where everyone is along the course
+  for (const id in racers) { g.fillStyle = 'rgba(255,255,255,.8)'; g.fillRect(40 + clamp2(racers[id].x / total, 0, 1) * (RW - 80) - 2, 10, 4, 14); }
+  g.fillStyle = accHex; g.fillRect(40 + clamp2(p.x / total, 0, 1) * (RW - 80) - 3, 8, 6, 18);
+  g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = '700 44px Unbounded,sans-serif';
+  const left = raceAt - now, big = raceState === 'count' ? String(Math.max(1, Math.ceil(left / 1000))) : raceState === 'run' && left > -900 ? 'GO!' : '';
+  if (big) g.fillText(big, RW / 2, 130);
+  g.font = '600 14px Manrope,sans-serif';
+  if (raceState === 'run') g.fillText(((now - raceAt) / 1000).toFixed(1) + 's', RW / 2, 46);
+  if (raceMsg) g.fillText(raceMsg, RW / 2, 70);
+  if (raceState === 'free') { g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(RW / 2 - 250, RH - 44, 500, 28); g.fillStyle = '#fff'; g.fillText('Practice run. Press "Start race" and everyone here can join the same course.', RW / 2, RH - 25); }
 }
 function raceLoop(t) {
   if (!raceOpen) return;
@@ -1932,15 +1966,19 @@ function setRace(open) {
   if (open === raceOpen) return;
   raceOpen = open;
   if (open) {
-    setBoard(false); $('stage').appendChild(raceEl); raceEl.classList.remove('hidden'); buildLevel(raceSeed);
+    setBoard(false); setShoot(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(raceEl); raceEl.classList.remove('hidden');
+    buildLevel(raceSeed || 1 + Math.floor(Math.random() * 1e9)); // no race yet in this room: a random course to practise on
     raceState = Date.now() < raceAt ? 'count' : 'free'; raceLast = 0; raceAcc = 0; requestAnimationFrame(raceLoop); send({ type: 'race', act: 'open', on: true });
   } else { raceEl.classList.add('hidden'); for (const k in held) held[k] = false; send({ type: 'race', act: 'open', on: false }); }
   layout();
 }
-function raceQuit() { raceOpen = false; raceEl.classList.add('hidden'); racers = {}; raceAt = 0; raceMsg = ''; raceState = 'free'; } // leaving the room
+function raceQuit() { // leaving the room closes both stage games
+  raceOpen = shootOpen = false; raceEl.classList.add('hidden'); shEl.classList.add('hidden'); $('joinBar').classList.add('hidden');
+  racers = {}; raceAt = 0; raceMsg = ''; raceState = 'free'; foes = {}; shots = []; shScore = {}; shMsg = '';
+}
 function onRaceStart(m) {
   raceSeed = m.seed; raceAt = Date.now() + m.wait; raceMsg = '';
-  if (raceOpen) { buildLevel(raceSeed); raceState = 'count'; } else notify('A platformer race is starting', () => { if (inRoom) setRace(true); });
+  if (raceOpen) { buildLevel(raceSeed); raceState = 'count'; } else invite(m.by + ' started a platformer race', () => setRace(true));
 }
 $('raceGo').onclick = () => send({ type: 'race', act: 'start' }); $('raceX').onclick = () => setRace(false);
 document.querySelectorAll('.rtouch button').forEach(b => { // on-screen buttons for phones
@@ -1948,117 +1986,158 @@ document.querySelectorAll('.rtouch button').forEach(b => { // on-screen buttons 
   b.addEventListener('pointerdown', e => { e.preventDefault(); held[b.dataset.k] = true; });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, () => { held[b.dataset.k] = false; }));
 });
-addEventListener('blur', () => { for (const k in held) held[k] = false; });
-addEventListener('keyup', e => { const k = KEYMAP[e.key.toLowerCase()]; if (k) held[k] = false; });
 
-/* ---------- arcade: single-player games in the menu (Snake, 2048, Memory). Best scores are saved in this browser ---------- */
-const acv = $('acv'), ag = acv.getContext('2d'); let arc = '', arcTimer = 0, snake = [], sdir, snext, sfood, sscore = 0, sdead = true, g48 = [], g48score = 0, mem = null;
-const arcInfo = t => { $('aInfo').textContent = t; };
-function best(key, v, low) { // remembers the best score; low: fewer is better
-  const old = +localStorage.getItem('best_' + key) || 0, top = !old ? v : low ? Math.min(old, v || old) : Math.max(old, v);
-  if (top && top !== old) try { localStorage.setItem('best_' + key, top); } catch {}
-  return top;
+/* ---------- shooter arena: top-down, WASD and mouse. You simulate yourself; a hit is decided by the player who got hit ---------- */
+const shEl = $('shoot'), scv = $('scv'), sg = scv.getContext('2d'), PR = 13, aim = { x: RW / 2, y: RH / 2, down: false };
+let shSeed = 0, walls = [], hero = null, foes = {}, shots = [], shScore = {}, shMsg = '', shMsgAt = 0, shLast = 0, shAcc = 0, shSent = 0, shFired = 0, shBack = 0, shFlash = 0; // shBack: when you respawn after a knockout
+const walled = (x, y, r) => x < r || y < r || x > RW - r || y > RH - r || walls.some(w => x + r > w.x && x - r < w.x + w.w && y + r > w.y && y - r < w.y + w.h);
+function buildArena(seed) { // six random walls, each copied to the opposite corner so no side has the better cover
+  const rnd = seeded(seed || 1); walls = [];
+  for (let i = 0; i < 6; i++) { const w = rnd() < .5 ? 26 : 50 + rnd() * 100, h = w === 26 ? 60 + rnd() * 90 : 26, x = 50 + rnd() * (RW / 2 - 90 - w), y = 40 + rnd() * (RH - 80 - h); walls.push({ x, y, w, h }, { x: RW - x - w, y: RH - y - h, w, h }); }
 }
-function snakeFood() { do sfood = { x: Math.floor(Math.random() * 20), y: Math.floor(Math.random() * 20) }; while (snake.some(c => c.x === sfood.x && c.y === sfood.y)); }
-function snakeDraw() {
-  ag.clearRect(0, 0, 400, 400); ag.fillStyle = accHex; ag.fillRect(sfood.x * 20 + 3, sfood.y * 20 + 3, 14, 14);
-  snake.forEach((c, i) => { ag.fillStyle = fgc(i ? .7 : 1); ag.fillRect(c.x * 20 + 1, c.y * 20 + 1, 18, 18); });
-}
-function snakeTick() {
-  if (arc !== 'snake' || $('arcDlg').classList.contains('hidden')) return clearInterval(arcTimer);
-  sdir = snext; const h = { x: snake[0].x + sdir.x, y: snake[0].y + sdir.y };
-  if (h.x < 0 || h.y < 0 || h.x > 19 || h.y > 19 || snake.some(c => c.x === h.x && c.y === h.y)) {
-    sdead = true; clearInterval(arcTimer); snakeDraw(); return arcInfo('Game over. Score ' + sscore + ' · best ' + best('snake', sscore) + '. Press Space or New game');
+function spawnHero() { let x, y, tries = 0; do { x = 30 + Math.random() * (RW - 60); y = 30 + Math.random() * (RH - 60); } while (walled(x, y, PR + 6) && ++tries < 200); hero = { x, y, a: 0, hp: 3 }; }
+function shootStep() {
+  const now = Date.now();
+  if (hero.hp <= 0) { if (now >= shBack) spawnHero(); }
+  else {
+    const mx = (held.right ? 1 : 0) - (held.left ? 1 : 0), my = (held.down ? 1 : 0) - (held.up ? 1 : 0), sp = mx && my ? 2.3 : 3.2;
+    if (mx && !walled(hero.x + mx * sp, hero.y, PR)) hero.x += mx * sp;
+    if (my && !walled(hero.x, hero.y + my * sp, PR)) hero.y += my * sp;
+    hero.a = Math.atan2(aim.y - hero.y, aim.x - hero.x);
+    if (aim.down && now - shFired > 260) { // hold the button to keep firing
+      shFired = now; const x = hero.x + Math.cos(hero.a) * (PR + 4), y = hero.y + Math.sin(hero.a) * (PR + 4);
+      shots.push({ x, y, vx: Math.cos(hero.a) * 9, vy: Math.sin(hero.a) * 9, by: 'me' }); send({ type: 'shoot', act: 'fire', x, y, a: hero.a }); tone(520, .05, 'square', .03, .5);
+    }
   }
-  snake.unshift(h); if (h.x === sfood.x && h.y === sfood.y) { sscore++; snakeFood(); } else snake.pop();
-  arcInfo('Score ' + sscore + ' · best ' + best('snake', sscore) + ' · WASD or arrows, or swipe'); snakeDraw();
-}
-function snakeNew() { snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }]; sdir = snext = { x: 1, y: 0 }; sscore = 0; sdead = false; snakeFood(); clearInterval(arcTimer); arcTimer = setInterval(snakeTick, 110); snakeDraw(); }
-function g48Add() { const free = g48.map((v, i) => (v ? -1 : i)).filter(i => i >= 0); if (free.length) g48[free[Math.floor(Math.random() * free.length)]] = Math.random() < .9 ? 2 : 4; }
-function g48Draw() {
-  ag.clearRect(0, 0, 400, 400); ag.textAlign = 'center'; ag.textBaseline = 'middle';
-  g48.forEach((v, i) => {
-    const x = (i % 4) * 100 + 6, y = Math.floor(i / 4) * 100 + 6, lvl = v ? Math.log2(v) : 0;
-    ag.fillStyle = v ? 'rgba(' + accRGB + ',' + Math.min(1, .12 + lvl * .08) + ')' : fgc(.07); ag.fillRect(x, y, 88, 88);
-    if (v) { ag.fillStyle = fgc(1); ag.font = '700 ' + (v > 999 ? 24 : 32) + 'px Unbounded,sans-serif'; ag.fillText(v, x + 44, y + 46); }
+  shots = shots.filter(b => {
+    b.x += b.vx; b.y += b.vy; if (walled(b.x, b.y, 2)) return false;
+    if (b.by === 'me') return !Object.values(foes).some(o => o.hp > 0 && Math.hypot(o.dx - b.x, o.dy - b.y) < PR + 3); // your own shots just vanish on a hit; the other player decides if it counted
+    if (hero.hp > 0 && Math.hypot(hero.x - b.x, hero.y - b.y) < PR + 3) {
+      hero.hp--; shFlash = now; tone(160, .12, 'sawtooth', .08, .5);
+      if (hero.hp <= 0) { shBack = now + 2000; send({ type: 'shoot', act: 'dead', by: b.by }); }
+      return false;
+    }
+    return true;
   });
-  const stuck = !g48.includes(0) && !g48.some((v, i) => (i % 4 < 3 && v === g48[i + 1]) || (i < 12 && v === g48[i + 4]));
-  arcInfo((stuck ? 'No moves left. ' : '') + 'Score ' + g48score + ' · best ' + best('g48', g48score) + (stuck ? '' : ' · WASD or arrows, or swipe'));
 }
-function g48Move(dx, dy) { // slide every row or column toward the pressed side, merging equal neighbours once
-  let moved = false;
-  for (let line = 0; line < 4; line++) {
-    const idx = [0, 1, 2, 3].map(k => (dx ? line * 4 + (dx > 0 ? 3 - k : k) : (dy > 0 ? 3 - k : k) * 4 + line)), vals = idx.map(i => g48[i]).filter(Boolean);
-    for (let k = 0; k < vals.length - 1; k++) if (vals[k] === vals[k + 1]) { vals[k] *= 2; g48score += vals[k]; vals.splice(k + 1, 1); }
-    idx.forEach((i, k) => { const v = vals[k] || 0; if (g48[i] !== v) moved = true; g48[i] = v; });
+function drawShoot() {
+  const g = sg, now = Date.now();
+  g.setTransform(2, 0, 0, 2, 0, 0); g.shadowBlur = 0; g.fillStyle = '#0a0c12'; g.fillRect(0, 0, RW, RH);
+  g.strokeStyle = 'rgba(255,255,255,.05)'; g.lineWidth = 1; g.beginPath(); for (let x = 0; x <= RW; x += 40) { g.moveTo(x, 0); g.lineTo(x, RH); } for (let y = 0; y <= RH; y += 40) { g.moveTo(0, y); g.lineTo(RW, y); } g.stroke();
+  g.fillStyle = '#2a3142'; g.strokeStyle = accHex; for (const w of walls) { g.fillRect(w.x, w.y, w.w, w.h); g.strokeRect(w.x + .5, w.y + .5, w.w - 1, w.h - 1); }
+  const man = (x, y, a, hp, col, name) => { // a player: circle, gun barrel, name, three health pips
+    if (hp <= 0) return;
+    g.strokeStyle = col; g.lineWidth = 5; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * (PR + 9), y + Math.sin(a) * (PR + 9)); g.stroke();
+    g.fillStyle = col; g.beginPath(); g.arc(x, y, PR, 0, 6.283); g.fill();
+    g.font = '600 11px Manrope,sans-serif'; g.textAlign = 'center'; g.fillStyle = '#fff'; g.fillText(name, x, y - PR - 12);
+    for (let i = 0; i < 3; i++) { g.fillStyle = i < hp ? '#2dff88' : 'rgba(255,255,255,.2)'; g.fillRect(x - 13 + i * 9, y - PR - 8, 7, 4); }
+  };
+  for (const id in foes) {
+    const o = foes[id]; if (now - o.t > 3000 || !people[id]) { delete foes[id]; continue; }
+    o.dx += (o.x - o.dx) * .35; o.dy += (o.y - o.dy) * .35; man(o.dx, o.dy, o.a, o.hp, '#ff5f6d', people[id].name);
   }
-  if (moved) g48Add(); g48Draw();
+  man(hero.x, hero.y, hero.a, hero.hp, accHex, 'You');
+  g.shadowColor = '#ffd23f'; g.shadowBlur = 8; g.fillStyle = '#ffd23f'; for (const b of shots) { g.beginPath(); g.arc(b.x, b.y, 3, 0, 6.283); g.fill(); } g.shadowBlur = 0;
+  if (now - shFlash < 120) { g.fillStyle = 'rgba(255,40,40,.25)'; g.fillRect(0, 0, RW, RH); } // you were hit
+  g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.beginPath(); g.arc(aim.x, aim.y, 7, 0, 6.283); g.moveTo(aim.x - 11, aim.y); g.lineTo(aim.x + 11, aim.y); g.moveTo(aim.x, aim.y - 11); g.lineTo(aim.x, aim.y + 11); g.stroke();
+  g.textAlign = 'left'; g.font = '600 12px Manrope,sans-serif'; g.fillStyle = '#fff'; // scoreboard
+  Object.keys(shScore).map(id => [+id === myId ? 'You' : people[id] ? people[id].name : 'Left', shScore[id]]).sort((a, b) => b[1] - a[1]).slice(0, 6).forEach(([name, pts], i) => g.fillText(pts + '  ' + name, 12, 20 + i * 16));
+  g.textAlign = 'center'; g.font = '600 14px Manrope,sans-serif';
+  if (hero.hp <= 0) g.fillText('Knocked out. Back in ' + Math.max(1, Math.ceil((shBack - now) / 1000)), RW / 2, RH / 2);
+  if (shMsg && now - shMsgAt < 4000) g.fillText(shMsg, RW / 2, 24);
 }
-function g48New() { g48 = Array(16).fill(0); g48score = 0; g48Add(); g48Add(); g48Draw(); }
-function memDraw() {
-  const box = $('amem'), left = mem.cards.filter(c => !c.done).length; box.innerHTML = '';
-  mem.cards.forEach((c, i) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.sfx = 'none'; b.className = 'mcard' + (c.up || c.done ? ' up' : ''); b.textContent = c.up || c.done ? c.e : ''; b.setAttribute('aria-label', c.up || c.done ? c.e : 'Hidden card'); b.onclick = () => memFlip(i); box.appendChild(b); });
-  arcInfo(left ? 'Moves ' + mem.moves + ' · find the matching pairs' : 'Done in ' + mem.moves + ' moves · best ' + best('mem', mem.moves, true));
+function shootLoop(t) {
+  if (!shootOpen) return;
+  requestAnimationFrame(shootLoop);
+  shAcc += Math.min(100, t - (shLast || t)); shLast = t;
+  while (shAcc >= 16.67) { shootStep(); shAcc -= 16.67; }
+  if (t - shSent > 60) { shSent = t; send({ type: 'shoot', act: 'pos', x: hero.x, y: hero.y, a: hero.a, hp: hero.hp }); }
+  drawShoot();
 }
-function memFlip(i) {
-  const c = mem.cards[i]; if (mem.lock || c.up || c.done) return;
-  c.up = true; mem.pick.push(c);
-  if (mem.pick.length === 2) {
-    const [a, b] = mem.pick; mem.pick = []; mem.moves++;
-    if (a.e === b.e) { a.done = b.done = true; a.up = b.up = false; }
-    else { mem.lock = true; setTimeout(() => { a.up = b.up = false; mem.lock = false; if (arc === 'mem') memDraw(); }, 700); } // show a wrong pair for a moment
-  }
-  memDraw();
+function setShoot(open) {
+  if (open === shootOpen) return;
+  shootOpen = open;
+  if (open) {
+    setBoard(false); setRace(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(shEl); shEl.classList.remove('hidden');
+    buildArena(shSeed); spawnHero(); shots = []; shLast = 0; shAcc = 0; requestAnimationFrame(shootLoop); send({ type: 'shoot', act: 'open', on: true });
+  } else { shEl.classList.add('hidden'); aim.down = false; for (const k in held) held[k] = false; send({ type: 'shoot', act: 'open', on: false }); }
+  layout();
 }
-function memNew() { const e = ['🍕', '🚀', '🐸', '🎧', '⚽', '🌵', '👻', '🍩']; mem = { cards: [...e, ...e].map(x => ({ e: x, k: Math.random() })).sort((a, b) => a.k - b.k), pick: [], moves: 0, lock: false }; memDraw(); }
-function arcStart(game) {
-  arc = game; clearInterval(arcTimer); acv.classList.toggle('hidden', game === 'mem'); $('amem').classList.toggle('hidden', game !== 'mem');
-  document.querySelectorAll('#arcTabs button').forEach(b => b.classList.toggle('on', b.dataset.g === game));
-  if (game === 'snake') snakeNew(); else if (game === 'g48') g48New(); else memNew();
+function onShootStart(m) { // a new match: fresh walls, scores back to zero
+  shSeed = m.seed; shScore = {}; shMsg = m.by + ' started a match. First to 10 knockouts'; shMsgAt = Date.now();
+  if (shootOpen) { buildArena(shSeed); spawnHero(); shots = []; } else invite(m.by + ' started a shooter match', () => setShoot(true));
 }
-function arcDir(k) { // one direction press or swipe
-  const d = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[k]; if (!d) return;
-  if (arc === 'snake') { if (sdead) return snakeNew(); if (d[0] !== -sdir.x || d[1] !== -sdir.y) snext = { x: d[0], y: d[1] }; } // no turning straight back into yourself
-  else if (arc === 'g48') g48Move(d[0], d[1]);
+const aimAt = e => { const r = scv.getBoundingClientRect(); aim.x = (e.clientX - r.left) / r.width * RW; aim.y = (e.clientY - r.top) / r.height * RH; };
+scv.addEventListener('pointermove', aimAt);
+scv.addEventListener('pointerdown', e => { scv.setPointerCapture(e.pointerId); aimAt(e); aim.down = true; });
+['pointerup', 'pointercancel'].forEach(ev => scv.addEventListener(ev, () => { aim.down = false; }));
+$('shootGo').onclick = () => send({ type: 'shoot', act: 'start' }); $('shootX').onclick = () => setShoot(false);
+
+/* ---------- moderation panel (moderators only): blocked accounts, and a quick way to open any profile ---------- */
+const closeMod = () => $('modDlg').classList.add('hidden');
+function drawMod(m) {
+  const box = $('modList'); box.innerHTML = ''; $('modInfo').textContent = m.accounts + ' accounts exist. Open a profile to reset a name, clear a bio, block or delete. Posts and comments have their own Delete buttons.';
+  if (!m.users.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'Nobody is blocked.'; box.appendChild(p); }
+  m.users.forEach(u => {
+    const r = document.createElement('div'), b = document.createElement('button'); r.className = 'frow'; b.type = 'button'; b.className = 'ghost'; b.textContent = 'Unblock';
+    r.innerHTML = '<div class="pav"></div><div class="frn"><b></b><small></small></div>'; r.querySelector('.pav').textContent = (u.name[0] || '?').toUpperCase();
+    r.querySelector('b').textContent = u.name; r.querySelector('small').textContent = '@' + u.code + ' · ' + u.devices + (u.devices === 1 ? ' device' : ' devices') + ' blocked';
+    b.onclick = () => { send({ type: 'mod', act: 'unblock', user: u.code }); setTimeout(() => send({ type: 'mod-list' }), 300); }; r.appendChild(b); box.appendChild(r);
+  });
 }
-const closeArc = () => { $('arcDlg').classList.add('hidden'); clearInterval(arcTimer); };
-$('openArc').onclick = () => { $('arcDlg').classList.remove('hidden'); arcStart(arc || 'snake'); };
-$('arcDone').onclick = closeArc; $('arcNew').onclick = () => arcStart(arc); $('arcDlg').onclick = e => { if (e.target === $('arcDlg')) closeArc(); };
-document.querySelectorAll('#arcTabs button').forEach(b => { b.onclick = () => arcStart(b.dataset.g); });
-let swipe = null;
-acv.addEventListener('pointerdown', e => { swipe = [e.clientX, e.clientY]; });
-acv.addEventListener('pointerup', e => {
-  if (!swipe) return; const dx = e.clientX - swipe[0], dy = e.clientY - swipe[1]; swipe = null;
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) { if (arc === 'snake' && sdead) snakeNew(); return; }
-  arcDir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up');
-});
-addEventListener('keydown', e => { // WASD, arrows and Space drive whichever game is open
-  if (e.key === 'Escape') closeArc();
-  const k = KEYMAP[e.key.toLowerCase()]; if (!k || typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
-  if (!$('arcDlg').classList.contains('hidden')) { e.preventDefault(); if (e.key === ' ') { if (arc === 'snake' && sdead) snakeNew(); } else arcDir(k); }
-  else if (raceOpen) { e.preventDefault(); held[k] = true; }
-});
+$('openMod').onclick = () => { $('modDlg').classList.remove('hidden'); send({ type: 'mod-list' }); };
+$('modDone').onclick = closeMod; $('modDlg').onclick = e => { if (e.target === $('modDlg')) closeMod(); };
+$('modFind').onsubmit = e => { e.preventDefault(); const u = $('modUser').value.trim().toLowerCase().replace(/^@/, ''); if (u) { closeMod(); openProfile(u); } };
+
+/* ---------- your own font and background image: saved in this browser, only you see them ---------- */
+const FONTS = { Manrope: 'Manrope', Rounded: 'Nunito', Comic: '"Comic Neue"', Typewriter: '"Space Mono"', Serif: 'Georgia', 'Your device font': 'system-ui' };
+function setFont(k) { if (!FONTS[k]) k = 'Manrope'; document.documentElement.style.setProperty('--font', FONTS[k]); $('selFont').value = k; try { localStorage.setItem('font', k); } catch {} }
+Object.keys(FONTS).forEach(k => $('selFont').add(new Option(k, k))); $('selFont').onchange = () => setFont($('selFont').value); setFont(localStorage.getItem('font'));
+function setBg(data) { $('bgimg').style.backgroundImage = data ? 'url("' + data + '")' : ''; $('bgimg').classList.toggle('on', !!data); }
+function setBgDim(v) { v = clamp2(+v || 0, 0, 90); document.documentElement.style.setProperty('--bgdim', v / 100); $('bgDim').value = v; }
+$('bgPick').onclick = () => $('bgFile').click();
+$('bgClear').onclick = () => { setBg(''); try { localStorage.removeItem('bgimg'); } catch {} };
+$('bgDim').oninput = () => { setBgDim($('bgDim').value); try { localStorage.setItem('bgdim', $('bgDim').value); } catch {} };
+$('bgFile').onchange = e => {
+  const file = e.target.files[0], img = new Image(); e.target.value = ''; if (!file) return;
+  img.onload = () => { // shrink it so it fits in the browser's storage
+    const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(img.src); const data = c.toDataURL('image/jpeg', .8);
+    setBg(data); try { localStorage.setItem('bgimg', data); } catch { toast('That image is too big to keep after a refresh'); }
+  };
+  img.onerror = () => toast('That file is not a usable image'); img.src = URL.createObjectURL(file);
+};
+setBg(localStorage.getItem('bgimg') || ''); setBgDim(localStorage.getItem('bgdim') === null ? 55 : localStorage.getItem('bgdim'));
 
 function toast(t) {
   const old = $('toast'); if (old) old.remove();
   const d = document.createElement('div'); d.id = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 4000);
 }
-/* ---------- start-up: the site opens itself inside an about:blank tab ---------- */
-function openBlank() { // a blank tab whose only content is this site in a full-page frame; false if the browser refused
+/* ---------- start-up: the site can open itself inside an about:blank tab ---------- */
+function openBlank() { // true if a blank tab now holds this site in a full-page frame
   let w = null; try { w = window.open('about:blank', '_blank'); } catch {}
-  if (!w) return false;
-  const fr = w.document.createElement('iframe'); fr.src = location.href; fr.allow = 'camera; microphone; display-capture; autoplay; fullscreen; clipboard-write; speaker-selection';
-  fr.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0'; w.document.body.style.cssText = 'margin:0;background:#000;overflow:hidden'; w.document.body.appendChild(fr);
-  return true;
+  if (!w) return false; // the browser blocked it
+  const fill = () => { // some browsers swap in a fresh blank page a moment after opening, which would wipe the frame, so this runs a few times
+    try {
+      const d = w.document; if (w.closed || d.querySelector('iframe')) return;
+      const fr = d.createElement('iframe'); fr.src = location.href; fr.allow = 'camera; microphone; display-capture; autoplay; fullscreen; clipboard-write; speaker-selection'; fr.setAttribute('allowfullscreen', '');
+      fr.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:0';
+      if (!d.body) d.documentElement.appendChild(d.createElement('body'));
+      d.body.style.cssText = 'margin:0;background:#000;overflow:hidden'; d.body.appendChild(fr);
+    } catch {}
+  };
+  fill(); [150, 600, 1500].forEach(ms => setTimeout(fill, ms));
+  try { return !w.closed; } catch { return false; }
 }
 const stayed = (() => { try { return !!sessionStorage.getItem('stay'); } catch { return false; } })();
 if (window !== window.top || stayed) connect(); // already inside the blank tab's frame, or this tab chose to stay
 else {
-  const opened = () => { $('cloakMsg').textContent = 'Ten Rooms is open in the new tab. You can close this one.'; $('cloakGo').classList.add('hidden'); $('cloakStay').textContent = 'Use it in this tab instead'; };
-  $('cloak').classList.remove('hidden');
-  if (openBlank()) opened(); // most browsers block a tab that opens without a click, so the button is the fallback
-  $('cloakGo').onclick = () => { if (openBlank()) opened(); else toast('Your browser blocked the new tab. Allow pop-ups, or stay in this tab'); };
+  const opened = () => { $('cloakMsg').textContent = 'Ten Rooms is open in the new tab. You can close this one.'; $('cloakGo').textContent = 'Open another blank tab'; $('cloakStay').textContent = 'Use it in this tab instead'; };
+  // the buttons are wired up before anything is tried, so they work even if the automatic attempt goes wrong
+  $('cloakGo').onclick = () => { if (openBlank()) opened(); else $('cloakMsg').textContent = 'Your browser blocked the new tab. Click the pop-up blocked icon in the address bar and allow pop-ups for this site, then press the button again. Or stay in this tab.'; };
   $('cloakStay').onclick = () => { try { sessionStorage.setItem('stay', '1'); } catch {} $('cloak').classList.add('hidden'); connect(); };
+  $('cloak').classList.remove('hidden');
+  try { if (openBlank()) opened(); } catch {} // browsers only allow this without a click if pop-ups are already allowed for the site
 }
 </script>
 </body>
