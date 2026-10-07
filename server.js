@@ -397,9 +397,13 @@ function c4win(b, i) { // b is 7 wide and 6 tall with row 0 at the top; i is the
 }
 // Shooter arena guns: damage per bullet, milliseconds between shots, bullets per shot. The page has the same table plus how each one looks.
 const SHGUNS = { pistol: { dmg: 25, gap: 280, n: 1 }, smg: { dmg: 12, gap: 90, n: 1 }, shotgun: { dmg: 14, gap: 750, n: 5 }, sniper: { dmg: 80, gap: 1100, n: 1 } };
+// A race counts as running from Start until someone finishes (or 2 minutes pass); a shooter match until someone wins (or a minute goes by with no hits). Nobody can start another while one is running.
+const raceLive = r => !!r.race && !r.race.free && !r.race.done.size && Date.now() - r.race.at < 120000;
+const shootLive = r => !!r.shoot && !!r.shoot.live && !r.shoot.over && Date.now() - r.shoot.last < 60000;
 function leave(ws) {
   const r = ws.room; if (!r) return;
   r.members.delete(ws.id); ws.room = null; ws.racing = false;
+  if (ws.hanging) { ws.hanging = false; r.members.forEach(p => p.hanging && send(p, { type: 'hang-gone', id: ws.id })); }
   if (ws.shooting) { ws.shooting = false; r.members.forEach(p => p.shooting && send(p, { type: 'shoot-gone', id: ws.id })); }
   toRoom(r, { type: 'peer-left', id: ws.id });
   say(r, `${ws.name} left`);
@@ -561,8 +565,9 @@ wss.on('connection', (ws, req) => {
       } else if (m.act === 'open') { // they opened or closed the race panel
         ws.racing = !!m.on; if (!ws.racing) return;
         if (!r.race) r.race = { seed: 1 + Math.floor(Math.random() * 1e9), at: Date.now(), done: new Set(), free: true }; // nobody has started a race yet: one shared practice course for the room
-        send(ws, { type: 'race-course', seed: r.race.seed, age: Date.now() - r.race.at, racing: !r.race.free, done: r.race.done.has(ws.id) }); // age: how long the course has been running, so moving platforms line up for everyone
+        send(ws, { type: 'race-course', seed: r.race.seed, age: Date.now() - r.race.at, racing: !r.race.free, done: r.race.done.has(ws.id), live: raceLive(r) }); // age: how long the course has been running, so moving platforms line up for everyone
       } else if (m.act === 'start') {
+        if (raceLive(r)) return err(ws, 'A race is already running. Wait for it to finish');
         if (slow(ws, 'lastRace', 8000)) return err(ws, 'Wait a few seconds before starting another race');
         r.race = { seed: 1 + Math.floor(Math.random() * 1e9), at: Date.now() + 3500, done: new Set() }; // the seed builds the same course for everyone
         toRoom(r, { type: 'race-start', seed: r.race.seed, wait: 3500, by: ws.name });
@@ -580,10 +585,11 @@ wss.on('connection', (ws, req) => {
       if (m.act === 'open') { // they opened or closed the arena
         ws.shooting = !!m.on; if (!ws.shooting) return others({ type: 'shoot-gone', id: ws.id });
         if (!r.shoot) r.shoot = { seed: 1 + Math.floor(Math.random() * 1e9), score: {}, over: false }; // the seed builds the same map for everyone in the room
-        ws.sh = fresh(); send(ws, { type: 'shoot-arena', seed: r.shoot.seed, score: r.shoot.score });
+        ws.sh = fresh(); send(ws, { type: 'shoot-arena', seed: r.shoot.seed, score: r.shoot.score, live: shootLive(r) });
       } else if (m.act === 'start') {
+        if (shootLive(r)) return err(ws, 'A match is already running. Wait for it to finish');
         if (slow(ws, 'lastMatch', 8000)) return err(ws, 'Wait a few seconds before starting another match');
-        r.shoot = { seed: 1 + Math.floor(Math.random() * 1e9), score: {}, over: false };
+        r.shoot = { seed: 1 + Math.floor(Math.random() * 1e9), score: {}, over: false, live: true, last: now };
         r.members.forEach(p => { if (p.shooting) p.sh = fresh(); });
         toRoom(r, { type: 'shoot-start', seed: r.shoot.seed, by: ws.name });
         say(r, ws.name + ' started a shooter match. Press Join on the banner to play');
@@ -595,12 +601,18 @@ wss.on('connection', (ws, req) => {
         if (!t || t === ws || !t.shooting || !t.sh || t.sh.hp <= 0 || t.sh.safe > now || me.hp <= 0 || !r.shoot || r.shoot.over) return;
         if (now - me.wt > g.gap * .8) { me.wt = now; me.wd = 0; }
         const dmg = Math.min(g.dmg * Math.max(1, Math.min(g.n, m.n | 0)), g.dmg * g.n - me.wd); if (dmg <= 0) return;
-        me.wd += dmg; t.sh.hp = Math.max(0, t.sh.hp - dmg); all({ type: 'shoot-hit', to: t.id, by: ws.id, hp: t.sh.hp, dmg });
+        me.wd += dmg; r.shoot.last = now; t.sh.hp = Math.max(0, t.sh.hp - dmg); all({ type: 'shoot-hit', to: t.id, by: ws.id, hp: t.sh.hp, dmg });
         if (t.sh.hp > 0) return;
         const sc = r.shoot.score; sc[ws.id] = (sc[ws.id] || 0) + 1; all({ type: 'shoot-score', score: sc, text: ws.name + ' knocked out ' + t.name });
-        if (sc[ws.id] >= 10) { r.shoot.over = true; say(r, ws.name + ' won the shooter match'); all({ type: 'shoot-score', score: sc, text: ws.name + ' wins! Press Start match to play again' }); }
+        if (sc[ws.id] >= 10) { r.shoot.over = true; say(r, ws.name + ' won the shooter match'); all({ type: 'shoot-score', score: sc, text: ws.name + ' wins! Press Start match to play again', over: true }); }
         setTimeout(() => { if (t.shooting && t.sh && t.room === r) { t.sh = fresh(); all({ type: 'shoot-spawn', id: t.id }); } }, 2000); // back in after 2 seconds
       }
+    } else if (m.type === 'hang' && ws.room) { // 3D hangout: each browser moves its own figure and the server passes positions on to the others in the park
+      const r = ws.room, others = msg => r.members.forEach((p, id) => { if (id !== ws.id && p.hanging) send(p, msg); }), num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0);
+      if (m.act === 'open') {
+        ws.hanging = !!m.on; if (!ws.hanging) return others({ type: 'hang-gone', id: ws.id });
+        if (!slow(ws, 'lastHangIn', 20000)) r.members.forEach((p, id) => { if (id !== ws.id && !p.hanging) send(p, { type: 'hang-open', name: ws.name }); }); // invite the people who are not in it
+      } else if (m.act === 'pos' && ws.hanging && !slow(ws, 'lastHPos', 70)) others({ type: 'hang-pos', id: ws.id, x: num(m.x), y: num(m.y), z: num(m.z), r: num(m.r), e: m.e ? 1 : 0 });
     } else if (m.type === 'kick' && ws.room) { // start a vote to kick someone; the starter counts as a yes
       const r = ws.room, t = r.members.get(m.id);
       if (!t || t === ws) return;
