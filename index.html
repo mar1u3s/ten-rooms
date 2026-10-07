@@ -337,12 +337,6 @@ button:active:not(:disabled){transform:scale(.95)}
 .gbtn{width:100%;margin-top:8px;padding:18px;border:1px solid var(--line);border-radius:12px;background:transparent;font-weight:700}
 .gbtn.go{background:var(--acc);border-color:var(--acc);color:#000}
 /* platformer race and the arcade */
-#rcv{width:min(100cqw,177.7cqh);height:auto;aspect-ratio:16/9;border:1px solid var(--line);border-radius:12px;background:rgb(var(--bgc)/.6);touch-action:none}
-#race .bwrap{position:relative}
-.rtouch{position:absolute;left:18px;right:18px;bottom:18px;display:none;justify-content:space-between;pointer-events:none}
-.rtouch span{display:flex;gap:10px}
-.rtouch button{pointer-events:auto;width:58px;height:58px;padding:0;border-radius:50%;border:1px solid var(--line);background:rgb(var(--bgc)/.6);font-size:1.3rem;touch-action:none}
-@media(hover:none){.rtouch{display:flex}}
 /* top navigation, shown on the menu, Posts and Profile pages */
 #nav{position:sticky;top:0;z-index:6;padding:12px 22px 0}
 .navin{display:flex;align-items:center;gap:6px;max-width:1120px;margin:0 auto;padding:6px;border-radius:999px;overflow-x:auto}
@@ -415,6 +409,26 @@ button:active:not(:disabled){transform:scale(.95)}
 #modReports{display:grid;gap:8px}
 #modReports .frow{flex-wrap:wrap}
 #modReports .frn b{white-space:normal;overflow-wrap:anywhere}
+/* horror maze, private calls, rules, direct message extras */
+#maze .bwrap{position:relative;padding:8px;background:#000}
+#mcv{width:100%;height:100%;display:block;border-radius:12px;touch-action:none;cursor:crosshair}
+#mmap{position:absolute;right:16px;top:16px;width:min(168px,30%);height:auto;aspect-ratio:1;border:1px solid rgb(255 255 255/.25);border-radius:8px;opacity:.88;pointer-events:none}
+#scare{position:fixed;inset:0;z-index:60;background:#000;overflow:hidden}
+#scare canvas{width:100%;height:100%;object-fit:cover;animation:scare 1.1s linear}
+@keyframes scare{0%{transform:scale(.35)}10%{transform:scale(1.25) rotate(-2deg)}25%{transform:scale(1.1) rotate(2deg)}45%{transform:scale(1.3) rotate(-1deg)}70%{transform:scale(1.2) rotate(1deg)}100%{transform:scale(1.5)}}
+#callBar{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:45;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:12px 16px;width:max-content;max-width:92vw;background:var(--bg);border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}
+#callBar button{padding:7px 16px}
+#rulesDlg{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgb(var(--bgc)/.65);padding:20px}
+#rulesDlg h2{font-size:1.5rem}
+#rulesDlg .panel{width:min(540px,100%);max-height:100%;overflow:auto}
+.rules{margin:0;padding-left:22px;display:grid;gap:9px}
+.rules b{display:block}
+.linkb{background:none;border:0;padding:0;color:var(--fg);text-decoration:underline}
+#frSend{position:relative}
+#frSend .ghost{flex:none;padding:0 11px;border-radius:10px;font-size:.78rem;font-weight:600}
+.frhead .solid{padding:6px 16px;font-size:.85rem}
+.dm img{display:block;max-width:100%;max-height:180px;border-radius:8px}
+.dm small{display:block;margin-top:2px;font-size:.65rem;opacity:.6}
 /* themes */
 #settings .panel{max-height:100%;overflow:auto}
 .themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -469,7 +483,7 @@ button:active:not(:disabled){transform:scale(.95)}
   <button type="button" class="navme" id="openProf" title="Your profile"><span id="meAv" class="pav"></span><span id="me"></span></button>
   <form id="searchForm" class="navsearch" role="search"><input id="searchQ" maxlength="40" placeholder="Search posts and people" aria-label="Search posts and people" autocomplete="off" enterkeyhint="search"></form>
   <span class="navsp"></span>
-  <button type="button" class="ntab" id="feedBack">Rooms</button><button type="button" class="ntab" id="openFeed">Posts</button><button type="button" class="ntab" id="openFr">Friends</button><button type="button" class="ntab" id="openSet">Settings</button><button type="button" class="ntab hidden" id="openMod">Moderation</button><button type="button" class="ntab" id="logout">Log out</button>
+  <button type="button" class="ntab" id="feedBack">Rooms</button><button type="button" class="ntab" id="openFeed">Posts</button><button type="button" class="ntab" id="openFr">Friends</button><button type="button" class="ntab" id="openSet">Settings</button><button type="button" class="ntab" id="openRules">Rules</button><button type="button" class="ntab hidden" id="openMod">Moderation</button><button type="button" class="ntab" id="logout">Log out</button>
 </div></nav>
 
 <section id="auth" class="view hidden">
@@ -477,7 +491,7 @@ button:active:not(:disabled){transform:scale(.95)}
     <h1>Ten rooms</h1>
     <p class="sub" id="authSub">Log in to walk into any open room.</p>
     <p class="notice hidden" id="regTips">Do not put your actual name.<br>Remember your password, it does not have to be advanced.</p>
-    <p class="notice">This site is only for entertainment purposes. If requested by important figures, we will take the website down.</p>
+    <p class="notice">This site is only for entertainment purposes. If requested by important figures, we will take the website down. Chat, posts, names and images are checked by AI moderation. <button type="button" class="linkb" id="rulesLink2">Read the rules</button></p>
     <label for="u">Username</label><input id="u" maxlength="17" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="letters, numbers or _" required>
     <div id="dnRow" class="hidden" style="display:grid;gap:12px"><label for="dn">Display name</label><input id="dn" maxlength="20" autocomplete="nickname" placeholder="What people see. You can change it later"></div>
     <label for="pw">Password</label><input id="pw" type="password" minlength="6" maxlength="100" autocomplete="current-password" required>
@@ -491,7 +505,7 @@ button:active:not(:disabled){transform:scale(.95)}
 <main id="lobby" class="view hidden">
   <h1>Ten rooms</h1>
   <p class="sub">Walk into any open room to talk on video. Every room has its own chat.</p>
-  <p class="notice">Notice: this site is only for entertainment purposes. If requested by important figures, we will take the website down.</p>
+  <p class="notice">Notice: this site is only for entertainment purposes. If requested by important figures, we will take the website down. Everything here is checked by AI moderation: chat, direct messages, posts, names and images. <button type="button" class="linkb" id="rulesLink">Read the rules</button></p>
   <aside id="sideFeed" class="mod" aria-label="Latest posts">
     <h2>Latest posts</h2>
     <div id="sideList"></div>
@@ -627,28 +641,15 @@ button:active:not(:disabled){transform:scale(.95)}
       <button type="button" class="solid" id="frDone">Done</button>
     </div>
     <div id="frChat" class="hidden">
-      <div class="frhead"><button type="button" class="ghost" id="frBack">Back</button><b id="frWho"></b></div>
+      <div class="frhead"><button type="button" class="ghost" id="frBack">Back</button><b id="frWho"></b><span style="flex:1"></span><button type="button" class="solid" id="frCall">Call</button></div>
       <div id="frLog" aria-live="polite"></div>
-      <form id="frSend"><input id="frText" maxlength="500" placeholder="Message" aria-label="Message" autocomplete="off"><button class="solid">Send</button></form>
+      <form id="frSend"><button type="button" class="ghost hidden" id="dmPic" title="Send an image">Image</button><button type="button" class="ghost hidden" id="dmGif" title="Send a GIF">GIF</button><input type="file" id="dmFile" accept="image/*" hidden><input id="frText" maxlength="500" placeholder="Message" aria-label="Message" autocomplete="off"><button class="solid">Send</button></form>
     </div>
   </div>
 </div>
 
 <div id="notes" aria-live="polite"></div>
 <div id="hint" class="mod hidden" role="dialog" aria-label="Tip"><b id="hintText"></b><div><button type="button" class="ghost" id="hintSkip">Skip tips</button><button type="button" class="solid" id="hintNext">Next</button></div></div>
-
-<div id="race" class="boardmod mod hidden" role="region" aria-label="Platformer race">
-  <div class="bh">
-    <h3>Platformer race</h3>
-    <span class="bsz">A / D to run, W or Space to jump (hold for a higher jump). Walk onto pink pads to bounce. Jump over red spikes</span>
-    <span style="flex:1"></span>
-    <button type="button" class="solid" id="raceGo">Start race</button>
-    <button type="button" class="ghost" id="raceX">Close</button>
-  </div>
-  <div class="bwrap"><canvas id="rcv" width="1600" height="900"></canvas>
-    <div class="rtouch"><span><button type="button" data-k="left" aria-label="Left">◀</button><button type="button" data-k="right" aria-label="Right">▶</button></span><button type="button" data-k="up" aria-label="Jump">▲</button></div>
-  </div>
-</div>
 
 <div id="shoot" class="boardmod mod hidden" role="region" aria-label="Shooter arena">
   <div class="bh">
@@ -670,6 +671,37 @@ button:active:not(:disabled){transform:scale(.95)}
     <button type="button" class="ghost" id="hangX">Close</button>
   </div>
   <div class="bwrap"><canvas id="hcv"></canvas><div id="hangHud" class="hud"></div></div>
+</div>
+
+<div id="maze" class="boardmod mod hidden" role="region" aria-label="Horror maze">
+  <div class="bh">
+    <h3>Horror maze</h3>
+    <span class="bsz">WASD to move, Shift to run, click the picture to look with the mouse (Esc lets go). Find 5 keys, then the door</span>
+    <span style="flex:1"></span>
+    <button type="button" class="solid" id="mazeGo">New round</button>
+    <button type="button" class="ghost" id="mazeX">Close</button>
+  </div>
+  <div class="bwrap"><canvas id="mcv"></canvas><canvas id="mmap" width="168" height="168"></canvas><div id="mzHud" class="hud"></div></div>
+</div>
+<div id="scare" class="hidden"><canvas id="scareCv" width="800" height="450"></canvas></div>
+<div id="callBar" class="mod hidden" role="alert"><span id="callText"></span><button type="button" class="solid" id="callYes">Accept</button><button type="button" class="ghost" id="callNo">Decline</button></div>
+<div id="rulesDlg" class="hidden">
+  <div class="panel" role="dialog" aria-label="Rules">
+    <h2>Rules</h2>
+    <p class="sub">Ten Rooms uses AI moderation. Chat, direct messages, posts, comments, names and images are checked automatically, and moderators see what gets blocked or reported. Breaking the rules can get your account and your device blocked.</p>
+    <ol class="rules">
+      <li><b>No threats.</b>Do not threaten anyone, even as a joke.</li>
+      <li><b>Respect each other.</b>No bullying, slurs, hate or ganging up on people.</li>
+      <li><b>Keep it safe for everyone.</b>Nothing sexual, violent or gross. Keep your camera and your pictures appropriate.</li>
+      <li><b>Protect your privacy.</b>Do not share your full name, address, phone number, passwords or school, and do not ask other people for theirs.</li>
+      <li><b>Do not cheat.</b>No sharing test or homework answers, and no hacks, exploits or extra accounts to win games or get round a block.</li>
+      <li><b>Be yourself.</b>Do not pretend to be another student, a teacher or a moderator.</li>
+      <li><b>No spam.</b>Do not flood chat, posts or calls, and no advertising.</li>
+      <li><b>Follow your school's rules.</b>Use Ten Rooms only when and where you are allowed to.</li>
+      <li><b>Speak up.</b>If someone breaks a rule or makes you uncomfortable, press Report or tell an adult you trust.</li>
+    </ol>
+    <button type="button" class="solid" id="rulesDone">Got it</button>
+  </div>
 </div>
 
 <div id="pollDlg" class="hidden">
@@ -701,7 +733,7 @@ button:active:not(:disabled){transform:scale(.95)}
 
 <script>
 const $ = id => document.getElementById(id);
-let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, dotRGB = '255,255,255', accRGB = '45,255,136', accHex = '#2dff88', fxOn = localStorage.getItem('fx') !== 'off', raceOpen = false, shootOpen = false, hangOpen = false;
+let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, peers = {}, inRoom = false, dotRGB = '255,255,255', accRGB = '45,255,136', accHex = '#2dff88', fxOn = localStorage.getItem('fx') !== 'off', shootOpen = false, hangOpen = false, mazeOpen = false;
 
 /* ---------- floating dot web (always running; slower if reduced motion is on) ---------- */
 (() => {
@@ -720,7 +752,7 @@ let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, 
   addEventListener('pointerdown', e => { if (fxOn && rings.length < 6) rings.push({ x: e.clientX, y: e.clientY, r: 6 }); }); // every click sends out a ring
   size();
   (function tick() {
-    if (raceOpen || shootOpen || hangOpen) return void requestAnimationFrame(tick); // paused while a game is on screen: the game gets the frame time
+    if (shootOpen || hangOpen || mazeOpen) return void requestAnimationFrame(tick); // paused while a game is on screen: the game gets the frame time
     cx.clearRect(0, 0, W, H);
     if (fxOn) { // the loud part: drifting glows in the theme colours, shooting stars and click rings
       time += .004 * speed;
@@ -806,17 +838,23 @@ function drawMe() { $('me').textContent = acct.display + ' @' + acct.code; }
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; $('authGo').disabled = false; authNote(''); if (isAdmin && !m.saved) setTimeout(() => notify('Warning: accounts are NOT being saved. Supabase is not connected, so everything resets on the next update. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Render.'), 1500); $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); picBase = m.picBase || ''; picWhy = !m.pics ? 'OPENAI_API_KEY is not set in Render' : !m.saved ? 'Supabase is not connected in Render' : ''; drawLatest(m.latest || []); $('openMod').classList.toggle('hidden', !isAdmin); $('openMod').classList.toggle('has-new', !!m.reports); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; $('authGo').disabled = false; authNote(''); if (isAdmin && !m.saved) setTimeout(() => notify('Warning: accounts are NOT being saved. Supabase is not connected, so everything resets on the next update. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Render.'), 1500); $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); $('dmPic').classList.toggle('hidden', !m.pics); $('dmGif').classList.toggle('hidden', !m.gifs); picBase = m.picBase || ''; picWhy = !m.pics ? 'OPENAI_API_KEY is not set in Render' : !m.saved ? 'Supabase is not connected in Render' : ''; drawLatest(m.latest || []); $('openMod').classList.toggle('hidden', !isAdmin); $('openMod').classList.toggle('has-new', !!m.reports); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
   else if (m.type === 'lobby') { rooms = m.rooms; drawStats(m.stats); drawLobby(); }
   else if (m.type === 'error') { toast(m.text); if (!inRoom && local) { local.getTracks().forEach(t => t.stop()); local = null; } } // a refused join must not leave the camera on
   else if (m.type === 'joined') onJoined(m);
   else if (m.type === 'peer-joined') { addTile(m.id, m.name, null, false, m); updateCount(); sfx.join(); notify(m.name + ' joined the room'); }
   else if (m.type === 'peer-left') { if (people[m.id]) notify(people[m.id].name + ' left the room'); dropPeer(m.id); sfx.leave(); }
   else if (m.type === 'friend-post') { sfx.ping(); notify(m.name + ' posted something new', () => { if (!inRoom) $('openFeed').click(); }); }
-  else if (m.type === 'race-pos') { const o = racers[m.id] || (racers[m.id] = { dx: m.x, dy: m.y }); o.x = m.x; o.y = m.y; o.t = Date.now(); }
-  else if (m.type === 'race-start') onRaceStart(m);
-  else if (m.type === 'race-course') { raceSeed = m.seed; raceAt = Date.now() - m.age; raceLive = !!m.live; if (raceOpen) { buildLevel(raceSeed); raceState = m.age < 0 ? 'count' : m.done ? 'done' : m.racing ? 'run' : 'free'; } } // the room's shared course and clock
-  else if (m.type === 'race-end') { raceMsg = (m.place === 1 ? m.name + ' wins in ' : m.name + ' finished in ') + m.secs + 's'; raceLive = false; if (m.id === myId) raceState = 'done'; }
+  else if (m.type === 'hang-hit') onHangHit(m);
+  else if (m.type === 'maze-state') onMazeState(m);
+  else if (m.type === 'maze-pos') onMazePos(m);
+  else if (m.type === 'maze-mon') { if (Z && mzRound && mzRound.host !== myId) { Z.mon.tx = m.x; Z.mon.tz = m.z; Z.mon.r = m.r; Z.mon.see = !!m.see; } }
+  else if (m.type === 'maze-key') { if (mzRound) { mzRound.keys = m.keys; mzApply(); if (mazeOpen) notify(m.name + ' found a key (' + m.keys.filter(Boolean).length + ' of 5)'); } }
+  else if (m.type === 'maze-caught') { if (mzRound) { mzRound.caught = m.caught; mzApply(); if (mazeOpen) notify(m.name + ' was caught'); } }
+  else if (m.type === 'maze-gone') { if (mzMates[m.id] && Z) { Z.scene.remove(mzMates[m.id].g); delete mzMates[m.id]; } }
+  else if (m.type === 'maze-open') { if (!mazeOpen) invite(m.name + ' went into the horror maze', () => setMaze(true)); }
+  else if (m.type === 'call-room') { if (inRoom) { send({ type: 'leave' }); exitRoom(); } closeFr(); joinRoom(m.room); toast('Calling… they come in when they accept'); } // the private call you just started
+  else if (m.type === 'call-invite') onCallInvite(m);
   else if (m.type === 'hang-pos') onHangPos(m);
   else if (m.type === 'hang-gone') { if (mates[m.id] && H) { H.scene.remove(mates[m.id].g); delete mates[m.id]; } }
   else if (m.type === 'hang-open') { if (!hangOpen) invite(m.name + ' is in the 3D hangout', () => setHang(true)); }
@@ -905,7 +943,7 @@ async function joinRoom(id) {
 }
 function onJoined(m) {
   inRoom = true; roomMax = m.max || 6; show('call');
-  $('roomTitle').textContent = m.name; roomId = m.room; raceSeed = m.race || 0; shSeed = m.shoot || 0; $('stage').innerHTML = ''; $('log').innerHTML = ''; setReply(null); drawKick(m.vote || { over: true });
+  $('roomTitle').textContent = m.name; roomId = m.room; shSeed = m.shoot || 0; $('stage').innerHTML = ''; $('log').innerHTML = ''; setReply(null); drawKick(m.vote || { over: true });
   m.chat.forEach(x => addMsg(x));
   addTile('me', myName, local, true, { avatar: myAvatar });
   updateBtns(); pin(null); $('topicIn').value = m.topic || '';
@@ -978,7 +1016,7 @@ function dropPeer(id) {
   updateCount();
 }
 function exitRoom() {
-  drawKick({ over: true }); raceQuit(); inRoom = false; Object.keys(peers).forEach(dropPeer); unmeter('me'); boardOpen = false; boardEl.classList.add('hidden'); strokes = []; cur = null; pend = []; redraw();
+  drawKick({ over: true }); stageQuit(); inRoom = false; Object.keys(peers).forEach(dropPeer); unmeter('me'); boardOpen = false; boardEl.classList.add('hidden'); strokes = []; cur = null; pend = []; redraw();
   sharing = null; screenAudio = null; $('share').textContent = 'Share screen'; pin(null); Object.keys(people).forEach(k => delete people[k]); renderPeople(); Object.keys(typers).forEach(k => setTyper(k, '', false));
   if (local) local.getTracks().forEach(t => t.stop());
   local = null; $('mic').textContent = 'Mute mic'; $('cam').textContent = 'Stop camera';
@@ -1374,7 +1412,7 @@ let boardOpen = false, strokes = [], brush = '#ffffff', mySeq = 0, cur = null, p
 const boardEl = $('board'), bcv = $('bcv'), bx = bcv.getContext('2d');
 const SW = ['#ffffff', '#2dff88', '#ffd23f', '#ff5fa2', '#3fd0ff', '#0b0b0b']; // last one is the eraser
 function layout() {
-  const st = $('stage'); const big = boardOpen || raceOpen || shootOpen || hangOpen; st.classList.toggle('pinned', !!pinId || big); st.classList.toggle('boardopen', big); // one big thing at a time takes the main slot
+  const st = $('stage'); const big = boardOpen || shootOpen || hangOpen || mazeOpen; st.classList.toggle('pinned', !!pinId || big); st.classList.toggle('boardopen', big); // one big thing at a time takes the main slot
   if (sideGrip.parentNode !== st) st.appendChild(sideGrip); // the stage is emptied on every join, so put the handle back
   sideGrip.classList.toggle('hidden', !pinId && !big);
 }
@@ -1427,7 +1465,7 @@ function setBoard(open) {
   else boardEl.classList.add('hidden');
   layout();
 }
-$('boardBtn').onclick = () => { if (!boardOpen) { setRace(false); setShoot(false); setHang(false); } setBoard(!boardOpen); }; $('bclose').onclick = () => setBoard(false);
+$('boardBtn').onclick = () => { if (!boardOpen) { setShoot(false); setHang(false); setMaze(false); } setBoard(!boardOpen); }; $('bclose').onclick = () => setBoard(false);
 $('bclear').onclick = () => { strokes = []; redraw(); send({ type: 'board-clear' }); };
 const bpt = e => { const r = bcv.getBoundingClientRect(); return [Math.max(0, Math.min(1000, Math.round((e.clientX - r.left) / r.width * 1000))), Math.max(0, Math.min(625, Math.round((e.clientY - r.top) / r.height * 625)))]; };
 function extend(x, y) { const from = cur.pts.length; cur.pts.push(x, y); pend.push(x, y); drawStroke(cur, from); }
@@ -1593,9 +1631,9 @@ function drawOpenGame(el, g, mid) { // games the whole room plays at once: no se
   }
 }
 const gameBar = $('gameBar');
-[['hang3d', '3D hangout'], ['race', 'Platformer race'], ['shoot', 'Shooter arena'], ['ttt', 'Tic-Tac-Toe'], ['c4', 'Connect Four'], ['rps', 'Rock Paper Scissors'], ['num', 'Guess the number'], ['react', 'Reaction race'], ['hang', 'Hangman'], ['roll', 'Roll a dice'], ['flip', 'Flip a coin']].forEach(([k, label]) => {
+[['hang3d', '3D hangout'], ['maze', 'Horror maze'], ['shoot', 'Shooter arena'], ['ttt', 'Tic-Tac-Toe'], ['c4', 'Connect Four'], ['rps', 'Rock Paper Scissors'], ['num', 'Guess the number'], ['react', 'Reaction race'], ['hang', 'Hangman'], ['roll', 'Roll a dice'], ['flip', 'Flip a coin']].forEach(([k, label]) => {
   const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
-  b.onclick = () => { gameBar.classList.add('hidden'); if (k === 'race') return setRace(true); if (k === 'shoot') return setShoot(true); if (k === 'hang3d') return setHang(true); send(GAMES[k] ? { type: 'game', kind: k } : { type: 'luck', kind: k }); tab('chat'); };
+  b.onclick = () => { gameBar.classList.add('hidden'); if (k === 'maze') return setMaze(true); if (k === 'shoot') return setShoot(true); if (k === 'hang3d') return setHang(true); send(GAMES[k] ? { type: 'game', kind: k } : { type: 'luck', kind: k }); tab('chat'); };
   gameBar.appendChild(b);
 });
 $('gamesBtn').onclick = () => gameBar.classList.toggle('hidden');
@@ -1649,17 +1687,19 @@ async function gifSearch() { // an empty search box shows what is trending
     if (!GIFRE.test(g.url) || !GIFRE.test(g.thumb)) return;
     const b = document.createElement('button'); b.type = 'button'; b.dataset.sfx = 'none';
     const im = document.createElement('img'); im.alt = g.title || 'GIF'; im.loading = 'lazy'; im.referrerPolicy = 'no-referrer'; im.src = g.thumb; b.appendChild(im);
-    b.onclick = () => { send({ type: 'chat', gif: g.url, re: replyTo ? replyTo.id : undefined }); setReply(null); imgPick.classList.add('hidden'); sfx.pop(); };
+    b.onclick = () => { if (gifSend) gifSend(g.url); imgPick.classList.add('hidden'); sfx.pop(); };
     grid.appendChild(b);
   });
 }
 $('gifQ').addEventListener('input', () => { clearTimeout(gifTimer); gifTimer = setTimeout(gifSearch, 350); });
 $('gifQ').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); clearTimeout(gifTimer); gifSearch(); } }); // Enter must not send the chat form
-$('imgBtn').onclick = () => {
-  if (imgPick.classList.toggle('hidden')) return;
-  $('gifQ').focus(); if (!$('gifGrid').children.length) gifSearch();
-};
-document.addEventListener('click', e => { if (!imgPick.contains(e.target) && !e.target.closest('#imgBtn')) imgPick.classList.add('hidden'); });
+let gifSend = null; // where a picked GIF goes: the room chat, or the direct message that is open
+function openGifs(form, sendTo) { // the one GIF panel is moved into whichever form asked for it
+  if (!imgPick.classList.contains('hidden') && imgPick.parentNode === form) return imgPick.classList.add('hidden');
+  form.insertBefore(imgPick, form.firstChild); gifSend = sendTo; imgPick.classList.remove('hidden'); $('gifQ').focus(); if (!$('gifGrid').children.length) gifSearch();
+}
+$('imgBtn').onclick = () => openGifs($('chatForm'), url => { send({ type: 'chat', gif: url, re: replyTo ? replyTo.id : undefined }); setReply(null); });
+document.addEventListener('click', e => { if (!imgPick.contains(e.target) && !e.target.closest('#imgBtn,#dmGif')) imgPick.classList.add('hidden'); });
 /* ---------- vote kick: the bar everyone in the room sees while a vote is running ---------- */
 let kickTick;
 function drawKick(m) {
@@ -1717,31 +1757,37 @@ function drawFriends() {
   if (!friends.length && !reqs.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'No friends yet. Share your username, or press Add friend on someone in a room\'s People tab.'; box.appendChild(p); }
   [...friends].sort((a, b) => !!pres[b.code] - !!pres[a.code]).forEach(f => {
     const p = pres[f.code], room = p && rooms.find(x => x.id === p.room);
-    const r = row(f.name, '@' + f.code + ' · ' + (p ? (room ? 'In ' + room.name : 'Online') : 'Offline, or has not added you back'), !!p);
+    const r = row(f.name, '@' + f.code + ' · ' + (p ? (room ? 'In ' + room.name : p.room === -1 ? 'In a private call' : 'Online') : 'Offline, or has not added you back'), !!p);
     const fav = r.querySelector('.pav'); setAv(fav, f.name, avUrl(f.code, f.av)); fav.classList.add('clicky'); fav.onclick = () => openProfile(f.code);
     if (room && !(inRoom && $('roomTitle').textContent === room.name)) btn(r, 'solid', 'Join', () => {
       closeFr(); if (inRoom) { send({ type: 'leave' }); exitRoom(); }
       joinRoom(room.id);
     });
     btn(r, 'ghost', 'Message' + (unread[f.code] ? ' (' + unread[f.code] + ')' : ''), () => openDm(f.code));
+    if (p) btn(r, 'ghost', 'Call', () => callFriend(f.code));
     btn(r, 'ghost', '×', () => { if (confirm('Remove ' + f.name + ' from your friends?')) send({ type: 'friend-del', code: f.code }); }).setAttribute('aria-label', 'Remove ' + f.name);
   });
   frBadge();
 }
-function dmLine(d) {
-  const el = document.createElement('div'); el.className = 'dm' + (d.me ? ' me' : ''); el.textContent = d.text; el.title = new Date(d.t).toLocaleString();
+function dmLine(d) { // one message in the open conversation: text, a GIF or an image, with the time under it
+  const el = document.createElement('div'), tm = document.createElement('small'); el.className = 'dm' + (d.me ? ' me' : '');
+  if ((d.gif && GIFRE.test(d.gif)) || /^[a-f0-9]{24}$/.test(d.pic || '')) {
+    const im = document.createElement('img'); im.alt = d.gif ? 'GIF' : 'Image'; im.referrerPolicy = 'no-referrer'; im.onload = () => { $('frLog').scrollTop = $('frLog').scrollHeight; };
+    im.onerror = () => { im.replaceWith(document.createTextNode('(this image has expired)')); }; im.src = d.gif || '/img/' + d.pic; el.appendChild(im);
+  } else el.textContent = d.text;
+  tm.textContent = new Date(d.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); el.appendChild(tm); el.title = new Date(d.t).toLocaleString();
   $('frLog').appendChild(el); $('frLog').scrollTop = $('frLog').scrollHeight;
 }
 function openDm(code) {
   dmOpen = code; delete unread[code]; $('frHome').classList.add('hidden'); $('frChat').classList.remove('hidden');
-  $('frWho').textContent = nameOf(code); $('frLog').innerHTML = ''; (dms[code] || []).forEach(dmLine); frBadge(); $('frText').focus();
+  $('frWho').textContent = nameOf(code); $('frCall').classList.toggle('hidden', !pres[code]); // you can only ring someone who is online $('frLog').innerHTML = ''; (dms[code] || []).forEach(dmLine); frBadge(); $('frText').focus();
 }
 function onDm(m) { // m.from is set on messages to you; your own come back with m.to so every open tab shows them
   const code = m.from || m.to; if (!friends.some(f => f.code === code)) return;
-  const list = dms[code] = dms[code] || [], d = { me: !m.from, text: m.text, t: m.t };
+  const list = dms[code] = dms[code] || [], d = { me: !m.from, text: m.text, gif: m.gif, pic: m.pic, t: m.t };
   list.push(d); if (list.length > 100) list.shift(); keep('dms:' + myCode, dms);
   if (dmOpen === code && !$('frDlg').classList.contains('hidden')) dmLine(d);
-  else if (m.from) { unread[code] = (unread[code] || 0) + 1; sfx.ping(); toast(m.name + ': ' + m.text.slice(0, 60)); drawFriends(); }
+  else if (m.from) { unread[code] = (unread[code] || 0) + 1; sfx.ping(); notify(m.name + ': ' + (m.text ? m.text.slice(0, 60) : m.gif ? 'sent a GIF' : 'sent an image'), () => { $('openFr').click(); openDm(code); }); drawFriends(); }
 }
 const closeFr = () => $('frDlg').classList.add('hidden');
 const frHome = () => { dmOpen = null; $('frChat').classList.add('hidden'); $('frHome').classList.remove('hidden'); drawFriends(); };
@@ -2005,9 +2051,9 @@ const KEYMAP = { a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right', 
 const typing = e => !!(e.target.closest && e.target.closest('input,textarea,select'));
 const fgc = al => 'rgba(' + dotRGB + ',' + al + ')';
 
-/* ---------- stage games (platformer race, shooter arena): shared keys and the Join banner ---------- */
+/* ---------- stage games (shooter arena, 3D hangout, horror maze): shared helpers and the Join banner ---------- */
 const held = {}; // which direction keys are down
-addEventListener('keydown', e => { const k = KEYMAP[e.key.toLowerCase()]; if (!k || !(raceOpen || shootOpen) || typing(e) || e.ctrlKey || e.metaKey || e.altKey) return; e.preventDefault(); held[k] = true; });
+addEventListener('keydown', e => { const k = KEYMAP[e.key.toLowerCase()]; if (!k || !shootOpen || typing(e) || e.ctrlKey || e.metaKey || e.altKey) return; e.preventDefault(); held[k] = true; });
 addEventListener('keyup', e => { const k = KEYMAP[e.key.toLowerCase()]; if (k) held[k] = false; });
 addEventListener('blur', () => { for (const k in held) held[k] = false; });
 const seeded = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }; // the same seed gives everyone the same random numbers
@@ -2020,130 +2066,12 @@ function invite(text, fn) { // "Sam started a race [Join]": one click puts you i
 $('joinGo').onclick = () => { $('joinBar').classList.add('hidden'); if (joinFn && inRoom) joinFn(); };
 $('joinX').onclick = () => $('joinBar').classList.add('hidden');
 
-/* ---------- platformer race: everyone runs the same random course; you simulate yourself and see where the others are ---------- */
-const raceEl = $('race'), rcv = $('rcv'), rg = rcv.getContext('2d'), RW = 800, RH = 450, PW = 22, PH = 30;
-let raceLive = false, shLive = false; // a race or match is running right now, so Start is refused
-let raceSeed = 0, racers = {}, raceState = 'free', raceAt = 0, raceMsg = '', level = [], spikes = [], pads = [], parts = [], finishX = 0, hue = 200, runner = null, raceLast = 0, raceAcc = 0, raceSent = 0; // raceState: free roam, count (3-2-1), run, done
-function buildLevel(seed) { // platforms, moving platforms, bounce pads and spikes, all decided by the seed. Every piece is placed so a plain full jump can clear it
-  const rnd = seeded(seed); let x = 320, y = 360, tight = false;
-  hue = Math.floor(rnd() * 360); level = [{ x: -300, y: 360, w: 620, h: 300 }]; spikes = []; pads = []; parts = [];
-  while (x < 5600) {
-    const prev = level[level.length - 1], kind = rnd();
-    if (kind < .15 && prev.w >= 150 && !prev.amp && !prev.spiked && level.length > 1) { // a bounce pad at the end of the last platform, then a step too tall for a normal jump
-      pads.push({ x: prev.x + prev.w - 62, y: prev.y - 8, w: 56 });
-      y = Math.max(140, y - 110 - rnd() * 40); x += 50 + rnd() * 40; const w = 160 + rnd() * 110; level.push({ x, y, w, h: 18 }); x += w; tight = true;
-    } else if (kind > .84 && !tight && !prev.amp) { // a moving platform, level with the one before it, sliding 36 either way
-      x += 50 + rnd() * 20 + 36; const b = { x, y, w: 120, h: 18, x0: x, amp: 36, sp: .0012 + rnd() * .001, ph: rnd() * 6.28 };
-      level.push(b); x += b.w + 36; tight = true;
-    } else {
-      const spiked = !tight && rnd() < .28, w = spiked ? 300 + rnd() * 140 : 130 + rnd() * 170, ny = clamp2(y + (rnd() - .5) * 150, 190, 390);
-      y = Math.max(ny, y - 70); x += 50 + rnd() * (tight ? 20 : 60); // never more than 70 up: that is what a jump can reach
-      const b = { x, y, w, h: rnd() < .3 ? 300 : 18, spiked };
-      if (spiked) spikes.push({ x: x + 80 + rnd() * (w - 300), y: y - 14, w: 26, h: 14 }); // always at least 190 of platform left after a spike to land on
-      level.push(b); x += w; tight = false;
-    }
-  }
-  level.push({ x: x + 70, y: 360, w: 600, h: 300 }); finishX = x + 70 + 260;
-  runner = { x: 40, y: 360 - PH, vx: 0, vy: 0, ground: false, coyote: 0, sx: 40, sy: 360 - PH, on: null, face: 1, boost: false };
+const RW = 800, RH = 450; // the shooter's playing field, in its own units
+let shLive = false; // a shooter match is running right now, so Start is refused
+function stageQuit() { // leaving the room closes whichever game was open
+  shootOpen = false; shLive = false; hangQuit(); mazeQuit(); shEl.classList.add('hidden'); $('joinBar').classList.add('hidden');
+  foes = {}; shots = []; shScore = {}; shMsg = '';
 }
-const touching = (p, b) => p.x < b.x + b.w && p.x + PW > b.x && p.y < b.y + b.h && p.y + PH > b.y;
-function puff(x, y, count, col) { for (let i = 0; i < count && parts.length < 140; i++) parts.push({ x, y, vx: (Math.random() - .5) * 4, vy: -Math.random() * 3, life: 1, col }); }
-function raceStep() { // one sixtieth of a second of running and jumping
-  const p = runner, frozen = raceState === 'count', T = Date.now() - raceAt, wasAir = !p.ground;
-  for (const b of level) if (b.amp) { const nx = b.x0 + Math.sin(T * b.sp + b.ph) * b.amp; b.dx = nx - b.x; b.x = nx; }
-  if (p.on && p.on.amp) p.x += p.on.dx; // a moving platform carries you
-  p.vx = frozen ? 0 : ((held.right ? 1 : 0) - (held.left ? 1 : 0)) * 5; if (p.vx) p.face = p.vx > 0 ? 1 : -1;
-  if (!frozen && held.up && p.coyote > 0) { p.vy = -11.5; p.coyote = 0; puff(p.x + PW / 2, p.y + PH, 5); }
-  if (!held.up && p.vy < -4 && !p.boost) p.vy = -4; // letting go early makes a shorter hop
-  p.vy = Math.min(p.vy + .6 + (held.down ? .5 : 0), 14); if (p.vy >= 0) p.boost = false;
-  p.x += p.vx; for (const b of level) if (touching(p, b)) p.x = p.x + PW / 2 < b.x + b.w / 2 ? b.x - PW : b.x + b.w; // pushed out of whichever side is nearer
-  p.y += p.vy; p.ground = false; p.on = null;
-  for (const b of level) if (touching(p, b)) { if (p.vy > 0) { p.y = b.y - PH; p.ground = true; p.on = b; } else p.y = b.y + b.h; p.vy = 0; }
-  if (p.ground && wasAir) puff(p.x + PW / 2, p.y + PH, 6);
-  p.coyote = p.ground ? 6 : p.coyote - 1; // a few frames of grace after running off an edge
-  for (const pd of pads) if (p.vy >= 0 && touching(p, { x: pd.x, y: pd.y, w: pd.w, h: 10 })) { p.vy = -16.5; p.boost = true; p.ground = false; p.coyote = 0; puff(pd.x + pd.w / 2, pd.y, 12, '#ff5fa2'); }
-  let dead = p.y > 760; for (const sp of spikes) if (touching(p, { x: sp.x + 5, y: sp.y + 4, w: sp.w - 10, h: sp.h })) dead = true;
-  if (dead) { puff(p.x + PW / 2, Math.min(p.y, RH), 18, '#ff4040'); p.x = p.sx; p.y = p.sy; p.vy = 0; } // back to the last safe spot you stood on
-  else if (p.ground && !p.on.amp) { p.sx = clamp2(p.x, p.on.x + 4, p.on.x + p.on.w - PW - 4); p.sy = p.y; }
-  if (raceState === 'run' && p.x > finishX) { raceState = 'done'; puff(p.x, p.y, 40, '#ffd23f'); send({ type: 'race', act: 'finish' }); }
-  else if (raceState === 'free' && p.x > finishX + 120) { raceMsg = 'You reached the end of the practice course. Press Start race to race it for real'; p.x = p.sx = 40; p.y = p.sy = 360 - PH; p.vy = 0; } // practice: back to the start
-}
-function drawRace() {
-  const p = runner, cam = clamp2(p.x - RW * .4, -300, finishX + 340 - RW), now = Date.now(), g = rg, h = k => (hue + k) % 360, total = finishX - 40;
-  g.setTransform(2, 0, 0, 2, 0, 0); g.shadowBlur = 0;
-  const sky = g.createLinearGradient(0, 0, 0, RH); sky.addColorStop(0, 'hsl(' + hue + ',65%,13%)'); sky.addColorStop(1, 'hsl(' + h(50) + ',70%,32%)'); g.fillStyle = sky; g.fillRect(0, 0, RW, RH);
-  g.fillStyle = 'rgba(255,255,255,.7)'; for (let i = 0; i < 40; i++) g.fillRect(((i * 97 - cam * .05) % RW + RW) % RW, (i * 53) % 210, 1.5, 1.5); // stars
-  g.fillStyle = 'hsla(' + h(40) + ',90%,72%,.3)'; g.beginPath(); g.arc(RW * .75 - cam * .02, 110, 62, 0, 6.283); g.fill(); // a big pale sun
-  [[.15, 300, 60], [.35, 356, 40]].forEach(([par, base, amp], k) => { // two rows of hills that slide slower than the ground
-    g.fillStyle = 'hsl(' + h(200 + k * 20) + ',40%,' + (11 + k * 5) + '%)'; g.beginPath(); g.moveTo(0, RH);
-    for (let x = 0; x <= RW; x += 20) { const wx = x + cam * par; g.lineTo(x, base - Math.sin(wx * .006 + k) * amp - Math.sin(wx * .017 + k * 3) * amp * .4); }
-    g.lineTo(RW, RH); g.fill();
-  });
-  for (const b of level) {
-    if (b.x + b.w < cam || b.x > cam + RW) continue;
-    g.fillStyle = 'hsl(' + h(210) + ',30%,' + (b.amp ? 32 : 20) + '%)'; g.fillRect(b.x - cam, b.y, b.w, b.h);
-    g.fillStyle = b.amp ? '#ffd23f' : 'hsl(' + h(120) + ',85%,58%)'; g.fillRect(b.x - cam, b.y, b.w, 5); // moving platforms get a yellow top
-  }
-  g.shadowColor = '#ff5fa2'; g.shadowBlur = 14; g.fillStyle = '#ff5fa2'; for (const pd of pads) g.fillRect(pd.x - cam, pd.y, pd.w, 8); g.shadowBlur = 0;
-  g.fillStyle = '#ff4040'; for (const sp of spikes) { for (let k = 0; k < 2; k++) { g.beginPath(); g.moveTo(sp.x - cam + k * 13, sp.y + sp.h); g.lineTo(sp.x - cam + k * 13 + 6.5, sp.y); g.lineTo(sp.x - cam + k * 13 + 13, sp.y + sp.h); g.fill(); } }
-  g.fillStyle = '#fff'; g.fillRect(finishX - cam, 360 - 130, 4, 130); // finish pole and chequered flag
-  for (let i = 0; i < 12; i++) { g.fillStyle = (i + Math.floor(i / 4)) % 2 ? '#fff' : '#111'; g.fillRect(finishX - cam + 4 + (i % 4) * 13, 360 - 130 + Math.floor(i / 4) * 11, 13, 11); }
-  parts = parts.filter(q => { q.x += q.vx; q.y += q.vy; q.vy += .15; q.life -= .04; if (q.life <= 0) return false; g.fillStyle = q.col || 'rgba(255,255,255,' + q.life * .7 + ')'; g.globalAlpha = q.col ? q.life : 1; g.fillRect(q.x - cam, q.y, 3, 3); g.globalAlpha = 1; return true; });
-  const body = (x, y, col, face, name, glow) => { // a racer: a block with eyes and a name tag
-    if (glow) { g.shadowColor = col; g.shadowBlur = 16; } g.fillStyle = col; g.beginPath(); if (g.roundRect) g.roundRect(x - cam, y, PW, PH, 6); else g.rect(x - cam, y, PW, PH); g.fill(); g.shadowBlur = 0;
-    g.fillStyle = '#fff'; g.fillRect(x - cam + (face > 0 ? 11 : 3), y + 7, 4, 6); g.fillRect(x - cam + (face > 0 ? 17 : 9) - 2, y + 7, 4, 6);
-    g.font = '600 11px Manrope,sans-serif'; g.textAlign = 'center'; g.fillStyle = 'rgba(0,0,0,.55)'; const tw = g.measureText(name).width + 10; g.fillRect(x - cam + PW / 2 - tw / 2, y - 20, tw, 15);
-    g.fillStyle = '#fff'; g.fillText(name, x - cam + PW / 2, y - 9);
-  };
-  for (const id in racers) {
-    const o = racers[id]; if (now - o.t > 3000 || !people[id]) { delete racers[id]; continue; }
-    o.face = o.x > o.dx + .5 ? 1 : o.x < o.dx - .5 ? -1 : o.face || 1; o.dx += (o.x - o.dx) * .3; o.dy += (o.y - o.dy) * .3; // glide toward the last reported spot
-    body(o.dx, o.dy, 'rgba(255,255,255,.55)', o.face, people[id].name);
-  }
-  body(p.x, p.y, accHex, p.face, 'You', true);
-  g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(40, 14, RW - 80, 6); // progress bar: where everyone is along the course
-  for (const id in racers) { g.fillStyle = 'rgba(255,255,255,.8)'; g.fillRect(40 + clamp2(racers[id].x / total, 0, 1) * (RW - 80) - 2, 10, 4, 14); }
-  g.fillStyle = accHex; g.fillRect(40 + clamp2(p.x / total, 0, 1) * (RW - 80) - 3, 8, 6, 18);
-  g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = '700 44px Unbounded,sans-serif';
-  const left = raceAt - now, big = raceState === 'count' ? String(Math.max(1, Math.ceil(left / 1000))) : raceState === 'run' && left > -900 ? 'GO!' : '';
-  if (big) g.fillText(big, RW / 2, 130);
-  g.font = '600 14px Manrope,sans-serif';
-  if (raceState === 'run') g.fillText(((now - raceAt) / 1000).toFixed(1) + 's', RW / 2, 46);
-  if (raceMsg) g.fillText(raceMsg, RW / 2, 70);
-  if (raceState === 'free') { g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(RW / 2 - 250, RH - 44, 500, 28); g.fillStyle = '#fff'; g.fillText('Practice on the room\'s course. Press "Start race" for a new one with a countdown.', RW / 2, RH - 25); }
-}
-function raceLoop(t) {
-  if (!raceOpen) return;
-  requestAnimationFrame(raceLoop);
-  raceAcc += Math.min(100, t - (raceLast || t)); raceLast = t;
-  if (raceState === 'count' && Date.now() >= raceAt) raceState = 'run';
-  while (raceAcc >= 16.67) { raceStep(); raceAcc -= 16.67; }
-  if (t - raceSent > 80) { raceSent = t; send({ type: 'race', act: 'pos', x: runner.x, y: runner.y }); }
-  drawRace();
-}
-function setRace(open) {
-  if (open === raceOpen) return;
-  raceOpen = open;
-  if (open) {
-    setBoard(false); setShoot(false); setHang(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(raceEl); raceEl.classList.remove('hidden');
-    buildLevel(raceSeed || 1); raceState = 'free'; // a stand-in for a moment: the server answers the 'open' below with the course this room is really on raceLast = 0; raceAcc = 0; requestAnimationFrame(raceLoop); send({ type: 'race', act: 'open', on: true });
-  } else { raceEl.classList.add('hidden'); for (const k in held) held[k] = false; send({ type: 'race', act: 'open', on: false }); }
-  layout();
-}
-function raceQuit() { // leaving the room closes both stage games
-  raceOpen = shootOpen = false; raceLive = shLive = false; hangQuit(); raceEl.classList.add('hidden'); shEl.classList.add('hidden'); $('joinBar').classList.add('hidden');
-  racers = {}; raceAt = 0; raceMsg = ''; raceState = 'free'; foes = {}; shots = []; shScore = {}; shMsg = '';
-}
-function onRaceStart(m) {
-  raceSeed = m.seed; raceAt = Date.now() + m.wait; raceMsg = ''; raceLive = true;
-  if (raceOpen) { buildLevel(raceSeed); raceState = 'count'; } else invite(m.by + ' started a platformer race', () => setRace(true));
-}
-$('raceGo').onclick = () => { if (raceLive && Date.now() - raceAt < 120000) return toast('A race is already running. Wait for it to finish'); send({ type: 'race', act: 'start' }); }; $('raceX').onclick = () => setRace(false);
-document.querySelectorAll('.rtouch button').forEach(b => { // on-screen buttons for phones
-  b.dataset.sfx = 'none';
-  b.addEventListener('pointerdown', e => { e.preventDefault(); held[b.dataset.k] = true; });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, () => { held[b.dataset.k] = false; }));
-});
 
 /* ---------- shooter arena: top-down, WASD and mouse. You move yourself and report when your bullets land; the server keeps everyone's health ---------- */
 const shEl = $('shoot'), scv = $('scv'), sg = scv.getContext('2d'), PR = 13, CELL = 50, aim = { x: RW / 2, y: RH / 2, down: false };
@@ -2283,7 +2211,7 @@ function setShoot(open) {
   if (open === shootOpen) return;
   shootOpen = open;
   if (open) {
-    setBoard(false); setRace(false); setHang(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(shEl); shEl.classList.remove('hidden');
+    setBoard(false); setHang(false); setMaze(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(shEl); shEl.classList.remove('hidden');
     buildArena(shSeed); spawnHero(); shots = []; sparks = []; shLast = 0; shAcc = 0; requestAnimationFrame(shootLoop); send({ type: 'shoot', act: 'open', on: true }); // the server answers with the room's real map
   } else { shEl.classList.add('hidden'); aim.down = false; for (const k in held) held[k] = false; send({ type: 'shoot', act: 'open', on: false }); }
   layout();
@@ -2297,12 +2225,16 @@ scv.addEventListener('pointermove', aimAt);
 scv.addEventListener('pointerdown', e => { scv.setPointerCapture(e.pointerId); aimAt(e); aim.down = true; });
 ['pointerup', 'pointercancel'].forEach(ev => scv.addEventListener(ev, () => { aim.down = false; }));
 scv.addEventListener('wheel', e => { e.preventDefault(); const ks = Object.keys(GUNS); setGun(ks[(ks.indexOf(gun) + (e.deltaY > 0 ? 1 : ks.length - 1)) % ks.length]); }, { passive: false }); // the wheel swaps guns too
-$('shootGo').onclick = () => send({ type: 'shoot', act: 'start' }); // the server refuses if a match is still being played $('shootX').onclick = () => setShoot(false);
+$('shootGo').onclick = () => send({ type: 'shoot', act: 'start' }); // the server refuses if a match is still being played
+$('shootX').onclick = () => setShoot(false);
 
-/* ---------- 3D hangout: a small park, with a parkour course, that everyone in the room can walk around in together. Drawn with three.js, which is only downloaded the first time someone opens it ---------- */
-const hgEl = $('hang'), hcv = $('hcv'), hk = {}; // hk: which keys are down, by physical key
+/* ---------- 3D hangout: a small park, with a parkour course and a sword arena, that everyone in the room can walk around in together. Drawn with three.js, which is only downloaded the first time someone opens it ---------- */
+const hgEl = $('hang'), hcv = $('hcv'), hk = {}; // hk: which keys are down, by physical key (shared with the horror maze)
 let H = null, mates = {}, roomId = 0, hangLast = 0, hangSent = 0, hangCols = [], hangBoxes = []; // H: the scene, camera, renderer and your own figure
 // hangCols: round things you cannot walk through, as [x, z, radius, height]. hangBoxes: blocks you can stand on or bump into, as { x, z, hw, hd, top, bot }
+const ARENA = { x: -22, z: -14, r: 6.5 }, inArena = p => Math.hypot(p.x - ARENA.x, p.z - ARENA.z) < ARENA.r; // the sword arena: you hold a sword while you are inside it
+const turnTo = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * Math.min(1, k); // turn angle a part of the way to b, the short way round
+const keysOff = () => { for (const k in hk) hk[k] = false; }; // a key can stay "down" if its release is never seen (you clicked away, or the tab lost focus); this is called whenever that can happen
 const loadThree = () => (window.THREE ? Promise.resolve() : new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); }));
 function hangLabel(text, bubble) { // a name tag or speech bubble: text drawn on a small canvas and shown as a sprite that always faces the camera
   const T = THREE, c = document.createElement('canvas'), g = c.getContext('2d'); c.width = 512; c.height = 96;
@@ -2311,17 +2243,21 @@ function hangLabel(text, bubble) { // a name tag or speech bubble: text drawn on
   g.fillStyle = bubble ? '#111' : '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 256, 50, 470);
   const sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(c), depthTest: false })); sp.scale.set(4.2, .8, 1); sp.renderOrder = 5; return sp;
 }
-function hangFigure(color, name) { // a blocky person: legs and arms hang from pivots so they can swing
+function hangFigure(color, name) { // a blocky person: legs and arms hang from pivots so they can swing, and the right hand has a sword that only shows in the arena
   const T = THREE, g = new T.Group(), mat = col => new T.MeshLambertMaterial({ color: col }), box = (w, h, d, col) => new T.Mesh(new T.BoxGeometry(w, h, d), mat(col));
   const limb = (w, h, d, col, x, y) => { const p = new T.Group(), m = box(w, h, d, col); m.position.y = -h / 2; p.add(m); p.position.set(x, y, 0); g.add(p); return p; };
   const body = box(.7, .85, .42, color), head = box(.56, .56, .56, 0xffd7b0), tag = hangLabel(name); body.position.y = 1.02; head.position.y = 1.75; tag.position.y = 2.55; g.add(body, head, tag);
   [-.14, .14].forEach(x => { const eye = box(.09, .12, .04, 0x1a1a1a); eye.position.set(x, 1.8, .29); g.add(eye); });
-  g.userData = { legs: [limb(.3, .6, .32, 0x333a4d, -.18, .6), limb(.3, .6, .32, 0x333a4d, .18, .6)], arms: [limb(.22, .75, .26, color, -.47, 1.42), limb(.22, .75, .26, color, .47, 1.42)], bubble: null, phase: 0 };
+  const legs = [limb(.3, .6, .32, 0x333a4d, -.18, .6), limb(.3, .6, .32, 0x333a4d, .18, .6)], arms = [limb(.22, .75, .26, color, -.47, 1.42), limb(.22, .75, .26, color, .47, 1.42)];
+  const sword = new T.Group(), blade = box(.07, 1.15, .05, 0xdfe6f0), guard = box(.32, .07, .09, 0x8a5a33); blade.position.y = -.62; sword.add(blade, guard); sword.position.y = -.72; sword.rotation.x = -Math.PI / 2; sword.visible = false; arms[1].add(sword);
+  g.userData = { legs, arms, sword, bubble: null, phase: 0 };
   return g;
 }
-function hangPose(g, moving, dancing, dt) { // swing the limbs when walking, wave the arms when dancing
+function hangPose(g, moving, dancing, dt, armed, swing) { // swing the limbs when walking, wave the arms when dancing; armed: holding the sword up; swing: 0 to 1 through a sword swing, or -1
   const u = g.userData; u.phase += dt * (moving ? 10 : 0); const sw = moving ? Math.sin(u.phase) * .7 : 0;
-  u.legs[0].rotation.x = sw; u.legs[1].rotation.x = -sw; u.arms[0].rotation.x = dancing ? Math.PI + Math.sin(performance.now() / 90) * .5 : -sw; u.arms[1].rotation.x = dancing ? Math.PI - Math.sin(performance.now() / 90) * .5 : sw;
+  u.legs[0].rotation.x = sw; u.legs[1].rotation.x = -sw; u.arms[0].rotation.x = dancing ? Math.PI + Math.sin(performance.now() / 90) * .5 : -sw;
+  u.sword.visible = !!armed;
+  u.arms[1].rotation.x = armed ? (swing >= 0 ? -2.5 + swing * 2.3 : -1) : dancing ? Math.PI - Math.sin(performance.now() / 90) * .5 : sw; // a swing brings the arm from overhead down to the front
 }
 function hangInit() {
   const T = THREE, scene = new T.Scene(), cam = new T.PerspectiveCamera(60, 16 / 9, .1, 160), ren = new T.WebGLRenderer({ canvas: hcv, antialias: true, powerPreference: 'high-performance' }), rnd = seeded(roomId * 7919 + 13);
@@ -2339,6 +2275,10 @@ function hangInit() {
     [-.9, 0, .9].forEach(k => hangCols.push([bx - Math.sin(a) * k, bz + Math.cos(a) * k, .5, .45]));
   }
   for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2, x = Math.cos(a) * 9.5, z = Math.sin(a) * 9.5; put(new T.CylinderGeometry(.08, .1, 3.2, 6), 0x2b2f3a, x, 1.6, z); put(new T.SphereGeometry(.28, 10, 8), 0xfff3b0, x, 3.3, z, true); hangCols.push([x, z, .2, 9]); } // lamp posts
+  // sword arena: a red sand ring with posts. Walk in and you are holding a sword; F or a click swings it
+  put(new T.CircleGeometry(ARENA.r, 36), 0xb9603a, ARENA.x, .03, ARENA.z).rotation.x = -Math.PI / 2; put(new T.RingGeometry(ARENA.r - .25, ARENA.r, 36), 0xf3e2c0, ARENA.x, .04, ARENA.z).rotation.x = -Math.PI / 2;
+  for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5; put(new T.CylinderGeometry(.12, .14, 1.4, 6), 0x5c3b22, ARENA.x + Math.cos(a) * (ARENA.r + .3), .7, ARENA.z + Math.sin(a) * (ARENA.r + .3)); }
+  const sign2 = hangLabel('Sword arena'); sign2.position.set(ARENA.x, 3.2, ARENA.z); scene.add(sign2);
   // parkour course: floating platforms that climb away from the park. Step on the first to start the clock, reach the gold one to stop it
   let cx = 22, cz = 8, top = .6, dir = .5; const plats = [];
   for (let i = 0; i < 20; i++) {
@@ -2352,7 +2292,7 @@ function hangInit() {
   const trees = [], rocks = []; // trees and rocks are placed by the room's number, so everyone in the room sees the same park
   for (let i = 0; i < 60; i++) {
     const a = rnd() * 6.283, d = 12 + rnd() * 44, x = Math.cos(a) * d, z = Math.sin(a) * d, s = .8 + rnd() * .9, tree = rnd() < .78;
-    if (Math.hypot(x + 15, z - 11) < 7 || (x > 7 && x < 17 && z > -14 && z < -6) || Math.hypot(x - 34, z - 22) < 21) continue; // not in the pond, on the stage or in the course
+    if (Math.hypot(x + 15, z - 11) < 7 || (x > 7 && x < 17 && z > -14 && z < -6) || Math.hypot(x - 34, z - 22) < 21 || Math.hypot(x - ARENA.x, z - ARENA.z) < ARENA.r + 3) continue; // not in the pond, on the stage, in the course or in the arena
     (tree ? trees : rocks).push({ x, z, s }); hangCols.push(tree ? [x, z, .4 * s, 9] : [x, z, .6 * s, .7 * s]);
   }
   const many = (geo, col, list, y) => { // one draw call for all trunks, one for all tree tops, and so on: this is what keeps the frame rate up
@@ -2362,7 +2302,7 @@ function hangInit() {
   many(new T.CylinderGeometry(.22, .3, 1.6, 6), 0x6b4a2b, trees, .8); many(new T.ConeGeometry(1.5, 2.6, 7), 0x2f7d3b, trees, 2.7); many(new T.ConeGeometry(1.1, 2, 7), 0x3c9447, trees, 3.9); many(new T.IcosahedronGeometry(.7, 0), 0x8b8f98, rocks, .35);
   scene.traverse(o => { o.matrixAutoUpdate = false; o.updateMatrix(); }); // nothing above ever moves, so its position is worked out once
   const fire = put(new T.ConeGeometry(.5, 1.3, 7), 0xff8a2a, 0, .8, 0, true), me = hangFigure(new T.Color(accHex), 'You'); me.position.set(4 + rnd() * 2, 0, 9 + rnd() * 2); scene.add(me);
-  H = { scene, cam, ren, me, fire, plats, yaw: 0, pitch: .32, dist: 7.5, vy: 0, dance: 0, w: 0, h: 0, pr, n: 0, acc: 0, fps: 60, on: -1, t0: 0 };
+  H = { scene, cam, ren, me, fire, plats, yaw: 0, pitch: .32, yawT: 0, pitchT: .32, dist: 7.5, vy: 0, dance: 0, w: 0, h: 0, pr, n: 0, acc: 0, fps: 60, on: -1, t0: 0, face: 0, swingAt: -9999, hp: 3, kx: 0, kz: 0, wasIn: false };
 }
 function hangCollide(p) { // push your figure back out of anything solid
   for (const c of hangCols) { if (p.y > c[3]) continue; const dx = p.x - c[0], dz = p.z - c[1], d = Math.hypot(dx, dz), min = c[2] + .35; if (d < min && d > .0001) { p.x = c[0] + dx / d * min; p.z = c[1] + dz / d * min; } }
@@ -2382,6 +2322,17 @@ function hangSay(name, text) { // a chat message from someone in the park floats
   if (g.userData.bubble) g.remove(g.userData.bubble); const b = hangLabel(text.length > 34 ? text.slice(0, 33) + '…' : text, true); b.position.y = 3.35; g.add(b); g.userData.bubble = b;
   setTimeout(() => { if (g.userData.bubble === b) { g.remove(b); g.userData.bubble = null; } }, 5000);
 }
+function hangSwing(t) { // swing the sword: anyone in the arena within reach and in front of you is hit
+  if (!H || !inArena(H.me.position) || t - H.swingAt < 500) return;
+  H.swingAt = t; if (sfxOn) try { hiss(.12, .12, 0, 2500); } catch {}
+  for (const id in mates) { const o = mates[id], p = H.me.position, dx = o.x - p.x, dz = o.z - p.z; if (inArena(o) && Math.hypot(dx, dz) < 2.7 && Math.abs(Math.atan2(Math.sin(Math.atan2(dx, dz) - H.me.rotation.y), Math.cos(Math.atan2(dx, dz) - H.me.rotation.y))) < 1.1) send({ type: 'hang', act: 'hit', to: +id }); }
+}
+function onHangHit(m) { // someone's sword reached you: lose a heart and get knocked back; at no hearts you are thrown out of the arena
+  if (!H || !hangOpen || !inArena(H.me.position)) return;
+  const p = H.me.position, o = mates[m.by], dx = o ? p.x - o.x : 1, dz = o ? p.z - o.z : 0, d = Math.hypot(dx, dz) || 1;
+  H.hp--; H.kx = dx / d * 9; H.kz = dz / d * 9; H.vy = 4.5; tone(180, .12, 'sawtooth', .08, .5);
+  if (H.hp <= 0) { send({ type: 'hang', act: 'ko', by: m.by }); p.set(ARENA.x + ARENA.r + 2.5, 0, ARENA.z); H.kx = H.kz = 0; H.hp = 3; toast('You were knocked out of the arena'); }
+}
 function hangLoop(t) {
   if (!hangOpen || !H) return;
   requestAnimationFrame(hangLoop);
@@ -2391,11 +2342,15 @@ function hangLoop(t) {
     H.fps = Math.round(H.n / H.acc); H.n = 0; H.acc = 0;
     if (H.fps < 40 && H.pr > .55) { H.pr -= .25; H.ren.setPixelRatio(H.pr); H.w = 0; }
   }
-  const fwd = (hk.KeyW || hk.ArrowUp ? 1 : 0) - (hk.KeyS || hk.ArrowDown ? 1 : 0), side = (hk.KeyD || hk.ArrowRight ? 1 : 0) - (hk.KeyA || hk.ArrowLeft ? 1 : 0), moving = !!(fwd || side), dancing = t < H.dance;
+  if (document.hasFocus && !document.hasFocus()) keysOff(); // the page is not being typed into right now, so no key can really be held
+  H.yaw += (H.yawT - H.yaw) * Math.min(1, dt * 14); H.pitch += (H.pitchT - H.pitch) * Math.min(1, dt * 14); // the camera eases to where you dragged it
+  const fwd = (hk.KeyW || hk.ArrowUp ? 1 : 0) - (hk.KeyS || hk.ArrowDown ? 1 : 0), side = (hk.KeyD || hk.ArrowRight ? 1 : 0) - (hk.KeyA || hk.ArrowLeft ? 1 : 0), moving = !!(fwd || side), dancing = t < H.dance, armed = inArena(p);
   if (moving) { // W walks away from the camera, A and D step sideways
     const mx = -Math.sin(H.yaw) * fwd + Math.cos(H.yaw) * side, mz = -Math.cos(H.yaw) * fwd - Math.sin(H.yaw) * side, len = Math.hypot(mx, mz) || 1;
-    p.x = clamp2(p.x + mx / len * 5.5 * dt, -58, 58); p.z = clamp2(p.z + mz / len * 5.5 * dt, -58, 58); me.rotation.y = Math.atan2(mx, mz);
-  } else if (dancing) me.rotation.y += dt * 7;
+    p.x += mx / len * 5.5 * dt; p.z += mz / len * 5.5 * dt; H.face = Math.atan2(mx, mz);
+  }
+  if (dancing && !moving) me.rotation.y += dt * 7; else me.rotation.y = turnTo(me.rotation.y, H.face, dt * 12); // turn smoothly toward the way you are walking
+  p.x = clamp2(p.x + H.kx * dt, -58, 58); p.z = clamp2(p.z + H.kz * dt, -58, 58); H.kx *= Math.max(0, 1 - dt * 5); H.kz *= Math.max(0, 1 - dt * 5); // knock-back from a sword hit, fading out
   hangCollide(p);
   let floor = hangFloor(p);
   if (hk.Space && p.y <= floor + .001) H.vy = 6.5;
@@ -2403,134 +2358,179 @@ function hangLoop(t) {
   if (H.on === 0 && p.y === floor) H.t0 = t; // standing on the first platform: the clock starts when you leave it
   else if (H.on === 19 && H.t0 && t - H.t0 > 0) { send({ type: 'hang', act: 'goal', ms: Math.round(t - H.t0) }); toast('Parkour finished in ' + ((t - H.t0) / 1000).toFixed(1) + 's!'); H.t0 = 0; }
   if (hk.KeyR) { p.set(19.5, 0, 6.5); H.vy = 0; H.t0 = 0; } // R: back to the start of the course
-  hangPose(me, moving, dancing, dt);
+  if (armed && !H.wasIn) H.hp = 3; H.wasIn = armed; // fresh hearts each time you walk into the arena
+  if (hk.KeyF) hangSwing(t);
+  const swing = t - H.swingAt < 260 ? (t - H.swingAt) / 260 : -1;
+  hangPose(me, moving, dancing, dt, armed, swing);
   for (const id in mates) { // everyone else glides toward the last spot they reported
     const o = mates[id], g = o.g; if (Date.now() - o.t > 4000 || !people[id]) { H.scene.remove(g); delete mates[id]; continue; }
     const far = Math.hypot(o.x - g.position.x, o.z - g.position.z); g.position.x += (o.x - g.position.x) * .2; g.position.y += (o.y - g.position.y) * .3; g.position.z += (o.z - g.position.z) * .2;
-    if (o.e) g.rotation.y += dt * 7; else g.rotation.y = o.r; hangPose(g, far > .06, !!o.e, dt);
+    if (o.e) g.rotation.y += dt * 7; else g.rotation.y = turnTo(g.rotation.y, o.r, dt * 10);
+    hangPose(g, far > .06, !!o.e, dt, inArena(o), o.s ? Math.min(1, (Date.now() - o.sAt) / 260) : -1);
   }
   H.fire.scale.y = 1 + Math.sin(t / 70) * .18; H.fire.rotation.y += dt * 3;
   const cp = Math.cos(H.pitch) * H.dist; H.cam.position.set(p.x + Math.sin(H.yaw) * cp, p.y + 1.6 + Math.sin(H.pitch) * H.dist, p.z + Math.cos(H.yaw) * cp); H.cam.lookAt(p.x, p.y + 1.5, p.z);
   if (t - hangSent > 100) { // ten times a second: tell the others where you are, and refresh the little readout
-    hangSent = t; send({ type: 'hang', act: 'pos', x: p.x, y: p.y, z: p.z, r: me.rotation.y, e: dancing ? 1 : 0 });
-    $('hangHud').textContent = (H.t0 && H.on !== 0 ? 'Parkour ' + ((t - H.t0) / 1000).toFixed(1) + 's · ' : '') + H.fps + ' fps';
+    hangSent = t; send({ type: 'hang', act: 'pos', x: p.x, y: p.y, z: p.z, r: me.rotation.y, e: dancing ? 1 : 0, s: swing >= 0 ? 1 : 0 });
+    $('hangHud').textContent = (armed ? '♥'.repeat(H.hp) + ' · F or click to swing · ' : '') + (H.t0 && H.on !== 0 ? 'Parkour ' + ((t - H.t0) / 1000).toFixed(1) + 's · ' : '') + H.fps + ' fps';
   }
   H.ren.render(H.scene, H.cam);
 }
 function onHangPos(m) {
   if (!H || !hangOpen || !people[m.id]) return;
-  let o = mates[m.id]; if (!o) { o = mates[m.id] = { g: hangFigure(new THREE.Color().setHSL((m.id * 67 % 360) / 360, .7, .55), people[m.id].name) }; o.g.position.set(m.x, m.y, m.z); H.scene.add(o.g); }
-  o.x = m.x; o.y = m.y; o.z = m.z; o.r = m.r; o.e = m.e; o.t = Date.now();
+  let o = mates[m.id]; if (!o) { o = mates[m.id] = { g: hangFigure(new THREE.Color().setHSL((m.id * 67 % 360) / 360, .7, .55), people[m.id].name), sAt: 0 }; o.g.position.set(m.x, m.y, m.z); H.scene.add(o.g); }
+  if (m.s && !o.s) o.sAt = Date.now(); // a swing just started
+  o.x = m.x; o.y = m.y; o.z = m.z; o.r = m.r; o.e = m.e; o.s = m.s; o.t = Date.now();
 }
 function setHang(open) {
   if (open === hangOpen) return;
-  hangOpen = open;
+  hangOpen = open; keysOff();
   if (open) {
-    setBoard(false); setRace(false); setShoot(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(hgEl); hgEl.classList.remove('hidden'); layout();
+    setBoard(false); setShoot(false); setMaze(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(hgEl); hgEl.classList.remove('hidden'); layout();
     loadThree().then(() => { if (!hangOpen) return; if (!H) hangInit(); hangLast = 0; requestAnimationFrame(hangLoop); send({ type: 'hang', act: 'open', on: true }); },
       () => { toast('The 3D hangout could not load. Check your connection and try again'); setHang(false); });
-  } else { hgEl.classList.add('hidden'); for (const k in hk) hk[k] = false; send({ type: 'hang', act: 'open', on: false }); layout(); }
+  } else { hgEl.classList.add('hidden'); send({ type: 'hang', act: 'open', on: false }); layout(); }
 }
 function hangQuit() { hangOpen = false; hgEl.classList.add('hidden'); mates = {}; if (H) { H.ren.dispose(); H = null; } } // leaving the room: the next room gets its own park
-addEventListener('keydown', e => { if (!hangOpen || typing(e) || e.ctrlKey || e.metaKey || e.altKey) return; hk[e.code] = true; if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault(); if (e.code === 'KeyE' && H) H.dance = performance.now() + 3000; });
-addEventListener('keyup', e => { hk[e.code] = false; });
-let hangDrag = null; // dragging on the picture turns the camera; the wheel zooms
-hcv.addEventListener('pointerdown', e => { hcv.setPointerCapture(e.pointerId); hangDrag = [e.clientX, e.clientY]; });
-hcv.addEventListener('pointermove', e => { if (!hangDrag || !H) return; H.yaw -= (e.clientX - hangDrag[0]) * .006; H.pitch = clamp2(H.pitch + (e.clientY - hangDrag[1]) * .005, .05, 1.25); hangDrag = [e.clientX, e.clientY]; });
-['pointerup', 'pointercancel'].forEach(ev => hcv.addEventListener(ev, () => { hangDrag = null; }));
+addEventListener('keydown', e => { // movement keys for the hangout and the maze
+  if (!(hangOpen || mazeOpen)) return;
+  if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return keysOff(); // typing in chat, or a browser shortcut: let go of everything
+  hk[e.code] = true; if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+  if (e.code === 'KeyE' && H && hangOpen) H.dance = performance.now() + 3000;
+});
+addEventListener('keyup', e => { hk[e.code] = false; if (e.key === 'Meta' || e.key === 'Control' || e.key === 'Alt') keysOff(); });
+addEventListener('blur', keysOff); document.addEventListener('visibilitychange', keysOff); document.addEventListener('focusin', e => { if (typing(e)) keysOff(); });
+let hangDrag = null; // dragging on the picture turns the camera; the wheel zooms; a click without dragging swings the sword
+hcv.addEventListener('pointerdown', e => { hcv.setPointerCapture(e.pointerId); hangDrag = [e.clientX, e.clientY, 0]; });
+hcv.addEventListener('pointermove', e => { if (!hangDrag || !H) return; hangDrag[2] += Math.abs(e.clientX - hangDrag[0]) + Math.abs(e.clientY - hangDrag[1]); H.yawT -= (e.clientX - hangDrag[0]) * .006; H.pitchT = clamp2(H.pitchT + (e.clientY - hangDrag[1]) * .005, .05, 1.25); hangDrag[0] = e.clientX; hangDrag[1] = e.clientY; });
+hcv.addEventListener('pointerup', () => { if (hangDrag && hangDrag[2] < 6) hangSwing(performance.now()); hangDrag = null; });
+hcv.addEventListener('pointercancel', () => { hangDrag = null; });
 hcv.addEventListener('wheel', e => { e.preventDefault(); if (H) H.dist = clamp2(H.dist + (e.deltaY > 0 ? 1 : -1), 3, 16); }, { passive: false });
 $('hangX').onclick = () => setHang(false);
 
-/* ---------- moderation panel (moderators only): blocked accounts, and a quick way to open any profile ---------- */
-function report(kind, what) { // a post, a comment or a person; it goes to the moderators' Moderation tab
-  const why = prompt('What is wrong? You can leave this empty.'); if (why === null) return;
-  send({ type: 'report', kind, why, ...what });
+/* ---------- horror maze: its own game. First person, dark, one flashlight each. Find the 5 keys and reach the door before the thing in the maze reaches you ---------- */
+// The server keeps the round (the maze's seed, keys found, who was caught). One player's browser, the "host", moves the monster and the server passes that on to the rest.
+const mzEl = $('maze'), mcv = $('mcv'), mmap = $('mmap'), mmg = mmap.getContext('2d'), MT = 2, MN = 21, MKEYS = 5; // MT: metres per tile; MN: tiles along each side
+let Z = null, mzGrid = [], mzKeys = [], mzExit = null, mzRound = null, mzMates = {}, mzLast = 0, mzSent = 0, mzDrone = null, mzDrag = null;
+const mzTile = v => Math.floor(v / MT), mzMid = c => (c + .5) * MT;
+const mzWall = (x, z) => { const c = mzTile(x), r = mzTile(z); return c < 0 || r < 0 || c >= MN || r >= MN || mzGrid[r][c] === 1; };
+const mzFree = (x, z, rad) => !mzWall(x - rad, z - rad) && !mzWall(x + rad, z - rad) && !mzWall(x - rad, z + rad) && !mzWall(x + rad, z + rad);
+function mzBuild(seed) { // carve a maze out of a grid of solid tiles, then open extra gaps so there is more than one way round
+  const rnd = seeded(seed || 1), g = Array.from({ length: MN }, () => Array(MN).fill(1)), stack = [[1, 1]], cells = []; g[1][1] = 0;
+  while (stack.length) {
+    const [c, r] = stack[stack.length - 1], next = [[2, 0], [-2, 0], [0, 2], [0, -2]].filter(([dc, dr]) => c + dc > 0 && r + dr > 0 && c + dc < MN - 1 && r + dr < MN - 1 && g[r + dr][c + dc]);
+    if (!next.length) { stack.pop(); continue; }
+    const [dc, dr] = next[Math.floor(rnd() * next.length)]; g[r + dr / 2][c + dc / 2] = 0; g[r + dr][c + dc] = 0; stack.push([c + dc, r + dr]);
+  }
+  for (let i = 0; i < 60; i++) { const c = 1 + Math.floor(rnd() * (MN - 2)), r = 1 + Math.floor(rnd() * (MN - 2)); if (g[r][c] && c % 2 !== r % 2) g[r][c] = 0; } // loops: a dead end is where it gets you
+  for (let r = 1; r < MN; r += 2) for (let c = 1; c < MN; c += 2) if (c + r > 10 && c + r < 2 * MN - 6) cells.push([c, r, rnd()]);
+  cells.sort((a, b) => a[2] - b[2]); mzGrid = g;
+  mzKeys = cells.slice(0, MKEYS).map(([c, r]) => ({ x: mzMid(c), z: mzMid(r) })); mzExit = { x: mzMid(MN - 2), z: mzMid(MN - 2) }; // keys in random cells away from the start; the door in the far corner
 }
-const closeMod = () => $('modDlg').classList.add('hidden');
-function drawMod(m) {
-  const box = $('modList'); box.innerHTML = ''; $('modInfo').textContent = m.accounts + ' accounts exist. Open a profile to reset a name, clear a bio, block or delete. Posts and comments have their own Delete buttons.';
-  if (!m.users.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'Nobody is blocked.'; box.appendChild(p); }
-  const rp = $('modReports'); rp.innerHTML = ''; // reports sent in by users, newest first
-  m.reports = m.reports || []; m.flags = m.flags || []; // an older server may not send these
-  if (!m.reports.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'No reports waiting.'; rp.appendChild(p); }
-  m.reports.forEach(x => {
-    const r = document.createElement('div'), act = (text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = text; b.onclick = fn; r.appendChild(b); };
-    r.className = 'frow'; r.innerHTML = '<div class="frn"><b></b><small></small></div>';
-    r.querySelector('b').textContent = (x.kind === 'user' ? 'Reported person: @' + x.u : (x.kind === 'post' ? 'Post' : 'Comment') + ' by @' + x.u + ': ' + x.text) + (x.why ? ' (' + x.why + ')' : '');
-    r.querySelector('small').textContent = 'reported by @' + x.by + (x.where ? ' in ' + x.where : '') + ' · ' + when(x.t);
-    act('Profile', () => { closeMod(); openProfile(x.u); });
-    if (x.pid) act(x.cid ? 'Delete comment' : 'Delete post', () => { send({ type: 'post-del', id: x.pid, cid: x.cid || undefined }); send({ type: 'report-done', id: x.id }); setTimeout(() => send({ type: 'mod-list' }), 300); });
-    act('Dismiss', () => { send({ type: 'report-done', id: x.id }); setTimeout(() => send({ type: 'mod-list' }), 300); });
-    rp.appendChild(r);
-  });
-  const fl = $('modFlags'); fl.innerHTML = ''; // what the text filter stopped, and who sent it; click one to open their profile
-  if (!m.flags.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = m.checking ? 'Nothing blocked yet. Filter level ' + m.level + ' of 3.' : 'The filter is off: OPENAI_API_KEY is not set in Render.'; fl.appendChild(p); }
-  m.flags.forEach(x => {
-    const r = document.createElement('div'); r.className = 'frow'; r.innerHTML = '<div class="frn"><b></b><small></small></div>';
-    r.querySelector('b').textContent = x.text || '(text not kept)'; r.querySelector('small').textContent = '@' + x.u + ' · ' + x.where + ' · ' + x.why + ' · ' + when(x.t);
-    if (x.u) r.onclick = () => { closeMod(); openProfile(x.u); }; fl.appendChild(r);
-  });
-  m.users.forEach(u => {
-    const r = document.createElement('div'), b = document.createElement('button'); r.className = 'frow'; b.type = 'button'; b.className = 'ghost'; b.textContent = 'Unblock';
-    r.innerHTML = '<div class="pav"></div><div class="frn"><b></b><small></small></div>'; r.querySelector('.pav').textContent = (u.name[0] || '?').toUpperCase();
-    r.querySelector('b').textContent = u.name; r.querySelector('small').textContent = '@' + u.code + ' · ' + u.devices + (u.devices === 1 ? ' device' : ' devices') + ' blocked';
-    b.onclick = () => { send({ type: 'mod', act: 'unblock', user: u.code }); setTimeout(() => send({ type: 'mod-list' }), 300); }; r.appendChild(b); box.appendChild(r);
-  });
+function mzPath(fc, fr, tc, tr) { // the next tile on the shortest way from one tile to another, or null
+  if (fc === tc && fr === tr) return null;
+  const seen = new Map([[tc + ',' + tr, null]]), todo = [[tc, tr]]; // searched backwards from the target, so the answer for the start tile is the step to take
+  for (let i = 0; i < todo.length; i++) {
+    const [c, r] = todo[i];
+    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nc = c + dc, nr = r + dr, k = nc + ',' + nr; if (nc < 0 || nr < 0 || nc >= MN || nr >= MN || mzGrid[nr][nc] === 1 || seen.has(k)) continue; seen.set(k, [c, r]); if (nc === fc && nr === fr) return [c, r]; todo.push([nc, nr]); }
+  }
+  return null;
 }
-$('openMod').onclick = () => { $('openMod').classList.remove('has-new'); $('modDlg').classList.remove('hidden'); send({ type: 'mod-list' }); };
-$('modDone').onclick = closeMod; $('modDlg').onclick = e => { if (e.target === $('modDlg')) closeMod(); };
-$('modFind').onsubmit = e => { e.preventDefault(); const u = $('modUser').value.trim().toLowerCase().replace(/^@/, ''); if (u) { closeMod(); openProfile(u); } };
-
-/* ---------- your own font and background image: saved in this browser, only you see them ---------- */
-const FONTS = { Manrope: 'Manrope', Rounded: 'Nunito', Comic: '"Comic Neue"', Typewriter: '"Space Mono"', Serif: 'Georgia', 'Your device font': 'system-ui' };
-function setFont(k) { if (!FONTS[k]) k = 'Manrope'; document.documentElement.style.setProperty('--font', FONTS[k]); $('selFont').value = k; try { localStorage.setItem('font', k); } catch {} }
-Object.keys(FONTS).forEach(k => $('selFont').add(new Option(k, k))); $('selFont').onchange = () => setFont($('selFont').value); setFont(localStorage.getItem('font'));
-function setBg(data) { $('bgimg').style.backgroundImage = data ? 'url("' + data + '")' : ''; $('bgimg').classList.toggle('on', !!data); }
-function setBgDim(v) { v = clamp2(+v || 0, 0, 90); document.documentElement.style.setProperty('--bgdim', v / 100); $('bgDim').value = v; }
-$('bgPick').onclick = () => $('bgFile').click();
-$('bgClear').onclick = () => { setBg(''); try { localStorage.removeItem('bgimg'); } catch {} };
-$('bgDim').oninput = () => { setBgDim($('bgDim').value); try { localStorage.setItem('bgdim', $('bgDim').value); } catch {} };
-$('bgFile').onchange = e => {
-  const file = e.target.files[0], img = new Image(); e.target.value = ''; if (!file) return;
-  img.onload = () => { // shrink it so it fits in the browser's storage
-    const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(img.src); const data = c.toDataURL('image/jpeg', .8);
-    setBg(data); try { localStorage.setItem('bgimg', data); } catch { toast('That image is too big to keep after a refresh'); }
-  };
-  img.onerror = () => toast('That file is not a usable image'); img.src = URL.createObjectURL(file);
-};
-setBg(localStorage.getItem('bgimg') || ''); setBgDim(localStorage.getItem('bgdim') === null ? 55 : localStorage.getItem('bgdim'));
-
-function toast(t) {
-  const old = $('toast'); if (old) old.remove();
-  const d = document.createElement('div'); d.id = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 4000);
+function mzSees(ax, az, bx, bz) { const d = Math.hypot(bx - ax, bz - az), n = Math.ceil(d / .5); for (let i = 1; i < n; i++) if (mzWall(ax + (bx - ax) * i / n, az + (bz - az) * i / n)) return false; return true; } // nothing but air between two points
+function mzThing() { // the monster: far too tall, far too thin, and its eyes do not fade in the dark
+  const T = THREE, g = new T.Group(), dark = new T.MeshLambertMaterial({ color: 0x0b0b0d }), glow = new T.MeshBasicMaterial({ color: 0xffffff, fog: false }), box = (w, h, d, m, x, y, z) => { const b = new T.Mesh(new T.BoxGeometry(w, h, d), m); b.position.set(x, y, z); return b; };
+  const limb = (w, h, x, y) => { const p = new T.Group(); p.add(box(w, h, w, dark, 0, -h / 2, 0)); p.position.set(x, y, 0); g.add(p); return p; };
+  const head = new T.Group(); head.add(box(.42, .5, .4, dark, 0, 0, 0), box(.09, .13, .02, glow, -.11, .06, .21), box(.09, .13, .02, glow, .11, .06, .21), box(.26, .05, .02, glow, 0, -.14, .21)); head.position.y = 2.72; g.add(head, box(.4, 1.25, .26, dark, 0, 1.85, 0));
+  g.userData = { head, legs: [limb(.13, 1.25, -.12, 1.25), limb(.13, 1.25, .12, 1.25)], arms: [limb(.1, 1.7, -.29, 2.4), limb(.1, 1.7, .29, 2.4)], phase: 0 };
+  return g;
 }
-/* ---------- start-up: the site can open itself inside an about:blank tab ---------- */
-function openBlank() { // true if a blank tab now holds this site in a full-page frame
-  let w = null; try { w = window.open('about:blank', '_blank'); } catch {}
-  if (!w) return false; // the browser blocked it
-  const fill = () => { // some browsers swap in a fresh blank page a moment after opening, which would wipe the frame, so this runs a few times
-    try {
-      const d = w.document; if (w.closed || d.querySelector('iframe')) return;
-      const fr = d.createElement('iframe'); fr.src = location.href; fr.allow = 'camera; microphone; display-capture; autoplay; fullscreen; clipboard-write; speaker-selection'; fr.setAttribute('allowfullscreen', '');
-      fr.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:0';
-      if (!d.body) d.documentElement.appendChild(d.createElement('body'));
-      d.body.style.cssText = 'margin:0;background:#000;overflow:hidden'; d.body.appendChild(fr);
-    } catch {}
-  };
-  fill(); [150, 600, 1500].forEach(ms => setTimeout(fill, ms));
-  try { return !w.closed; } catch { return false; }
+function mzInit() { // build the scene for the round in mzRound
+  const T = THREE, old = Z, ren = old ? old.ren : new T.WebGLRenderer({ canvas: mcv, antialias: false, powerPreference: 'high-performance' }), scene = new T.Scene(), cam = new T.PerspectiveCamera(74, 16 / 9, .05, 60);
+  mzBuild(mzRound.seed); ren.setPixelRatio(1); scene.background = new T.Color(0); scene.fog = new T.Fog(0, 1, 15);
+  scene.add(new T.AmbientLight(0x2a3040, .7));
+  const stone = new T.MeshPhongMaterial({ color: 0x4a4f5a, shininess: 4 }), size = MN * MT, flat = (col, y, rot) => { const m = new T.Mesh(new T.PlaneGeometry(size, size), new T.MeshPhongMaterial({ color: col, shininess: 2 })); m.rotation.x = rot; m.position.set(size / 2, y, size / 2); scene.add(m); };
+  flat(0x23262c, 0, -Math.PI / 2); flat(0x101114, 3.2, Math.PI / 2); // floor and a low ceiling
+  const blocks = []; for (let r = 0; r < MN; r++) for (let c = 0; c < MN; c++) if (mzGrid[r][c]) blocks.push([c, r]);
+  const walls = new T.InstancedMesh(new T.BoxGeometry(MT, 3.2, MT), stone, blocks.length), m4 = new T.Matrix4(); blocks.forEach(([c, r], i) => walls.setMatrixAt(i, m4.makeTranslation(mzMid(c), 1.6, mzMid(r)))); scene.add(walls); // every wall in one draw call
+  const lamp = new T.SpotLight(0xfff1d0, 3, 24, .62, .6, 1.2); cam.add(lamp); lamp.position.set(.18, -.18, 0); cam.add(lamp.target); lamp.target.position.set(.1, -.14, -6); cam.rotation.order = 'YXZ'; scene.add(cam); // your flashlight rides on the camera
+  const keys = mzKeys.map(k => { const m = new T.Mesh(new T.OctahedronGeometry(.28), new T.MeshBasicMaterial({ color: 0xffd23f })); m.position.set(k.x, 1.1, k.z); scene.add(m); return m; });
+  const door = new T.Mesh(new T.BoxGeometry(MT * .8, 2.8, .25), new T.MeshBasicMaterial({ color: 0x7a1010 })); door.position.set(mzExit.x, 1.4, mzExit.z + MT * .4); scene.add(door);
+  const thing = mzThing(); scene.add(thing);
+  for (const id in mzMates) delete mzMates[id];
+  Z = { scene, cam, ren, lamp, keys, door, thing, x: mzMid(1), z: mzMid(1), yaw: Math.PI * 1.25, pitch: 0, stam: 1, bob: 0, dead: false, w: 0, h: 0, wake: performance.now() + (mzRound.grace || 0),
+    mon: { x: mzMid(MN >> 1 | 1), z: mzMid(MN >> 1 | 1), r: 0, tx: 0, tz: 0, plan: 0, next: null, see: false, seen: false }, beat: 0, fps: 60, n: 0, acc: 0, live: !!(old && old.live) }; // live: the drawing loop is already running
+  Z.mon.tx = Z.mon.x; Z.mon.tz = Z.mon.z; mzApply();
 }
-const stayed = (() => { try { return !!sessionStorage.getItem('stay'); } catch { return false; } })();
-if (window !== window.top || stayed) connect(); // already inside the blank tab's frame, or this tab chose to stay
-else {
-  const opened = () => { $('cloakMsg').textContent = 'Ten Rooms is open in the new tab. You can close this one.'; $('cloakGo').textContent = 'Open another blank tab'; $('cloakStay').textContent = 'Use it in this tab instead'; };
-  // the buttons are wired up before anything is tried, so they work even if the automatic attempt goes wrong
-  $('cloakGo').onclick = () => { if (openBlank()) opened(); else $('cloakMsg').textContent = 'Your browser blocked the new tab. Click the pop-up blocked icon in the address bar and allow pop-ups for this site, then press the button again. Or stay in this tab.'; };
-  $('cloakStay').onclick = () => { try { sessionStorage.setItem('stay', '1'); } catch {} $('cloak').classList.add('hidden'); connect(); };
-  $('cloak').classList.remove('hidden');
-  try { if (openBlank()) opened(); } catch {} // browsers only allow this without a click if pop-ups are already allowed for the site
+function mzApply() { // show what the server says about the round: which keys are gone, whether the door is open, whether you were caught
+  if (!Z || !mzRound) return;
+  Z.keys.forEach((k, i) => { k.visible = !mzRound.keys[i]; }); Z.door.material.color.setHex(mzRound.keys.every(Boolean) ? 0x2dff88 : 0x7a1010);
+  Z.dead = mzRound.caught.includes(myId);
 }
-</script>
-</body>
-</html>
+function mzThink(dt, t) { // host only: the monster walks the shortest way to the nearest player it could reach, and runs when it can see them
+  const m = Z.mon, alive = Object.keys(mzMates).filter(id => !mzRound.caught.includes(+id)).map(id => mzMates[id]); if (!Z.dead) alive.push({ x: Z.x, z: Z.z });
+  if (t < Z.wake || !alive.length || mzRound.state !== 'play') return;
+  const near = alive.reduce((a, b) => (Math.hypot(b.x - m.x, b.z - m.z) < Math.hypot(a.x - m.x, a.z - m.z) ? b : a)), dist = Math.hypot(near.x - m.x, near.z - m.z);
+  m.see = dist < 15 && mzSees(m.x, m.z, near.x, near.z);
+  if (t - m.plan > 300 || !m.next) { m.plan = t; m.next = mzPath(mzTile(m.x), mzTile(m.z), mzTile(near.x), mzTile(near.z)); }
+  const gx = m.see || !m.next ? near.x : mzMid(m.next[0]), gz = m.see || !m.next ? near.z : mzMid(m.next[1]), d = Math.hypot(gx - m.x, gz - m.z) || 1; // in sight: straight at them
+  const speed = (m.see ? 5.2 : 3.2) + mzRound.keys.filter(Boolean).length * .22, step = Math.min(d, speed * dt), nx = m.x + (gx - m.x) / d * step, nz = m.z + (gz - m.z) / d * step; // it gets faster with every key taken
+  if (mzFree(nx, m.z, .3)) m.x = nx; if (mzFree(m.x, nz, .3)) m.z = nz;
+  if (d < .2) m.plan = 0; m.r = Math.atan2(gx - m.x, gz - m.z); m.tx = m.x; m.tz = m.z;
+}
+function mzScare() { // caught: the face fills the screen
+  const box = $('scare'), g = $('scareCv').getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, 800, 450);
+  g.fillStyle = '#c9c9c4'; g.beginPath(); g.ellipse(400, 215, 150, 215, 0, 0, 6.283); g.fill(); // a long pale face
+  g.fillStyle = '#000'; g.beginPath(); g.ellipse(335, 150, 44, 62, .15, 0, 6.283); g.ellipse(465, 150, 44, 62, -.15, 0, 6.283); g.ellipse(400, 320, 62, 95, 0, 0, 6.283); g.fill(); // eye holes and a mouth that is open too far
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(338, 158, 6, 0, 6.283); g.arc(462, 158, 6, 0, 6.283); g.fill();
+  box.classList.remove('hidden'); setTimeout(() => box.classList.add('hidden'), 1100);
+  if (sfxOn) try { [520, 700, 911, 1180].forEach((f, i) => osc(f, .9, 'sawtooth', .09, 1.9, i * .01)); hiss(.9, .3, 0, 1200); } catch {}
+}
+function mzLoop(t) {
+  if (!mazeOpen || !Z) { if (Z) Z.live = false; return; }
+  requestAnimationFrame(mzLoop);
+  const dt = Math.min(.05, (t - (mzLast || t)) / 1000), w = mcv.clientWidth, h = mcv.clientHeight, m = Z.mon, play = mzRound.state === 'play'; mzLast = t;
+  if (w && h && (w !== Z.w || h !== Z.h)) { Z.w = w; Z.h = h; Z.ren.setSize(w, h, false); Z.cam.aspect = w / h; Z.cam.updateProjectionMatrix(); }
+  Z.n++; Z.acc += dt; if (Z.n >= 90) { Z.fps = Math.round(Z.n / Z.acc); Z.n = 0; Z.acc = 0; }
+  if (document.hasFocus && !document.hasFocus()) keysOff();
+  Z.yaw += ((hk.ArrowLeft || hk.KeyQ ? 1 : 0) - (hk.ArrowRight || hk.KeyE ? 1 : 0)) * 2.4 * dt; // arrow keys or Q and E turn too, for when the mouse is not captured
+  const fwd = (hk.KeyW || hk.ArrowUp ? 1 : 0) - (hk.KeyS || hk.ArrowDown ? 1 : 0), side = (hk.KeyD ? 1 : 0) - (hk.KeyA ? 1 : 0), moving = !!(fwd || side) && !Z.dead && play;
+  const run = moving && (hk.ShiftLeft || hk.ShiftRight) && Z.stam > .02; Z.stam = clamp2(Z.stam + (run ? -.32 : .16) * dt, 0, 1); // running empties your breath in about three seconds
+  if (moving) {
+    const mx = -Math.sin(Z.yaw) * fwd + Math.cos(Z.yaw) * side, mz = -Math.cos(Z.yaw) * fwd - Math.sin(Z.yaw) * side, len = Math.hypot(mx, mz) || 1, sp = (run ? 6 : 3.6) * dt, nx = Z.x + mx / len * sp, nz = Z.z + mz / len * sp;
+    if (mzFree(nx, Z.z, .35)) Z.x = nx; if (mzFree(Z.x, nz, .35)) Z.z = nz; // each direction on its own, so you slide along walls
+    Z.bob += dt * (run ? 14 : 9);
+  }
+  if (!Z.dead && play) {
+    mzKeys.forEach((k, i) => { if (!mzRound.keys[i] && Math.hypot(k.x - Z.x, k.z - Z.z) < 1.2) { mzRound.keys[i] = 1; mzApply(); send({ type: 'maze', act: 'key', i }); tone(1320, .25, 'sine', .08, 1.5); } });
+    if (mzRound.keys.every(Boolean) && Math.hypot(mzExit.x - Z.x, mzExit.z - Z.z) < 1.3) send({ type: 'maze', act: 'escape' });
+  }
+  if (mzRound.host === myId) { mzThink(dt, t); if (t - mzSent > 90) send({ type: 'maze', act: 'mon', x: m.x, z: m.z, r: m.r, see: m.see ? 1 : 0 }); }
+  else { m.x += (m.tx - m.x) * .25; m.z += (m.tz - m.z) * .25; } // everyone else slides it toward where the host last said it was
+  const md = Math.hypot(m.x - Z.x, m.z - Z.z), sees = md < 15 && mzSees(Z.x, Z.z, m.x, m.z), awake = t >= Z.wake && play, u = Z.thing.userData;
+  if (awake && !Z.dead && md < 1.15) { Z.dead = true; mzRound.caught.push(myId); send({ type: 'maze', act: 'caught' }); mzScare(); if (document.exitPointerLock) document.exitPointerLock(); }
+  if (awake && sees && !m.seen && sfxOn) try { osc(240, 1.1, 'sawtooth', .1, .45); hiss(.5, .12, 0, 900); } catch {} // the moment it comes into view
+  m.seen = sees;
+  Z.thing.visible = awake; Z.thing.position.set(m.x, 0, m.z); Z.thing.rotation.y = turnTo(Z.thing.rotation.y, m.r, dt * 8); u.phase += dt * (m.see ? 11 : 6);
+  u.legs[0].rotation.x = Math.sin(u.phase) * .6; u.legs[1].rotation.x = -Math.sin(u.phase) * .6; u.arms[0].rotation.x = -.35 - Math.sin(u.phase) * .3; u.arms[1].rotation.x = -.35 + Math.sin(u.phase) * .3;
+  u.head.rotation.z = Math.sin(t / 130) * .08 + (Math.random() < .02 ? (Math.random() - .5) * 1.2 : 0); u.arms[0].rotation.z = -.08; u.arms[1].rotation.z = .08; // the head twitches
+  const fear = awake ? clamp2(1 - md / 22, 0, 1) : 0; // 0 far away, 1 on top of you: drives the flicker, the heartbeat and the growl
+  Z.lamp.intensity = 3 * (Math.random() < fear * .25 ? .15 + Math.random() * .4 : 1) * (Z.dead ? .25 : 1);
+  if (fear > 0 && t > Z.beat && sfxOn) { Z.beat = t + 1150 - fear * 850; try { osc(58, .13, 'sine', .1 + fear * .22, .6); osc(48, .15, 'sine', .08 + fear * .18, .6, .17); } catch {} }
+  if (mzDrone) mzDrone.growl.gain.value = awake ? Math.min(.22, .9 / Math.max(2, md)) : 0;
+  for (const id in mzMates) { // the other players
+    const o = mzMates[id], g = o.g; if (Date.now() - o.t > 4000 || !people[id]) { Z.scene.remove(g); delete mzMates[id]; continue; }
+    const far = Math.hypot(o.x - g.position.x, o.z - g.position.z); g.visible = !mzRound.caught.includes(+id); g.position.x += (o.x - g.position.x) * .25; g.position.z += (o.z - g.position.z) * .25; g.rotation.y = turnTo(g.rotation.y, o.r, dt * 10); hangPose(g, far > .05, false, dt, false, -1);
+  }
+  Z.keys.forEach(k => { k.rotation.y += dt * 2; });
+  Z.cam.position.set(Z.x, 1.62 + Math.sin(Z.bob) * (moving ? .05 : 0), Z.z); Z.cam.rotation.set(Z.pitch, Z.yaw, 0);
+  if (t - mzSent > 90) { // about ten times a second: report in, redraw the map and the readout
+    mzSent = t; send({ type: 'maze', act: 'pos', x: Z.x, z: Z.z, r: Z.yaw + Math.PI });
+    const got = mzRound.keys.filter(Boolean).length, left = Math.ceil((Z.wake - t) / 1000);
+    $('mzHud').textContent = mzRound.state === 'won' ? 'Someone got out. Press New round to go again' : mzRound.state === 'lost' ? 'Nobody got out. Press New round to try again'
+      : Z.dead ? 'It got you. Watch the map: the others can still make it' : left > 0 ? 'It wakes in ' + left + '… find the keys' : (got < MKEYS ? 'Keys ' + got + ' / ' + MKEYS : 'All keys found. Get to the green door!') + ' · breath ' + '█'.repeat(Math.round(Z.stam * 8)).padEnd(8, '░');
+    mzMap();
+  }
+  Z.ren.render(Z.scene, Z.cam);
+}
+function mzMap() { // the map in the corner: the maze, the keys, the door and where everyone is. The monster is never on it
+  const g = mmg, s = mmap.width / MN, dot = (x, z, col, rad) => { g.fillStyle = col; g.beginPath(); g.arc(x / MT * s, z / MT * s, rad, 0, 6.283); g.fill(); };
