@@ -3,7 +3,7 @@ const http = require('http'), fs = require('fs'), path = require('path'), crypto
 const { WebSocketServer } = require('ws');
 // Raised whenever the page starts needing something new from the server. index.html carries the number it expects, and tells moderators when
 // the server it reached is older: that means index.html was updated on GitHub but server.js was not. Also shown at /status.
-const VERSION = 26;
+const VERSION = 27;
 
 const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
 // [name, max people]. Small rooms keep full video; bigger rooms get lower per-person video quality (see tune() in index.html).
@@ -430,17 +430,33 @@ const SHGUNS = { pistol: { dmg: 25, gap: 280, n: 1 }, smg: { dmg: 12, gap: 90, n
 // A shooter match counts as running until someone wins, or a minute goes by with no hits. Nobody can start another while one is running.
 const shootLive = r => !!r.shoot && !!r.shoot.live && !r.shoot.over && Date.now() - r.shoot.last < 60000;
 const privates = new Map(); // id -> a room like the ten public ones, plus: private, allowed (usernames that may join), made (when)
-// Steal a Brainrot: buy brainrots off a moving belt, they earn money in your base, and anyone can carry one off from a base that is not locked.
-// The page has the same table (with the names) and the same two belt functions, so both sides agree on what is coming down the belt without any messages.
+// Steal a Brainrot: buy brainrots off a moving belt, they walk to your base and earn money there, and anyone can carry one off from a base that is not locked.
+// The page has the same table (with the names), the same sizes and the same belt and walking functions, so both sides agree on where everything is without a stream of messages.
 const BR = [[25, 2, 28], [90, 6, 22], [250, 14, 16], [600, 30, 11], [1400, 60, 8], [3200, 120, 5.5], [7500, 260, 4], [18000, 550, 2.5], [40000, 1100, 1.6], [90000, 2300, .8], [220000, 5000, .45], [600000, 12000, .15]]; // each kind: price, money a second, how often it turns up
-const BR_GAP = 2600, BR_RIDE = 24000, BR_SUM = BR.reduce((a, b) => a + b[2], 0); // a new one comes out every BR_GAP ms and takes BR_RIDE ms to cross
+const BR_GAP = 2600, BR_RIDE = 36000, BR_WALK = 5, BR_SUM = BR.reduce((a, b) => a + b[2], 0); // a new one comes out every BR_GAP ms and takes BR_RIDE ms to cross; a bought one walks at BR_WALK metres a second
 const brRand = (seed, i) => { let a = (seed + i * 0x9E3779B1) >>> 0; a = Math.imul(a ^ (a >>> 15), 1 | a); a = (a + Math.imul(a ^ (a >>> 7), 61 | a)) ^ a; return ((a ^ (a >>> 14)) >>> 0) / 4294967296; };
 const brKind = (seed, i) => { let x = brRand(seed, i) * BR_SUM; for (let k = 0; k < BR.length; k++) { x -= BR[k][2]; if (x < 0) return k; } return 0; }; // which kind the belt's i-th brainrot is
-const brBase = slot => ({ x: (slot % 4 - 1.5) * 15, z: (slot < 4 ? -1 : 1) * 13 }), brPad = (slot, pad) => { const b = brBase(slot); return { x: b.x + (pad % 4 - 1.5) * 2.6, z: b.z + (pad < 4 ? -2.2 : 2.2) }; }; // where base and pad number so-and-so are
-const brRate = p => p.pets.reduce((a, x) => a + (x && !x.out ? BR[x.k][1] : 0), 0), brSettle = (p, now) => { p.cash += brRate(p) * (now - p.at) / 1000; p.at = now; }; // money is worked out when it is needed, from what they earn a second
+const brSide = slot => (slot < 4 ? -1 : 1), brBase = slot => ({ x: (slot % 4 - 1.5) * 26, z: brSide(slot) * 23 }); // 4 bases down each side of the belt, each 20 wide and 18 deep, its gate facing the belt
+const brPad = (slot, pad) => { const b = brBase(slot); return { x: b.x + (pad % 4 - 1.5) * 4.4, z: b.z + (pad < 4 ? -3 : 3) }; }, brBtn = slot => { const b = brBase(slot); return { x: b.x + 7.5, z: b.z - brSide(slot) * 7 }; }; // the 8 pads, and the lock button just inside the gate
+const brBeltX = age => -56 + 112 * age / BR_RIDE; // how far along the belt one is, from how long ago it came out
+function brWalkAt(w, slot, now) { // where a walking brainrot is: from where it was bought to the front of the gate, then in to its pad
+  const b = brBase(slot), ez = brSide(slot) * 12.5, q = brPad(slot, w.pad), l1 = Math.hypot(b.x - w.x, ez - w.z), l2 = Math.hypot(q.x - b.x, q.z - ez), d = Math.max(0, now - w.t0) / 1000 * BR_WALK;
+  if (d < l1) return { x: w.x + (b.x - w.x) * d / l1, z: w.z + (ez - w.z) * d / l1, r: Math.atan2(b.x - w.x, ez - w.z), inside: false, ms: (l1 + l2) / BR_WALK * 1000 };
+  const k = l2 ? Math.min(1, (d - l1) / l2) : 1; return { x: b.x + (q.x - b.x) * k, z: ez + (q.z - ez) * k, r: Math.atan2(q.x - b.x, q.z - ez), inside: true, ms: (l1 + l2) / BR_WALK * 1000 }; // ms: how long the whole walk takes
+}
+const brRate = p => p.pets.reduce((a, x) => a + (x && !x.out && !x.w ? BR[x.k][1] : 0), 0), brSettle = (p, now) => { p.cash += brRate(p) * (now - p.at) / 1000; p.at = now; }; // money is worked out when it is needed, from what they earn a second
 const stealers = r => [...r.members.values()].filter(p => p.stealing);
-const stealView = r => ({ type: 'steal-state', now: Date.now(), seed: r.steal.seed, t0: r.steal.t0, bought: r.steal.bought, bases: [...r.steal.P.values()].map(p => ({ id: p.id, slot: p.slot, name: p.name, cash: Math.floor(p.cash), at: p.at, lock: p.lock, cd: p.cd, pets: p.pets.map(x => (x ? [x.k, x.out] : 0)) })) });
+const stealView = r => ({ type: 'steal-state', now: Date.now(), seed: r.steal.seed, t0: r.steal.t0, bought: r.steal.bought, walk: r.steal.walk.map(w => ({ id: w.id, k: w.k, x: w.x, z: w.z, t0: w.t0, to: w.to, pad: w.pad })),
+  bases: [...r.steal.P.values()].map(p => ({ id: p.id, slot: p.slot, name: p.name, cash: Math.floor(p.cash), at: p.at, lock: p.lock, cd: p.cd, pets: p.pets.map(x => (x ? [x.k, x.out, x.w ? 1 : 0] : 0)) })) });
 const stealPush = r => { const v = stealView(r); stealers(r).forEach(p => send(p, v)); }; // the whole picture, to everyone playing, whenever anything changes
+function stealWalk(r, g, w, now) { // a bought brainrot sets off for its new base. Its pad is kept for it, and it starts earning when it gets there
+  const p = g.P.get(w.to); w.id = ++g.wseq; w.t0 = now; g.walk.push(w);
+  w.timer = setTimeout(() => {
+    if (r.steal !== g || !g.walk.includes(w)) return; g.walk = g.walk.filter(x => x !== w);
+    const o = g.P.get(w.to), pet = o && o.pets[w.pad]; if (pet && pet.w) { brSettle(o, Date.now()); pet.w = 0; }
+    stealPush(r);
+  }, brWalkAt(w, p.slot, now).ms);
+}
 function stealDrop(g, p, now) { // a thief was slapped, or left: what they were carrying goes back to its pad
   const c = p.carry; if (!c) return false; p.carry = null;
   const o = g.P.get(c.owner), pet = o && o.pets[c.pad]; if (pet && pet.out === p.id) { brSettle(o, now); pet.out = 0; }
@@ -456,6 +472,7 @@ function stealBank(g, p, now) { // a thief got home: the brainrot is theirs now.
 function stealLeave(r, ws) { // someone left the room: their base empties
   const g = r.steal, p = g && g.P.get(ws.id), now = Date.now(); if (!p) return;
   stealDrop(g, p, now); // what they were carrying goes back
+  g.walk = g.walk.filter(w => { if (w.to !== ws.id) return true; clearTimeout(w.timer); return false; }); // anything still walking to their base is gone
   g.P.forEach(q => { // and anyone carrying one of theirs gets to keep it
     if (!q.carry || q.carry.owner !== ws.id) return;
     const pet = p.pets[q.carry.pad], free = q.pets.indexOf(null); q.carry = null;
@@ -504,7 +521,7 @@ function leave(ws) {
     else if (r.draw.drawer === ws.id) { say(r, ws.name + ' was drawing and left'); drawNext(r); }
   }
   if (r.private && !r.members.size) privates.delete(r.id); // a private call ends when the last person leaves
-  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; r.shoot = null; r.maze = null; r.tag = null; r.brawl = null; r.steal = null; } // empty room resets
+  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; r.shoot = null; r.maze = null; r.tag = null; r.brawl = null; if (r.steal) r.steal.walk.forEach(w => clearTimeout(w.timer)); r.steal = null; } // empty room resets
   pushLobby();
 }
 
@@ -725,43 +742,54 @@ wss.on('connection', (ws, req) => {
         r.tag = { it: t.id, at: Date.now() }; r.members.forEach(p => p.hanging && send(p, { type: 'hang-tag', it: t.id, name: t.name, by: ws.name }));
       }
       else if (m.act === 'goal' && ws.hanging) { const ms = m.ms | 0; if (ms >= 3000 && ms < 3600000 && !slow(ws, 'lastGoal', 5000)) others({ type: 'hang-note', text: ws.name + ' finished the parkour in ' + (ms / 1000).toFixed(1) + 's' }); }
-    } else if (m.type === 'steal' && ws.room) { // Steal a Brainrot: the money, the bases and who is carrying what all live here
+    } else if (m.type === 'steal' && ws.room) { // Steal a Brainrot: the money, the bases, what is walking where and who is carrying what all live here
       const r = ws.room, now = Date.now(), num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0), others = msg => stealers(r).forEach(p => p !== ws && send(p, msg));
       if (m.act === 'open') {
         ws.stealing = !!m.on;
         if (!ws.stealing) { others({ type: 'steal-gone', id: ws.id }); const p = r.steal && r.steal.P.get(ws.id); if (p && stealDrop(r.steal, p, now)) stealPush(r); return; } // closing the game with one in your arms puts it back
-        const g = r.steal = r.steal || { seed: 1 + Math.floor(Math.random() * 1e9), t0: now, bought: [], P: new Map() }; // P: everyone who has a base, by their id
+        const g = r.steal = r.steal || { seed: 1 + Math.floor(Math.random() * 1e9), t0: now, bought: [], walk: [], wseq: 0, P: new Map() }; // P: everyone who has a base, by their id. walk: the bought ones still on their way
         if (!g.P.has(ws.id)) { // their first time in: the first empty base of the 8, and a little money to start with
           const used = new Set([...g.P.values()].map(p => p.slot)); let slot = 0; while (used.has(slot)) slot++;
-          if (slot < 8) g.P.set(ws.id, { id: ws.id, slot, name: ws.name, cash: 100, at: now, lock: 0, cd: 0, pets: Array(8).fill(null), carry: null }); // pets: what is on each of the 8 pads, as { k: kind, out: who is carrying it off, or 0 }
+          if (slot < 8) g.P.set(ws.id, { id: ws.id, slot, name: ws.name, cash: 100, at: now, lock: 0, cd: 0, pets: Array(8).fill(null), carry: null }); // pets: what is on each of the 8 pads, as { k: kind, out: who is carrying it off or 0, w: 1 while it is still walking here }
         }
         ws.sp = null; stealPush(r);
         if (!slow(ws, 'lastStealIn', 20000)) r.members.forEach(p => { if (!p.stealing) send(p, { type: 'steal-open', name: ws.name }); }); // invite the rest of the room
         return;
       }
       const g = r.steal, me = g && g.P.get(ws.id); if (!ws.stealing || !g) return;
+      const pay = k => { // can they take one of this kind right now? Gives the pad it will stand on, or -1 after telling them why not
+        const free = me.pets.indexOf(null); if (free < 0) { err(ws, 'Your base is full. Sell one first: stand by it and press X'); return -1; }
+        brSettle(me, now); if (me.cash < BR[k][0]) { err(ws, 'You do not have enough cash for that one'); return -1; }
+        me.cash -= BR[k][0]; me.pets[free] = { k, out: 0, w: 1 }; return free;
+      };
       if (m.act === 'pos') {
         if (slow(ws, 'lastStPos', 70)) return;
         ws.sp = { x: num(m.x), z: num(m.z) }; others({ type: 'steal-pos', id: ws.id, x: ws.sp.x, z: ws.sp.z, r: num(m.r), s: m.s ? 1 : 0 });
         if (me && me.carry) { // carrying one and back inside their own base: it is theirs
-          const b = brBase(me.slot); if (Math.abs(ws.sp.x - b.x) > 6 || Math.abs(ws.sp.z - b.z) > 6) return;
+          const b = brBase(me.slot); if (Math.abs(ws.sp.x - b.x) > 10 || Math.abs(ws.sp.z - b.z) > 9) return;
           const from = r.members.get(me.carry.owner), k = stealBank(g, me, now); stealPush(r);
           if (from && k >= 0) send(from, { type: 'steal-note', what: 'gone', name: ws.name, k });
         }
-      } else if (m.act === 'buy') { // take one off the belt
+      } else if (m.act === 'buy') { // take one off the belt: it steps off and walks to their base
         const i = m.i | 0, age = now - g.t0 - i * BR_GAP, k = brKind(g.seed, i);
         if (!me || me.carry || i < 0 || age < 0 || age > BR_RIDE || g.bought.includes(i)) return;
-        if (!ws.sp || Math.hypot(ws.sp.x - (-34 + 68 * age / BR_RIDE), ws.sp.z) > 8) return; // they have to be standing by it
-        if (me.pets.indexOf(null) < 0) return err(ws, 'Your base is full. Sell one first: stand by it and press X');
-        brSettle(me, now); if (me.cash < BR[k][0]) return err(ws, 'You do not have enough cash for that one');
-        me.cash -= BR[k][0]; me.pets[me.pets.indexOf(null)] = { k, out: 0 };
-        const oldest = Math.floor((now - g.t0 - BR_RIDE) / BR_GAP); g.bought = g.bought.filter(x => x >= oldest); g.bought.push(i); stealPush(r);
+        if (!ws.sp || Math.hypot(ws.sp.x - brBeltX(age), ws.sp.z) > 8) return; // they have to be standing by it
+        const pad = pay(k); if (pad < 0) return;
+        const oldest = Math.floor((now - g.t0 - BR_RIDE) / BR_GAP); g.bought = g.bought.filter(x => x >= oldest); g.bought.push(i);
+        stealWalk(r, g, { k, x: brBeltX(age), z: 0, to: me.id, pad }, now); stealPush(r);
+      } else if (m.act === 'rebuy') { // buy one that is still walking to somebody else's base: it turns round and comes to theirs instead. The first buyer does not get their money back
+        const w = g.walk.find(x => x.id === (m.id | 0)), o = w && g.P.get(w.to); if (!me || !w || !o || o === me || me.carry) return;
+        const at = brWalkAt(w, o.slot, now); if (at.inside || !ws.sp || Math.hypot(ws.sp.x - at.x, ws.sp.z - at.z) > 8) return; // only while it is out in the open, and only from close by
+        const pad = pay(w.k); if (pad < 0) return;
+        clearTimeout(w.timer); g.walk = g.walk.filter(x => x !== w); if (o.pets[w.pad] && o.pets[w.pad].w) o.pets[w.pad] = null; // the pad that was being kept for it is free again
+        stealWalk(r, g, { k: w.k, x: num(at.x), z: num(at.z), to: me.id, pad }, now); stealPush(r);
+        const from = r.members.get(o.id); if (from) send(from, { type: 'steal-note', what: 'rebought', name: ws.name, k: w.k });
       } else if (m.act === 'grab') { // pick one up in somebody else's base
         const o = g.P.get(m.from), pad = m.pad | 0, pet = o && o.pets[pad];
-        if (!me || !o || o === me || !pet || pet.out || me.carry || slow(ws, 'lastGrab', 500)) return;
+        if (!me || !o || o === me || !pet || pet.out || pet.w || me.carry || slow(ws, 'lastGrab', 500)) return;
         if (o.lock > now) return err(ws, 'That base is locked');
         if (me.pets.indexOf(null) < 0) return err(ws, 'Your base is full, so you have nowhere to put it');
-        const q = brPad(o.slot, pad); if (!ws.sp || Math.hypot(ws.sp.x - q.x, ws.sp.z - q.z) > 5) return;
+        const q = brPad(o.slot, pad); if (!ws.sp || Math.hypot(ws.sp.x - q.x, ws.sp.z - q.z) > 5.5) return;
         brSettle(o, now); pet.out = ws.id; me.carry = { owner: o.id, pad }; stealPush(r);
         const from = r.members.get(o.id); if (from) send(from, { type: 'steal-note', what: 'taking', name: ws.name, k: pet.k }); // the owner is warned even if they have the game closed
       } else if (m.act === 'slap') { // hit someone close by: whatever they are carrying goes back
@@ -769,11 +797,12 @@ wss.on('connection', (ws, req) => {
         if (!t || t === ws || !t.stealing || !ws.sp || !t.sp || Math.hypot(ws.sp.x - t.sp.x, ws.sp.z - t.sp.z) > 5.5 || slow(ws, 'lastSlap', 600)) return;
         stealers(r).forEach(p => send(p, { type: 'steal-slap', by: ws.id, to: t.id }));
         if (tp && stealDrop(g, tp, now)) stealPush(r);
-      } else if (m.act === 'lock') { // 30 seconds with nobody else allowed in, then 15 before it can be locked again
-        if (!me) return; if (me.cd > now) return err(ws, me.lock > now ? 'Your base is already locked' : 'The lock is still recharging');
+      } else if (m.act === 'lock') { // the button inside their own gate: 30 seconds with nobody else allowed in, then 15 before it works again
+        if (!me || me.cd > now) return;
+        const q = brBtn(me.slot); if (!ws.sp || Math.hypot(ws.sp.x - q.x, ws.sp.z - q.z) > 3.5) return; // they have to be standing on it
         me.lock = now + 30000; me.cd = now + 45000; stealPush(r);
       } else if (m.act === 'sell') { // sell one of your own for half what it costs, to make room
-        const pad = m.pad | 0, pet = me && me.pets[pad]; if (!pet || pet.out) return;
+        const pad = m.pad | 0, pet = me && me.pets[pad]; if (!pet || pet.out || pet.w) return;
         brSettle(me, now); me.cash += Math.floor(BR[pet.k][0] / 2); me.pets[pad] = null; stealPush(r);
       }
     } else if (m.type === 'brawl' && ws.room) { // sky brawl: a 3D fight on a floating island. Everyone moves themselves; the damage (%) and the score are kept here

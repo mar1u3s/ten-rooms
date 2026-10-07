@@ -751,7 +751,7 @@ button:active:not(:disabled){transform:scale(.95)}
 <div id="steal" class="boardmod mod hidden" role="region" aria-label="Steal a Brainrot">
   <div class="bh">
     <h3>Steal a Brainrot</h3>
-    <span class="bsz">WASD to move. E buys a brainrot off the belt, or picks one up in someone else's base: carry it back to yours. F or a click slaps, L locks your base, X sells</span>
+    <span class="bsz">WASD to move. E buys a brainrot off the belt (or one walking to someone else's base), or picks one up inside a base: carry it back to yours. F or a click slaps, X sells, and the button inside your gate locks your base</span>
     <span style="flex:1"></span>
     <button type="button" class="ghost" id="stealX">Close</button>
   </div>
@@ -867,7 +867,7 @@ let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, 
 /* ---------- views + name ---------- */
 function show(v) { ['auth', 'lobby', 'feed', 'prof', 'call'].forEach(x => $(x).classList.toggle('hidden', x !== v)); $('nav').classList.toggle('hidden', v === 'auth' || v === 'call'); [['feedBack', 'lobby'], ['openFeed', 'feed'], ['openProf', 'prof']].forEach(([id, view]) => $(id).classList.toggle('on', v === view)); if (v !== 'lobby' && hintAt >= 0) showHint(-1); } // leaving the menu ends the tips
 // Accounts: you log in with a username and password. The server answers with a token that keeps this browser logged in.
-const NEED_SERVER = 26; let serverOld = false; // the server version this page was written for; serverOld: the server we reached is older than that
+const NEED_SERVER = 27; let serverOld = false; // the server version this page was written for; serverOld: the server we reached is older than that
 let acct = null, token = localStorage.getItem('token') || '', authMode = 'login'; // acct: { code (your @username), display, bio, av }
 // Settings follow your account: theme, font, background, sounds, panel sizes, the "Join with" switches, your gun, the volumes you set for people and whether you have seen the tips.
 // Which camera, mic and speaker you picked stays on this device and is never sent.
@@ -2787,16 +2787,23 @@ fcv.addEventListener('pointercancel', () => { ftDrag = null; });
 fcv.addEventListener('wheel', e => { e.preventDefault(); if (FT) FT.dist = clamp2(FT.dist + (e.deltaY > 0 ? 1 : -1), 4, 18); }, { passive: false });
 $('brawlGo').onclick = () => send({ type: 'brawl', act: 'start' }); $('brawlX').onclick = () => setFight(false);
 
-/* ---------- Steal a Brainrot: buy brainrots off the moving belt, they earn money in your base, and anyone can walk into a base that is not locked and carry one off ---------- */
-// The server keeps the money, the bases and who is carrying what, and sends the whole picture again whenever something changes.
-// The belt needs no messages: what comes down it is worked out from a seed and the time, the same way on the server and in every browser.
+/* ---------- Steal a Brainrot: buy brainrots off the moving belt, they walk to your base and earn money there, and anyone can walk into a base that is not locked and carry one off ---------- */
+// The server keeps the money, the bases, what is walking where and who is carrying what, and sends the whole picture again whenever something changes.
+// The belt and the walking need no stream of messages: where everything is gets worked out from the time, the same way on the server and in every browser.
 const BR = [['Noobini Pizzanini', 25, 2, 28, 0xf2b84b, 1], ['Lirili Larila', 90, 6, 22, 0x7fb069, 4], ['Tim Cheese', 250, 14, 16, 0xffd94a, 0], ['Tung Tung Tung Sahur', 600, 30, 11, 0xb07a45, 8],
   ['Trippi Troppi', 1400, 60, 8, 0x8fb7c9, 2], ['Brr Brr Patapim', 3200, 120, 5.5, 0x4f7f3a, 3], ['Chimpanzini Bananini', 7500, 260, 4, 0xf5e04a, 4], ['Ballerina Cappuccina', 18000, 550, 2.5, 0xf3c9d8, 5],
   ['Cappuccino Assassino', 40000, 1100, 1.6, 0x6b4a34, 8], ['Bombardiro Crocodilo', 90000, 2300, .8, 0x4d6b3c, 7], ['Tralalero Tralala', 220000, 5000, .45, 0x3f7fd0, 2], ['La Vaca Saturno Saturnita', 600000, 12000, .15, 0xe8e2d0, 6]]; // each kind: name, price, money a second, how often it turns up, colour, the feature that tells it apart. Price, money and how often must match the server's table
-const BR_GAP = 2600, BR_RIDE = 24000, BR_SUM = BR.reduce((a, b) => a + b[3], 0); // a new one comes out every BR_GAP ms and takes BR_RIDE ms to cross
+const BR_GAP = 2600, BR_RIDE = 36000, BR_WALK = 5, BR_SUM = BR.reduce((a, b) => a + b[3], 0); // a new one comes out every BR_GAP ms and takes BR_RIDE ms to cross; a bought one walks at BR_WALK metres a second. All of these, and the functions below, are the same on the server
 const brRand = (seed, i) => { let a = (seed + i * 0x9E3779B1) >>> 0; a = Math.imul(a ^ (a >>> 15), 1 | a); a = (a + Math.imul(a ^ (a >>> 7), 61 | a)) ^ a; return ((a ^ (a >>> 14)) >>> 0) / 4294967296; };
-const brKind = (seed, i) => { let x = brRand(seed, i) * BR_SUM; for (let k = 0; k < BR.length; k++) { x -= BR[k][3]; if (x < 0) return k; } return 0; }; // which kind the belt's i-th brainrot is (the server has the same two functions)
-const brBase = slot => ({ x: (slot % 4 - 1.5) * 15, z: (slot < 4 ? -1 : 1) * 13 }), brPad = (slot, pad) => { const b = brBase(slot); return { x: b.x + (pad % 4 - 1.5) * 2.6, z: b.z + (pad < 4 ? -2.2 : 2.2) }; }; // where base and pad number so-and-so are: 4 bases down each side of the belt, 8 pads in each
+const brKind = (seed, i) => { let x = brRand(seed, i) * BR_SUM; for (let k = 0; k < BR.length; k++) { x -= BR[k][3]; if (x < 0) return k; } return 0; }; // which kind the belt's i-th brainrot is
+const brSide = slot => (slot < 4 ? -1 : 1), brBase = slot => ({ x: (slot % 4 - 1.5) * 26, z: brSide(slot) * 23 }); // 4 bases down each side of the belt, each 20 wide and 18 deep, its gate facing the belt
+const brPad = (slot, pad) => { const b = brBase(slot); return { x: b.x + (pad % 4 - 1.5) * 4.4, z: b.z + (pad < 4 ? -3 : 3) }; }, brBtn = slot => { const b = brBase(slot); return { x: b.x + 7.5, z: b.z - brSide(slot) * 7 }; }; // the 8 pads, and the lock button just inside the gate
+const brBeltX = age => -56 + 112 * age / BR_RIDE; // how far along the belt one is, from how long ago it came out
+function brWalkAt(w, slot, now) { // where a walking brainrot is: from where it was bought to the front of the gate, then in to its pad
+  const b = brBase(slot), ez = brSide(slot) * 12.5, q = brPad(slot, w.pad), l1 = Math.hypot(b.x - w.x, ez - w.z), l2 = Math.hypot(q.x - b.x, q.z - ez), d = Math.max(0, now - w.t0) / 1000 * BR_WALK;
+  if (d < l1) return { x: w.x + (b.x - w.x) * d / l1, z: w.z + (ez - w.z) * d / l1, r: Math.atan2(b.x - w.x, ez - w.z), inside: false };
+  const k = l2 ? Math.min(1, (d - l1) / l2) : 1; return { x: b.x + (q.x - b.x) * k, z: ez + (q.z - ez) * k, r: Math.atan2(q.x - b.x, q.z - ez), inside: true };
+}
 const brCash = n => '$' + (n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? (n / 1e3).toFixed(1) + 'K' : Math.floor(n).toLocaleString());
 const sbEl = $('steal'), sbcv = $('sbcv'), sbHud = $('stealHud'), sbCashEl = $('stealCash');
 let SB = null, sbS = null, sbOff = 0, sbMates = {}, sbMine = null, sbWalls = [], sbLast = 0, sbSent = 0, sbNote = '', sbNoteAt = 0, sbDrag = null; // SB: the scene and your own figure. sbS: what the server last said. sbOff: how far this computer's clock is from the server's. sbMine: your own base in sbS
@@ -2808,7 +2815,7 @@ function brTag(k) { // the name tag every brainrot of one kind shares: its name,
   return new T.SpriteMaterial({ map: new T.CanvasTexture(c), depthTest: false });
 }
 function brModel(k) { // a brainrot: a blocky body and head in its own colour, one feature that tells it apart, and its tag floating above. Rarer ones are bigger
-  const T = THREE, d = BR[k], g = new T.Group(), s = .8 + k * .07, G = SB.geo, mat = SB.mats[k] || (SB.mats[k] = new T.MeshLambertMaterial({ color: d[4] }));
+  const T = THREE, d = BR[k], g = new T.Group(), s = .95 + k * .08, G = SB.geo, mat = SB.mats[k] || (SB.mats[k] = new T.MeshLambertMaterial({ color: d[4] }));
   const add = (geo, m, x, y, z, sx, sy, sz) => { const o = new T.Mesh(geo, m); o.position.set(x, y, z); o.scale.set(sx, sy, sz); g.add(o); return o; };
   add(G.box, mat, 0, .58, 0, .8, .7, .6); add(G.box, mat, 0, 1.22, 0, .6, .55, .55); // body and head
   add(G.box, SB.dark, -.14, 1.28, .28, .1, .13, .04); add(G.box, SB.dark, .14, 1.28, .28, .1, .13, .04); // eyes
@@ -2825,31 +2832,51 @@ function brModel(k) { // a brainrot: a blocky body and head in its own colour, o
   const tag = new T.Sprite(SB.tags[k] || (SB.tags[k] = brTag(k))); tag.scale.set(3.6 / s, .9 / s, 1); tag.position.y = 2.25; tag.renderOrder = 5; g.add(tag);
   g.scale.set(s, s, s); return g;
 }
-function sbSign(i, text) { // the board over a base: whose it is and what it earns. Redrawn only when the words change
-  const B = SB.bases[i]; if (B.text === text) return; B.text = text;
-  if (B.sign) { SB.scene.remove(B.sign); B.sign.material.map.dispose(); B.sign.material.dispose(); }
-  const b = brBase(i); B.sign = hangLabel(text); B.sign.scale.set(6.3, 1.2, 1); B.sign.position.set(b.x, 4.1, b.z + (i < 4 ? -6.2 : 6.2)); SB.scene.add(B.sign);
+function sbLabel(B, key, text, x, y, z, wide) { // a floating label that belongs to a base (key: 'sign' over the gate or 'tag' over the lock button). Redrawn only when its words change
+  if (B[key + 'Text'] === text) return; B[key + 'Text'] = text;
+  if (B[key]) { SB.scene.remove(B[key]); B[key].material.map.dispose(); B[key].material.dispose(); B[key] = null; }
+  if (!text) return;
+  B[key] = hangLabel(text); B[key].scale.set(wide, wide * .19, 1); B[key].position.set(x, y, z); SB.scene.add(B[key]);
 }
 function sbInit() {
-  const T = THREE, scene = new T.Scene(), cam = new T.PerspectiveCamera(60, 16 / 9, .1, 220), ren = new T.WebGLRenderer({ canvas: sbcv, antialias: true, powerPreference: 'high-performance' });
-  const lam = col => new T.MeshLambertMaterial({ color: col }), put = (geo, col, x, y, z) => { const m = new T.Mesh(geo, lam(col)); m.position.set(x, y, z); scene.add(m); return m; };
-  const pr = Math.min(window.devicePixelRatio || 1, 1.25); ren.setPixelRatio(pr); scene.background = new T.Color(0x8fd3ff); scene.fog = new T.Fog(0x8fd3ff, 60, 160);
+  const T = THREE, scene = new T.Scene(), cam = new T.PerspectiveCamera(60, 16 / 9, .1, 340), ren = new T.WebGLRenderer({ canvas: sbcv, antialias: true, powerPreference: 'high-performance' });
+  const lam = col => new T.MeshLambertMaterial({ color: col }), unit = new T.BoxGeometry(1, 1, 1), put = (geo, mat, x, y, z) => { const m = new T.Mesh(geo, mat); m.position.set(x, y, z); scene.add(m); return m; };
+  const boxes = (list, mat) => { // many boxes in one draw call. Each is [x, y, z, width, height, depth]
+    const im = new T.InstancedMesh(unit, mat, list.length), m4 = new T.Matrix4(), q = new T.Quaternion();
+    list.forEach((o, i) => im.setMatrixAt(i, m4.compose(new T.Vector3(o[0], o[1], o[2]), q, new T.Vector3(o[3], o[4], o[5])))); im.frustumCulled = false; scene.add(im); return im;
+  };
+  const pr = Math.min(window.devicePixelRatio || 1, 1.25); ren.setPixelRatio(pr); scene.background = new T.Color(0x8fd3ff); scene.fog = new T.Fog(0x8fd3ff, 90, 270);
   scene.add(new T.HemisphereLight(0xffffff, 0x4a6b3a, .95)); const sun = new T.DirectionalLight(0xfff2d0, .8); sun.position.set(20, 30, 10); scene.add(sun);
-  put(new T.PlaneGeometry(220, 220), 0x6ab85e, 0, 0, 0).rotation.x = -Math.PI / 2; // grass
-  put(new T.BoxGeometry(72, .3, 3.4), 0x2b2f3a, 0, .15, 0); put(new T.BoxGeometry(72, .34, .3), 0xffd23f, 0, .17, 1.85); put(new T.BoxGeometry(72, .34, .3), 0xffd23f, 0, .17, -1.85); // the belt, with a yellow line down each edge
-  put(new T.BoxGeometry(4, 3.4, 5), 0x3a3f4a, -37.5, 1.7, 0); put(new T.BoxGeometry(4, 3.4, 5), 0x3a3f4a, 37.5, 1.7, 0); // the boxes it comes out of and goes into
-  sbWalls = [{ x: -37.5, z: 0, hw: 2, hd: 2.5 }, { x: 37.5, z: 0, hw: 2, hd: 2.5 }]; const bases = [], wall = new T.BoxGeometry(1, 1, 1), pad = new T.CylinderGeometry(.9, .9, .12, 14), wallMat = lam(0x555b68), padMat = lam(0x3b404c);
-  for (let i = 0; i < 8; i++) { // 8 bases: a floor, a back wall and two side walls, open toward the belt, with 8 pads inside
-    const b = brBase(i), side = i < 4 ? -1 : 1, floorMat = lam(0x8a8f99), floor = new T.Mesh(wall, floorMat); floor.scale.set(12, .2, 12); floor.position.set(b.x, .1, b.z); scene.add(floor);
-    [[b.x, b.z + side * 6.2, 6.4, .2], [b.x - 6.2, b.z, .2, 6], [b.x + 6.2, b.z, .2, 6]].forEach(([x, z, hw, hd]) => { const m = new T.Mesh(wall, wallMat); m.scale.set(hw * 2, 2.6, hd * 2); m.position.set(x, 1.3, z); scene.add(m); sbWalls.push({ x, z, hw, hd }); });
-    for (let p = 0; p < 8; p++) { const q = brPad(i, p), m = new T.Mesh(pad, padMat); m.position.set(q.x, .26, q.z); scene.add(m); }
-    const shield = new T.Mesh(wall, new T.MeshBasicMaterial({ color: 0xff3b3b, transparent: true, opacity: .22, depthWrite: false })); shield.scale.set(12, 3, 12); shield.position.set(b.x, 1.5, b.z); shield.visible = false; scene.add(shield); // shown while the base is locked
-    bases.push({ floorMat, shield, sign: null, text: '', pets: Array(8).fill(null) });
+  put(new T.PlaneGeometry(520, 520), lam(0x6ab85e), 0, 0, 0).rotation.x = -Math.PI / 2; // grass
+  boxes([[0, .03, 0, 140, .06, 27.4]], lam(0xcfc7b8)); // the paved strip between the two rows of bases
+  boxes([[0, .15, 0, 112, .3, 4]], lam(0x2b2f3a)); boxes([[0, .17, 2.15, 112, .34, .3], [0, .17, -2.15, 112, .34, .3]], lam(0xffd23f)); // the belt, with a yellow line down each edge
+  const stripes = new T.InstancedMesh(unit, lam(0x4b5160), 16); stripes.frustumCulled = false; scene.add(stripes); // lighter bars that ride along the belt, so you can see it moving
+  const wallMat = lam(0x3a3f4d), dark = [[-59, 2.5, 0, 6, 5, 7], [59, 2.5, 0, 6, 5, 7]], floors = [], pads = [], bases = []; // dark starts with the two machines the belt comes out of and goes into
+  const ringGeo = new T.TorusGeometry(1.3, .08, 6, 24), padGeo = new T.CylinderGeometry(1.3, 1.3, .16, 18), btnGeo = new T.CylinderGeometry(1.15, 1.15, .3, 18), baseGeo = new T.CylinderGeometry(1.6, 1.6, .2, 18); ringGeo.rotateX(Math.PI / 2);
+  const laserMat = new T.MeshBasicMaterial({ color: 0xff2a2a }), shieldMat = new T.MeshBasicMaterial({ color: 0xff3b3b, transparent: true, opacity: .1, depthWrite: false }), m4 = new T.Matrix4();
+  sbWalls = [{ x: -59, z: 0, hw: 3, hd: 3.5 }, { x: 59, z: 0, hw: 3, hd: 3.5 }];
+  for (let i = 0; i < 8; i++) { // a base: walls with a gate in the front, a tower on each corner, glowing trim in its owner's colour, 8 pads, a lock button, and lasers across the gate while it is locked
+    const b = brBase(i), sd = brSide(i), fz = b.z - sd * 9, bz = b.z + sd * 9, corners = [[b.x - 10, fz], [b.x + 10, fz], [b.x - 10, bz], [b.x + 10, bz]];
+    const trimMat = new T.MeshBasicMaterial({ color: 0x8a8f99 }), tintMat = lam(0x4a4f5c), btnMat = new T.MeshBasicMaterial({ color: 0x4a4f5c });
+    const walls = [[b.x, bz, 10.25, .25], [b.x - 10, b.z, .25, 9], [b.x + 10, b.z, .25, 9], [b.x - 7, fz, 3, .25], [b.x + 7, fz, 3, .25]]; // back, two sides, and the two pieces either side of the gate: [x, z, half the width, half the depth]
+    walls.forEach(([x, z, hw, hd]) => { dark.push([x, 2.5, z, hw * 2, 5, hd * 2]); sbWalls.push({ x, z, hw, hd }); });
+    corners.forEach(([x, z]) => dark.push([x, 3.5, z, 1.5, 7, 1.5])); dark.push([b.x, 5.6, fz, 9, 1.2, .8]); // towers, and the beam over the gate
+    floors.push([b.x, .125, b.z, 20.5, .25, 18.5]); put(unit, tintMat, b.x, .27, b.z).scale.set(17.5, .06, 15.5); // the floor, with a coloured middle
+    boxes(walls.map(([x, z, hw, hd]) => [x, 5.12, z, hw * 2 + .1, .24, hd * 2 + .1]).concat(corners.map(([x, z]) => [x, 7.2, z, 1.8, .4, 1.8]), [[b.x, .05, fz - sd * 2, 8, .06, 3]]), trimMat); // strips along the wall tops, caps on the towers, and a mat outside the gate
+    const rings = new T.InstancedMesh(ringGeo, trimMat, 8); rings.frustumCulled = false; scene.add(rings);
+    for (let p = 0; p < 8; p++) { const q = brPad(i, p); pads.push([q.x, q.z]); rings.setMatrixAt(p, m4.makeTranslation(q.x, .46, q.z)); }
+    const bt = brBtn(i); put(baseGeo, wallMat, bt.x, .35, bt.z); put(btnGeo, btnMat, bt.x, .52, bt.z); // the lock button
+    const lasers = new T.Group(); for (let k = 0; k < 5; k++) { const bar = new T.Mesh(unit, laserMat); bar.scale.set(8, .12, .12); bar.position.set(b.x, .7 + k * .85, fz); lasers.add(bar); } lasers.visible = false; scene.add(lasers);
+    const shield = put(unit, shieldMat, b.x, 2.5, b.z); shield.scale.set(20, 5, 18); shield.visible = false;
+    bases.push({ trimMat, tintMat, btnMat, lasers, shield, sign: null, signText: '', tag: null, tagText: '', pets: Array(8).fill(null) });
   }
+  boxes(dark, wallMat); boxes(floors, lam(0x262a33));
+  const padIm = new T.InstancedMesh(padGeo, lam(0x1c1f27), pads.length); pads.forEach((q, i) => padIm.setMatrixAt(i, m4.makeTranslation(q[0], .36, q[1]))); padIm.frustumCulled = false; scene.add(padIm);
   scene.traverse(o => { o.matrixAutoUpdate = false; o.updateMatrix(); }); // nothing above ever moves, so its position is worked out once
   const me = hangFigure(new T.Color(accHex), 'You'); scene.add(me);
-  SB = { scene, cam, ren, me, bases, belt: {}, carry: {}, mats: {}, tags: {}, seed: 0, near: null, placed: false, yaw: 0, pitch: .5, yawT: 0, pitchT: .5, dist: 11, face: 0, kx: 0, kz: 0, stun: 0, swingAt: -9999, eWas: false, xWas: false, lWas: false, w: 0, h: 0, pr, n: 0, acc: 0, fps: 60, live: false,
-    geo: { box: wall, cone: new T.ConeGeometry(.5, 1, 8), disc: new T.CylinderGeometry(.5, .5, 1, 16), ring: new T.TorusGeometry(.8, .09, 6, 20) }, dark: lam(0x1a1a1a), red: lam(0xd8342c), white: lam(0xffffff), gold: lam(0xffc93c), wood: lam(0x8a5a33) };
+  SB = { scene, cam, ren, me, bases, stripes, belt: {}, walk: {}, carry: {}, mats: {}, tags: {}, seed: 0, near: null, placed: false, yaw: 0, pitch: .5, yawT: 0, pitchT: .5, dist: 13, face: 0, kx: 0, kz: 0, stun: 0, swingAt: -9999, lockAt: -9999, eWas: false, xWas: false, w: 0, h: 0, pr, n: 0, acc: 0, fps: 60, live: false,
+    m4, v1: new T.Vector3(), v2: new T.Vector3(.6, .02, 3.6), q: new T.Quaternion(),
+    geo: { box: unit, cone: new T.ConeGeometry(.5, 1, 8), disc: new T.CylinderGeometry(.5, .5, 1, 16), ring: new T.TorusGeometry(.8, .09, 6, 20) }, dark: lam(0x1a1a1a), red: lam(0xd8342c), white: lam(0xffffff), gold: lam(0xffc93c), wood: lam(0x8a5a33) };
   sbApply();
 }
 function sbApply() { // make the scene match what the server last said: whose each base is, and what is standing on every pad
@@ -2857,22 +2884,28 @@ function sbApply() { // make the scene match what the server last said: whose ea
   if (SB.seed !== sbS.seed) { for (const i in SB.belt) SB.scene.remove(SB.belt[i].m); SB.belt = {}; SB.seed = sbS.seed; SB.placed = false; } // a different game: clear the belt
   sbS.bases.forEach(b => {
     const B = SB.bases[b.slot]; if (!B) return; seen.add(b.slot);
-    b.rate = b.pets.reduce((a, x) => a + (x && !x[1] ? BR[x[0]][2] : 0), 0); // what this base earns a second (one being carried off earns nothing)
-    B.floorMat.color.setHSL(b.slot / 8, .5, .58); sbSign(b.slot, (b.id === myId ? 'Your base' : b.name) + ' · +' + brCash(b.rate).slice(1) + '/s');
+    const c = brBase(b.slot), sd = brSide(b.slot); b.rate = b.pets.reduce((a, x) => a + (x && !x[1] && !x[2] ? BR[x[0]][2] : 0), 0); // what this base earns a second (one being carried off, or still walking here, earns nothing)
+    B.trimMat.color.setHSL(b.slot / 8, .95, .6); B.tintMat.color.setHSL(b.slot / 8, .45, .34);
+    sbLabel(B, 'sign', (b.id === myId ? 'Your base' : b.name) + ' · +' + brCash(b.rate).slice(1) + '/s', c.x, 7.7, c.z - sd * 9, 8.4);
     b.pets.forEach((x, i) => {
-      const want = x && !x[1] ? x[0] : -1, cur = B.pets[i]; if ((cur ? cur.k : -1) === want) return;
+      const want = x && !x[1] && !x[2] ? x[0] : -1, cur = B.pets[i]; if ((cur ? cur.k : -1) === want) return;
       if (cur) SB.scene.remove(cur.m); B.pets[i] = null; if (want < 0) return;
-      const m = brModel(want), q = brPad(b.slot, i); m.position.set(q.x, .32, q.z); m.rotation.y = b.slot < 4 ? 0 : Math.PI; SB.scene.add(m); B.pets[i] = { k: want, m }; // facing the belt
+      const m = brModel(want), q = brPad(b.slot, i); m.position.set(q.x, .44, q.z); m.rotation.y = sd < 0 ? 0 : Math.PI; SB.scene.add(m); B.pets[i] = { k: want, m }; // facing the gate
     });
   });
-  SB.bases.forEach((B, i) => { if (seen.has(i)) return; B.floorMat.color.setHex(0x8a8f99); sbSign(i, 'Empty base'); B.shield.visible = false; B.pets.forEach((cur, j) => { if (cur) { SB.scene.remove(cur.m); B.pets[j] = null; } }); }); // bases nobody has
+  SB.bases.forEach((B, i) => { // bases nobody has
+    if (seen.has(i)) return; const c = brBase(i);
+    B.trimMat.color.setHex(0x8a8f99); B.tintMat.color.setHex(0x4a4f5c); B.btnMat.color.setHex(0x4a4f5c); B.lasers.visible = B.shield.visible = false;
+    sbLabel(B, 'sign', 'Empty base', c.x, 7.7, c.z - brSide(i) * 9, 8.4); sbLabel(B, 'tag', '');
+    B.pets.forEach((cur, j) => { if (cur) { SB.scene.remove(cur.m); B.pets[j] = null; } });
+  });
   sbMine = sbS.bases.find(b => b.id === myId) || null;
-  if (sbMine && !SB.placed) { const b = brBase(sbMine.slot), side = sbMine.slot < 4 ? -1 : 1; SB.me.position.set(b.x, 0, side * 5); SB.face = side < 0 ? Math.PI : 0; SB.yaw = SB.yawT = side < 0 ? 0 : Math.PI; SB.placed = true; } // you start in front of your own base, looking at it
+  if (sbMine && !SB.placed) { const b = brBase(sbMine.slot), sd = brSide(sbMine.slot); SB.me.position.set(b.x, 0, sd * 10); SB.face = sd < 0 ? Math.PI : 0; SB.yaw = SB.yawT = sd < 0 ? 0 : Math.PI; SB.placed = true; } // you start outside your own gate, looking at it
 }
 function sbCollide(p, now) { // keep your figure out of walls and out of other people's locked bases, and inside the map
   for (const b of sbWalls) { const ox = b.hw + .4 - Math.abs(p.x - b.x), oz = b.hd + .4 - Math.abs(p.z - b.z); if (ox <= 0 || oz <= 0) continue; if (ox < oz) p.x += p.x > b.x ? ox : -ox; else p.z += p.z > b.z ? oz : -oz; }
-  if (sbS) sbS.bases.forEach(b => { if (b.id === myId || b.lock <= now) return; const c = brBase(b.slot); if (Math.abs(p.x - c.x) < 6 && Math.abs(p.z - c.z) < 6.4) p.z = (b.slot < 4 ? -1 : 1) * 6.6; }); // a locked base puts you back outside its open side
-  p.x = clamp2(p.x, -42, 42); p.z = clamp2(p.z, -24, 24);
+  if (sbS) sbS.bases.forEach(b => { if (b.id === myId || b.lock <= now) return; const c = brBase(b.slot); if (Math.abs(p.x - c.x) < 10.3 && Math.abs(p.z - c.z) < 9.4) p.z = brSide(b.slot) * 13.5; }); // a locked base puts you back outside its gate
+  p.x = clamp2(p.x, -66, 66); p.z = clamp2(p.z, -40, 40);
 }
 function sbSlap(t) { // swing at the nearest person within reach. If they are carrying a brainrot it goes back to where it came from
   if (!SB || t - SB.swingAt < 600 || t < SB.stun) return;
@@ -2900,53 +2933,69 @@ function sbLoop(t) {
   if (sbS) sbS.bases.forEach(b => b.pets.forEach(x => { if (x && x[1]) { held[x[1]] = x[0]; if (x[1] === myId) mineK = x[0]; } }));
   const stunned = t < SB.stun, fwd = (hk.KeyW || hk.ArrowUp ? 1 : 0) - (hk.KeyS || hk.ArrowDown ? 1 : 0), side = (hk.KeyD || hk.ArrowRight ? 1 : 0) - (hk.KeyA || hk.ArrowLeft ? 1 : 0), moving = !!(fwd || side) && !stunned;
   if (moving) { // W walks away from the camera, A and D step sideways. Carrying a brainrot slows you down
-    const mx = -Math.sin(SB.yaw) * fwd + Math.cos(SB.yaw) * side, mz = -Math.cos(SB.yaw) * fwd - Math.sin(SB.yaw) * side, len = Math.hypot(mx, mz) || 1, sp = (mineK >= 0 ? 4.8 : 7.2) * dt;
+    const mx = -Math.sin(SB.yaw) * fwd + Math.cos(SB.yaw) * side, mz = -Math.cos(SB.yaw) * fwd - Math.sin(SB.yaw) * side, len = Math.hypot(mx, mz) || 1, sp = (mineK >= 0 ? 5.6 : 8) * dt;
     p.x += mx / len * sp; p.z += mz / len * sp; SB.face = Math.atan2(mx, mz);
   }
   const drag = Math.max(0, 1 - dt * 5); p.x += SB.kx * dt; p.z += SB.kz * dt; SB.kx *= drag; SB.kz *= drag; // knock-back from a slap, fading out
-  sbCollide(p, now); p.y = Math.abs(p.z) < 1.7 && Math.abs(p.x) < 36 ? .3 : 0; // step up onto the belt
+  sbCollide(p, now); p.y = Math.abs(p.z) < 2 && Math.abs(p.x) < 56 ? .3 : 0; // step up onto the belt
   me.rotation.y = turnTo(me.rotation.y, SB.face, dt * 12);
   if (hk.KeyF) sbSlap(t);
   const swing = t - SB.swingAt < 260 ? (t - SB.swingAt) / 260 : -1;
   hangPose(me, moving, false, dt, swing >= 0, swing); me.rotation.x = stunned ? -1.1 : 0; // the swing shows a bat in your hand; a slap lays you out
   for (const id in sbMates) { // everyone else glides toward the last spot they reported
     const o = sbMates[id], g = o.g; if (Date.now() - o.t > 4000 || !people[id]) { SB.scene.remove(g); delete sbMates[id]; continue; }
-    const far = Math.hypot(o.x - g.position.x, o.z - g.position.z); g.position.x += (o.x - g.position.x) * .25; g.position.z += (o.z - g.position.z) * .25; g.position.y = Math.abs(o.z) < 1.7 && Math.abs(o.x) < 36 ? .3 : 0;
+    const far = Math.hypot(o.x - g.position.x, o.z - g.position.z); g.position.x += (o.x - g.position.x) * .25; g.position.z += (o.z - g.position.z) * .25; g.position.y = Math.abs(o.z) < 2 && Math.abs(o.x) < 56 ? .3 : 0;
     g.rotation.y = turnTo(g.rotation.y, o.r, dt * 10); const sw = o.s ? Math.min(1, (Date.now() - o.sAt) / 260) : -1; hangPose(g, far > .06, false, dt, sw >= 0, sw);
   }
-  if (sbS) { // the belt: every brainrot's place is worked out from the time, so it needs no messages
-    const first = Math.max(0, Math.ceil((now - sbS.t0 - BR_RIDE) / BR_GAP)), last = Math.floor((now - sbS.t0) / BR_GAP);
+  if (sbS) {
+    // the belt: every brainrot's place on it is worked out from the time, so it needs no messages
+    const first = Math.max(0, Math.ceil((now - sbS.t0 - BR_RIDE) / BR_GAP)), last = Math.floor((now - sbS.t0) / BR_GAP), ride = (now - sbS.t0) / BR_RIDE * 112;
     for (const i in SB.belt) if (+i < first || +i > last || sbS.bought.includes(+i)) { SB.scene.remove(SB.belt[i].m); delete SB.belt[i]; } // gone off the end, or bought
     for (let i = first; i <= last; i++) {
       if (sbS.bought.includes(i)) continue;
       let it = SB.belt[i]; if (!it) { const k = brKind(sbS.seed, i); it = SB.belt[i] = { k, m: brModel(k), x: 0 }; it.m.rotation.y = Math.PI / 2; SB.scene.add(it.m); }
-      it.x = -34 + 68 * (now - sbS.t0 - i * BR_GAP) / BR_RIDE; it.m.position.set(it.x, .3, 0);
+      it.x = brBeltX(now - sbS.t0 - i * BR_GAP); it.m.position.set(it.x, .3, 0);
     }
-    sbS.bases.forEach(b => { SB.bases[b.slot].shield.visible = b.lock > now; });
+    for (let i = 0; i < 16; i++) SB.stripes.setMatrixAt(i, SB.m4.compose(SB.v1.set(-56 + ((i * 7 + ride) % 112 + 112) % 112, .31, 0), SB.q, SB.v2)); SB.stripes.instanceMatrix.needsUpdate = true; // the bars move at the same speed as what is riding on it
+    // the ones that were bought and are walking to their new base
+    const going = {}; sbS.walk.forEach(wk => {
+      const o = sbS.bases.find(b => b.id === wk.to); if (!o) return; going[wk.id] = 1;
+      let it = SB.walk[wk.id]; if (!it) { it = SB.walk[wk.id] = { k: wk.k, m: brModel(wk.k), to: wk.to, x: 0, z: 0, inside: false }; SB.scene.add(it.m); }
+      const at = brWalkAt(wk, o.slot, now); it.x = at.x; it.z = at.z; it.inside = at.inside; it.m.position.set(at.x, .1 + Math.abs(Math.sin(now / 110)) * .22, at.z); it.m.rotation.y = at.r; // a little hop with every step
+    });
+    for (const id in SB.walk) if (!going[id]) { SB.scene.remove(SB.walk[id].m); delete SB.walk[id]; } // arrived (it is drawn on its pad now), or bought by someone else
   }
   const cp = Math.cos(SB.pitch) * SB.dist; SB.cam.position.set(p.x + Math.sin(SB.yaw) * cp, p.y + 1.6 + Math.sin(SB.pitch) * SB.dist, p.z + Math.cos(SB.yaw) * cp); SB.cam.lookAt(p.x, p.y + 1.5, p.z);
-  const ePress = !!hk.KeyE && !SB.eWas, xPress = !!hk.KeyX && !SB.xWas, lPress = !!hk.KeyL && !SB.lWas, near = SB.near; SB.eWas = !!hk.KeyE; SB.xWas = !!hk.KeyX; SB.lWas = !!hk.KeyL; // these keys count once per press
+  const ePress = !!hk.KeyE && !SB.eWas, xPress = !!hk.KeyX && !SB.xWas, near = SB.near; SB.eWas = !!hk.KeyE; SB.xWas = !!hk.KeyX; // these keys count once per press
   if (ePress && near && near.type === 'buy') send({ type: 'steal', act: 'buy', i: near.i });
+  else if (ePress && near && near.type === 'rebuy') send({ type: 'steal', act: 'rebuy', id: near.id });
   else if (ePress && near && near.type === 'grab' && !near.locked) send({ type: 'steal', act: 'grab', from: near.from, pad: near.pad });
   if (xPress && near && near.type === 'sell') send({ type: 'steal', act: 'sell', pad: near.pad });
-  if (lPress && sbMine) send({ type: 'steal', act: 'lock' });
   if (t - sbSent > 100) { // ten times a second: report in, sort out who is carrying what, find what E would act on, and refresh the readout
     sbSent = t; send({ type: 'steal', act: 'pos', x: p.x, z: p.z, r: me.rotation.y, s: swing >= 0 ? 1 : 0 });
     const fig = id => (+id === myId ? me : sbMates[id] ? sbMates[id].g : null);
     for (const id in SB.carry) if (held[id] !== SB.carry[id].k || !fig(id)) { const c = SB.carry[id]; if (c.m.parent) c.m.parent.remove(c.m); delete SB.carry[id]; } // put down, or the carrier is gone
     for (const id in held) { const f = fig(id); if (f && !SB.carry[id]) { const m = brModel(held[id]); m.position.y = 2.35; m.scale.multiplyScalar(.75); f.add(m); SB.carry[id] = { k: held[id], m }; } } // a carried brainrot rides above its thief's head
-    let nr = null; // the one thing E (or X) would act on right now: the nearest brainrot on the belt, or the nearest one on a pad
+    if (sbS) sbS.bases.forEach(b => { // each base's lasers and lock button show what its lock is doing
+      const B = SB.bases[b.slot], q = brBtn(b.slot), on = b.lock > now, wait = !on && b.cd > now;
+      B.lasers.visible = B.shield.visible = on; B.btnMat.color.setHex(on ? 0xff3b3b : wait ? 0x777b86 : 0x3dff7a);
+      sbLabel(B, 'tag', on ? 'Locked ' + Math.ceil((b.lock - now) / 1000) + 's' : wait ? 'Ready in ' + Math.ceil((b.cd - now) / 1000) + 's' : 'Lock', q.x, 2.7, q.z, 4.2);
+    });
+    const cash = sbMine ? sbMine.cash + (sbMine.rate || 0) * Math.max(0, now - sbMine.at) / 1000 : 0, lock = sbMine ? sbMine.lock - now : 0, cd = sbMine ? sbMine.cd - now : 0;
+    if (sbMine && lock <= 0 && cd <= 0 && t - SB.lockAt > 1500) { const q = brBtn(sbMine.slot); if (Math.hypot(q.x - p.x, q.z - p.z) < 1.7) { SB.lockAt = t; send({ type: 'steal', act: 'lock' }); tone(520, .12, 'square', .06, 1.4); } } // standing on your own lock button presses it
+    let nr = null; // the one thing E (or X) would act on right now: the nearest brainrot on the belt, walking past, or on a pad
     if (sbS && sbMine && mineK < 0) {
-      for (const i in SB.belt) { const it = SB.belt[i], d = Math.abs(it.x - p.x); if (Math.hypot(it.x - p.x, p.z) < 3.8 && (!nr || d < nr.d)) nr = { type: 'buy', i: +i, k: it.k, d }; }
-      if (!nr) sbS.bases.forEach(b => b.pets.forEach((x, pad) => { if (!x || x[1]) return; const q = brPad(b.slot, pad), d = Math.hypot(q.x - p.x, q.z - p.z); if (d < 2.3 && (!nr || d < nr.d)) nr = { type: b.id === myId ? 'sell' : 'grab', from: b.id, pad, k: x[0], d, locked: b.lock > now }; }));
+      for (const i in SB.belt) { const it = SB.belt[i], d = Math.hypot(it.x - p.x, p.z); if (d < 3.8 && (!nr || d < nr.d)) nr = { type: 'buy', i: +i, k: it.k, d }; }
+      for (const id in SB.walk) { const it = SB.walk[id], d = Math.hypot(it.x - p.x, it.z - p.z); if (it.to !== myId && !it.inside && d < 3.8 && (!nr || d < nr.d)) nr = { type: 'rebuy', id: +id, k: it.k, d }; } // one on its way to someone else, still out in the open
+      sbS.bases.forEach(b => b.pets.forEach((x, pad) => { if (!x || x[1] || x[2]) return; const q = brPad(b.slot, pad), d = Math.hypot(q.x - p.x, q.z - p.z); if (d < 2.6 && (!nr || d < nr.d)) nr = { type: b.id === myId ? 'sell' : 'grab', from: b.id, pad, k: x[0], d, locked: b.lock > now }; }));
     }
     SB.near = nr;
-    const cash = sbMine ? sbMine.cash + (sbMine.rate || 0) * Math.max(0, now - sbMine.at) / 1000 : 0, lock = sbMine ? sbMine.lock - now : 0, cd = sbMine ? sbMine.cd - now : 0;
+    const can = nr && cash >= BR[nr.k][1], what = nr ? BR[nr.k][0] : '';
     sbCashEl.textContent = sbMine ? brCash(cash) : '';
     sbHud.textContent = (t < sbNoteAt ? sbNote + ' · ' : '') + (!sbS ? 'Loading…' : !sbMine ? 'All 8 bases are taken. You can still slap thieves with F or a click'
       : mineK >= 0 ? 'You have a ' + BR[mineK][0] + '! Get it back to your base before someone slaps you'
-      : (nr ? (nr.type === 'buy' ? (cash >= BR[nr.k][1] ? 'E: buy ' : 'Not enough for ') + BR[nr.k][0] + ' (' + brCash(BR[nr.k][1]) + ')' : nr.type === 'grab' ? (nr.locked ? 'This base is locked' : 'E: steal ' + BR[nr.k][0]) : 'X: sell ' + BR[nr.k][0] + ' for ' + brCash(BR[nr.k][1] / 2)) + ' · ' : '')
-        + '+' + brCash(sbMine.rate || 0).slice(1) + '/s · ' + (lock > 0 ? 'Base locked ' + Math.ceil(lock / 1000) + 's' : cd > 0 ? 'Lock ready in ' + Math.ceil(cd / 1000) + 's' : 'L: lock your base') + ' · F or click: slap');
+      : (nr ? (nr.type === 'buy' ? (can ? 'E: buy ' : 'Not enough for ') + what + ' (' + brCash(BR[nr.k][1]) + ')' : nr.type === 'rebuy' ? (can ? 'E: buy this ' : 'Not enough to take this ') + what + ' before it gets there (' + brCash(BR[nr.k][1]) + ')' : nr.type === 'grab' ? (nr.locked ? 'This base is locked' : 'E: steal ' + what) : 'X: sell ' + what + ' for ' + brCash(BR[nr.k][1] / 2)) + ' · ' : '')
+        + '+' + brCash(sbMine.rate || 0).slice(1) + '/s · ' + (lock > 0 ? 'Base locked ' + Math.ceil(lock / 1000) + 's' : cd > 0 ? 'Lock ready in ' + Math.ceil(cd / 1000) + 's' : 'Step on the button inside your gate to lock') + ' · F or click: slap');
   }
   SB.ren.render(SB.scene, SB.cam);
 }
@@ -2956,9 +3005,9 @@ function onStealPos(m) {
   if (m.s && !o.s) o.sAt = Date.now(); // a swing just started
   o.x = m.x; o.z = m.z; o.r = m.r; o.s = m.s; o.t = Date.now();
 }
-function onStealState(m) { sbS = m; sbOff = m.now - Date.now(); if (stealOpen && SB) sbApply(); } // the server's whole picture of the game
+function onStealState(m) { if (!Array.isArray(m.walk)) m.walk = []; sbS = m; sbOff = m.now - Date.now(); if (stealOpen && SB) sbApply(); } // the server's whole picture of the game
 function onStealNote(m) { // a warning for the owner, shown even when they have the game closed
-  const what = BR[m.k] ? BR[m.k][0] : 'brainrot', text = m.what === 'taking' ? m.name + ' is stealing your ' + what + '! Slap them before they get home' : m.name + ' stole your ' + what;
+  const what = BR[m.k] ? BR[m.k][0] : 'brainrot', text = m.what === 'taking' ? m.name + ' is stealing your ' + what + '! Slap them before they get home' : m.what === 'rebought' ? m.name + ' bought your ' + what + ' while it was walking to your base' : m.name + ' stole your ' + what;
   sbNote = text; sbNoteAt = performance.now() + 5000; toast(text); sfx.ping();
 }
 function setSteal(open) {
@@ -2976,7 +3025,7 @@ sbcv.addEventListener('pointerdown', e => { sbcv.setPointerCapture(e.pointerId);
 sbcv.addEventListener('pointermove', e => { if (!sbDrag || !SB) return; sbDrag[2] += Math.abs(e.clientX - sbDrag[0]) + Math.abs(e.clientY - sbDrag[1]); SB.yawT -= (e.clientX - sbDrag[0]) * .006; SB.pitchT = clamp2(SB.pitchT + (e.clientY - sbDrag[1]) * .005, .1, 1.3); sbDrag[0] = e.clientX; sbDrag[1] = e.clientY; });
 sbcv.addEventListener('pointerup', () => { if (sbDrag && sbDrag[2] < 6) sbSlap(performance.now()); sbDrag = null; });
 sbcv.addEventListener('pointercancel', () => { sbDrag = null; });
-sbcv.addEventListener('wheel', e => { e.preventDefault(); if (SB) SB.dist = clamp2(SB.dist + (e.deltaY > 0 ? 1 : -1), 4, 22); }, { passive: false });
+sbcv.addEventListener('wheel', e => { e.preventDefault(); if (SB) SB.dist = clamp2(SB.dist + (e.deltaY > 0 ? 1.5 : -1.5), 5, 32); }, { passive: false });
 $('stealX').onclick = () => setSteal(false);
 
 /* ---------- horror maze: its own game. First person, dark, one flashlight each. Find the 5 keys and reach the door before the thing in the maze reaches you ---------- */
