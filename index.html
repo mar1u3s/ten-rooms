@@ -2534,3 +2534,161 @@ function mzLoop(t) {
 }
 function mzMap() { // the map in the corner: the maze, the keys, the door and where everyone is. The monster is never on it
   const g = mmg, s = mmap.width / MN, dot = (x, z, col, rad) => { g.fillStyle = col; g.beginPath(); g.arc(x / MT * s, z / MT * s, rad, 0, 6.283); g.fill(); };
+  g.fillStyle = '#050505'; g.fillRect(0, 0, mmap.width, mmap.height); g.fillStyle = '#3a3f4a';
+  for (let r = 0; r < MN; r++) for (let c = 0; c < MN; c++) if (mzGrid[r][c]) g.fillRect(c * s, r * s, s + .5, s + .5);
+  mzKeys.forEach((k, i) => { if (!mzRound.keys[i]) dot(k.x, k.z, '#ffd23f', 2.5); });
+  g.fillStyle = mzRound.keys.every(Boolean) ? '#2dff88' : '#7a1010'; g.fillRect((MN - 2) * s, (MN - 2) * s, s, s);
+  for (const id in mzMates) dot(mzMates[id].x, mzMates[id].z, mzRound.caught.includes(+id) ? '#555' : 'hsl(' + (id * 67) % 360 + ',80%,62%)', 3);
+  dot(Z.x, Z.z, Z.dead ? '#777' : accHex, 3.5); g.strokeStyle = accHex; g.lineWidth = 1.5; g.beginPath(); g.moveTo(Z.x / MT * s, Z.z / MT * s); g.lineTo((Z.x - Math.sin(Z.yaw) * 2.2) / MT * s, (Z.z - Math.cos(Z.yaw) * 2.2) / MT * s); g.stroke();
+}
+function mzHum(on) { // a low drone the whole time you are inside, and a growl that gets louder as it gets closer
+  if (on && !mzDrone && sfxOn) try {
+    const c = ctx(), out = c.createGain(), growl = c.createGain(), low = c.createBiquadFilter(), nodes = [[49, 'sine', .09, out], [52.5, 'triangle', .05, out], [71, 'sawtooth', 1, low], [74.5, 'sawtooth', 1, low]].map(([f, type, vol, to]) => { const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f; g.gain.value = vol; o.connect(g).connect(to); o.start(); return o; });
+    low.type = 'lowpass'; low.frequency.value = 260; growl.gain.value = 0; low.connect(growl).connect(c.destination); out.connect(c.destination); mzDrone = { nodes, growl, out };
+  } catch {} else if (!on && mzDrone) { mzDrone.nodes.forEach(o => { try { o.stop(); } catch {} }); mzDrone.out.disconnect(); mzDrone.growl.disconnect(); mzDrone = null; }
+}
+function onMazeState(m) { // the server's word on the round; a new seed means a new maze
+  const fresh = !mzRound || mzRound.seed !== m.seed, was = mzRound && mzRound.state; mzRound = m;
+  if (!mazeOpen || !window.THREE) return;
+  if (fresh || !Z) mzInit(); else mzApply();
+  if (!Z.live) { Z.live = true; mzLast = 0; requestAnimationFrame(mzLoop); }
+  if (was === 'play' && m.state !== 'play' && document.exitPointerLock) document.exitPointerLock();
+}
+function setMaze(open) {
+  if (open === mazeOpen) return;
+  mazeOpen = open; keysOff();
+  if (open) {
+    setBoard(false); setShoot(false); setHang(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(mzEl); mzEl.classList.remove('hidden'); layout();
+    loadThree().then(() => { if (!mazeOpen) return; mzRound = null; mzHum(true); send({ type: 'maze', act: 'open', on: true }); }, // the server answers with the round, and that builds the maze
+      () => { toast('The maze could not load. Check your connection and try again'); setMaze(false); });
+  } else { mzEl.classList.add('hidden'); mzHum(false); if (document.pointerLockElement === mcv) document.exitPointerLock(); send({ type: 'maze', act: 'open', on: false }); layout(); }
+}
+function mazeQuit() { mazeOpen = false; mzEl.classList.add('hidden'); mzHum(false); mzRound = null; for (const id in mzMates) delete mzMates[id]; if (Z) { Z.ren.dispose(); Z = null; } } // leaving the room
+function onMazePos(m) {
+  if (!Z || !mazeOpen || !people[m.id]) return;
+  let o = mzMates[m.id]; if (!o) { o = mzMates[m.id] = { g: hangFigure(new THREE.Color().setHSL((m.id * 67 % 360) / 360, .7, .55), people[m.id].name) }; o.g.position.set(m.x, 0, m.z); Z.scene.add(o.g); }
+  o.x = m.x; o.z = m.z; o.r = m.r; o.t = Date.now();
+}
+// looking around: click the picture to capture the mouse (Esc lets it go); dragging works too
+mcv.addEventListener('click', () => { if (Z && !Z.dead && document.pointerLockElement !== mcv && mcv.requestPointerLock) try { mcv.requestPointerLock(); } catch {} });
+document.addEventListener('mousemove', e => { if (Z && mazeOpen && document.pointerLockElement === mcv) { Z.yaw -= e.movementX * .0025; Z.pitch = clamp2(Z.pitch - e.movementY * .002, -1.2, 1.2); } });
+mcv.addEventListener('pointerdown', e => { if (document.pointerLockElement !== mcv) mzDrag = [e.clientX, e.clientY]; });
+mcv.addEventListener('pointermove', e => { if (!mzDrag || !Z || document.pointerLockElement === mcv) return; Z.yaw -= (e.clientX - mzDrag[0]) * .005; Z.pitch = clamp2(Z.pitch - (e.clientY - mzDrag[1]) * .004, -1.2, 1.2); mzDrag = [e.clientX, e.clientY]; });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => mcv.addEventListener(ev, () => { mzDrag = null; }));
+$('mazeGo').onclick = () => send({ type: 'maze', act: 'start' }); $('mazeX').onclick = () => setMaze(false);
+
+/* ---------- moderation panel (moderators only): blocked accounts, and a quick way to open any profile ---------- */
+function report(kind, what) { // a post, a comment or a person; it goes to the moderators' Moderation tab
+  const why = prompt('What is wrong? You can leave this empty.'); if (why === null) return;
+  send({ type: 'report', kind, why, ...what });
+}
+const closeMod = () => $('modDlg').classList.add('hidden');
+function drawMod(m) {
+  const box = $('modList'); box.innerHTML = ''; $('modInfo').textContent = m.accounts + ' accounts exist. Open a profile to reset a name, clear a bio, block or delete. Posts and comments have their own Delete buttons.';
+  if (!m.users.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'Nobody is blocked.'; box.appendChild(p); }
+  const rp = $('modReports'); rp.innerHTML = ''; // reports sent in by users, newest first
+  m.reports = m.reports || []; m.flags = m.flags || []; // an older server may not send these
+  if (!m.reports.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'No reports waiting.'; rp.appendChild(p); }
+  m.reports.forEach(x => {
+    const r = document.createElement('div'), act = (text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = text; b.onclick = fn; r.appendChild(b); };
+    r.className = 'frow'; r.innerHTML = '<div class="frn"><b></b><small></small></div>';
+    r.querySelector('b').textContent = (x.kind === 'user' ? 'Reported person: @' + x.u : (x.kind === 'post' ? 'Post' : 'Comment') + ' by @' + x.u + ': ' + x.text) + (x.why ? ' (' + x.why + ')' : '');
+    r.querySelector('small').textContent = 'reported by @' + x.by + (x.where ? ' in ' + x.where : '') + ' · ' + when(x.t);
+    act('Profile', () => { closeMod(); openProfile(x.u); });
+    if (x.pid) act(x.cid ? 'Delete comment' : 'Delete post', () => { send({ type: 'post-del', id: x.pid, cid: x.cid || undefined }); send({ type: 'report-done', id: x.id }); setTimeout(() => send({ type: 'mod-list' }), 300); });
+    act('Dismiss', () => { send({ type: 'report-done', id: x.id }); setTimeout(() => send({ type: 'mod-list' }), 300); });
+    rp.appendChild(r);
+  });
+  const fl = $('modFlags'); fl.innerHTML = ''; // what the text filter stopped, and who sent it; click one to open their profile
+  if (!m.flags.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = m.checking ? 'Nothing blocked yet. Filter level ' + m.level + ' of 3.' : 'The filter is off: OPENAI_API_KEY is not set in Render.'; fl.appendChild(p); }
+  m.flags.forEach(x => {
+    const r = document.createElement('div'); r.className = 'frow'; r.innerHTML = '<div class="frn"><b></b><small></small></div>';
+    r.querySelector('b').textContent = x.text || '(text not kept)'; r.querySelector('small').textContent = '@' + x.u + ' · ' + x.where + ' · ' + x.why + ' · ' + when(x.t);
+    if (x.u) r.onclick = () => { closeMod(); openProfile(x.u); }; fl.appendChild(r);
+  });
+  m.users.forEach(u => {
+    const r = document.createElement('div'), b = document.createElement('button'); r.className = 'frow'; b.type = 'button'; b.className = 'ghost'; b.textContent = 'Unblock';
+    r.innerHTML = '<div class="pav"></div><div class="frn"><b></b><small></small></div>'; r.querySelector('.pav').textContent = (u.name[0] || '?').toUpperCase();
+    r.querySelector('b').textContent = u.name; r.querySelector('small').textContent = '@' + u.code + ' · ' + u.devices + (u.devices === 1 ? ' device' : ' devices') + ' blocked';
+    b.onclick = () => { send({ type: 'mod', act: 'unblock', user: u.code }); setTimeout(() => send({ type: 'mod-list' }), 300); }; r.appendChild(b); box.appendChild(r);
+  });
+}
+$('openMod').onclick = () => { $('openMod').classList.remove('has-new'); $('modDlg').classList.remove('hidden'); send({ type: 'mod-list' }); };
+$('modDone').onclick = closeMod; $('modDlg').onclick = e => { if (e.target === $('modDlg')) closeMod(); };
+$('modFind').onsubmit = e => { e.preventDefault(); const u = $('modUser').value.trim().toLowerCase().replace(/^@/, ''); if (u) { closeMod(); openProfile(u); } };
+
+/* ---------- your own font and background image: saved in this browser, only you see them ---------- */
+const FONTS = { Manrope: 'Manrope', Rounded: 'Nunito', Comic: '"Comic Neue"', Typewriter: '"Space Mono"', Serif: 'Georgia', 'Your device font': 'system-ui' };
+function setFont(k) { if (!FONTS[k]) k = 'Manrope'; document.documentElement.style.setProperty('--font', FONTS[k]); $('selFont').value = k; try { localStorage.setItem('font', k); } catch {} }
+Object.keys(FONTS).forEach(k => $('selFont').add(new Option(k, k))); $('selFont').onchange = () => setFont($('selFont').value); setFont(localStorage.getItem('font'));
+function setBg(data) { $('bgimg').style.backgroundImage = data ? 'url("' + data + '")' : ''; $('bgimg').classList.toggle('on', !!data); }
+function setBgDim(v) { v = clamp2(+v || 0, 0, 90); document.documentElement.style.setProperty('--bgdim', v / 100); $('bgDim').value = v; }
+$('bgPick').onclick = () => $('bgFile').click();
+$('bgClear').onclick = () => { setBg(''); try { localStorage.removeItem('bgimg'); } catch {} };
+$('bgDim').oninput = () => { setBgDim($('bgDim').value); try { localStorage.setItem('bgdim', $('bgDim').value); } catch {} };
+$('bgFile').onchange = e => {
+  const file = e.target.files[0], img = new Image(); e.target.value = ''; if (!file) return;
+  img.onload = () => { // shrink it so it fits in the browser's storage
+    const k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(img.src); const data = c.toDataURL('image/jpeg', .8);
+    setBg(data); try { localStorage.setItem('bgimg', data); } catch { toast('That image is too big to keep after a refresh'); }
+  };
+  img.onerror = () => toast('That file is not a usable image'); img.src = URL.createObjectURL(file);
+};
+setBg(localStorage.getItem('bgimg') || ''); setBgDim(localStorage.getItem('bgdim') === null ? 55 : localStorage.getItem('bgdim'));
+
+/* ---------- direct message extras, private calls and the rules page ---------- */
+$('dmGif').onclick = () => openGifs($('frSend'), url => { if (dmOpen) send({ type: 'dm', to: dmOpen, gif: url }); });
+$('dmPic').onclick = () => $('dmFile').click();
+$('dmFile').onchange = async e => { // the image is shrunk and checked by the server first, like images in room chat
+  const file = e.target.files[0], to = dmOpen; e.target.value = ''; if (!file || !to) return;
+  const id = await uploadImage(file); if (id) send({ type: 'dm', to, pic: id });
+};
+const callFriend = code => send({ type: 'call', to: code }); // the server makes a private call and rings them; from inside a private call it brings them into it
+$('frCall').onclick = () => { if (dmOpen) callFriend(dmOpen); };
+let callFrom = null, ringTimer = 0;
+function endRing() { clearInterval(ringTimer); $('callBar').classList.add('hidden'); callFrom = null; }
+function onCallInvite(m) { // a friend is ringing you: a bar with Accept and Decline, and a ring for about 15 seconds
+  let rings = 0; const ring = () => { sfx.ping(); if (++rings > 8) endRing(); };
+  clearInterval(ringTimer); callFrom = m; $('callText').textContent = m.name + ' is calling you'; $('callBar').classList.remove('hidden'); ring(); ringTimer = setInterval(ring, 1800);
+}
+$('callYes').onclick = () => { const m = callFrom; endRing(); if (!m) return; if (inRoom) { send({ type: 'leave' }); exitRoom(); } closeFr(); joinRoom(m.room); };
+$('callNo').onclick = () => { if (callFrom) send({ type: 'call-no', to: callFrom.from }); endRing(); };
+const closeRules = () => $('rulesDlg').classList.add('hidden');
+$('openRules').onclick = $('rulesLink').onclick = $('rulesLink2').onclick = () => $('rulesDlg').classList.remove('hidden');
+$('rulesDone').onclick = closeRules; $('rulesDlg').onclick = e => { if (e.target === $('rulesDlg')) closeRules(); };
+addEventListener('keydown', e => { if (e.key === 'Escape') closeRules(); });
+
+function toast(t) {
+  const old = $('toast'); if (old) old.remove();
+  const d = document.createElement('div'); d.id = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 4000);
+}
+/* ---------- start-up: the site can open itself inside an about:blank tab ---------- */
+function openBlank() { // true if a blank tab now holds this site in a full-page frame
+  let w = null; try { w = window.open('about:blank', '_blank'); } catch {}
+  if (!w) return false; // the browser blocked it
+  const fill = () => { // some browsers swap in a fresh blank page a moment after opening, which would wipe the frame, so this runs a few times
+    try {
+      const d = w.document; if (w.closed || d.querySelector('iframe')) return;
+      const fr = d.createElement('iframe'); fr.src = location.href; fr.allow = 'camera; microphone; display-capture; autoplay; fullscreen; clipboard-write; speaker-selection'; fr.setAttribute('allowfullscreen', '');
+      fr.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:0';
+      if (!d.body) d.documentElement.appendChild(d.createElement('body'));
+      d.body.style.cssText = 'margin:0;background:#000;overflow:hidden'; d.body.appendChild(fr);
+    } catch {}
+  };
+  fill(); [150, 600, 1500].forEach(ms => setTimeout(fill, ms));
+  try { return !w.closed; } catch { return false; }
+}
+const stayed = (() => { try { return !!sessionStorage.getItem('stay'); } catch { return false; } })();
+if (window !== window.top || stayed) connect(); // already inside the blank tab's frame, or this tab chose to stay
+else {
+  const opened = () => { $('cloakMsg').textContent = 'Ten Rooms is open in the new tab. You can close this one.'; $('cloakGo').textContent = 'Open another blank tab'; $('cloakStay').textContent = 'Use it in this tab instead'; };
+  // the buttons are wired up before anything is tried, so they work even if the automatic attempt goes wrong
+  $('cloakGo').onclick = () => { if (openBlank()) opened(); else $('cloakMsg').textContent = 'Your browser blocked the new tab. Click the pop-up blocked icon in the address bar and allow pop-ups for this site, then press the button again. Or stay in this tab.'; };
+  $('cloakStay').onclick = () => { try { sessionStorage.setItem('stay', '1'); } catch {} $('cloak').classList.add('hidden'); connect(); };
+  $('cloak').classList.remove('hidden');
+  try { if (openBlank()) opened(); } catch {} // browsers only allow this without a click if pop-ups are already allowed for the site
+}
+</script>
+</body>
+</html>
