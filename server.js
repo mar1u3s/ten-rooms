@@ -1,6 +1,9 @@
 // Ten Rooms: accounts, lobby and signaling server. Video/audio go browser-to-browser (WebRTC); this handles logins, rooms, handshakes, chat and posts.
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { WebSocketServer } = require('ws');
+// Raised whenever the page starts needing something new from the server. index.html carries the number it expects, and tells moderators when
+// the server it reached is older: that means index.html was updated on GitHub but server.js was not. Also shown at /status.
+const VERSION = 22;
 
 const PORT = process.env.PORT || 3000, REACTS = ['👍', '😂', '🎉', '👏', '🔥', '💜'];
 // [name, max people]. Small rooms keep full video; bigger rooms get lower per-person video quality (see tune() in index.html).
@@ -59,7 +62,7 @@ function upload(req, res) { // POST /upload: the JPEG bytes, with the login toke
 
 const server = http.createServer((req, res) => {
   if (req.url === '/health') { res.writeHead(200); return res.end('ok'); }
-  if (req.url === '/status') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ storage: useSB ? 'supabase' : 'local file (lost on every deploy)', accounts: accounts.size })); }
+  if (req.url === '/status') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ storage: useSB ? 'supabase' : 'local file (lost on every deploy)', accounts: accounts.size, version: VERSION })); }
   const av = /^\/av\/([a-z0-9_]{3,16})(\?|$)/.exec(req.url); // someone's profile picture; the ?v= number changes whenever they change it, so browsers can keep it forever
   if (av) {
     const a = accounts.get(av[1]), d = a && a.av; if (!d) { res.writeHead(404); return res.end('No picture'); }
@@ -102,7 +105,7 @@ const SB_URL = envVal('SUPABASE_URL').replace(/\/+$/, ''), SB_KEY = envVal('SUPA
 if (!useSB) console.warn('WARNING: Supabase is not connected (' + (SB_URL ? 'SUPABASE_SECRET_KEY' : 'SUPABASE_URL') + ' is not set). Accounts and posts are kept in a local file and will be LOST on the next deploy or restart.');
 const DATA = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'tenrooms.json'), ACC = path.join(path.dirname(DATA), 'accounts.json');
 const ADMINS = new Set((process.env.ADMIN_USERS || 'diddydespacito').split(',').map(s => s.trim().toLowerCase().replace(/^@/, '')).filter(Boolean)); // usernames that can moderate: delete posts and accounts, reset names, run the global poll
-const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0, blocked: { users: [], devices: [] }, flags: [] }; // blocked.devices: [{ id, user }]
+const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0, blocked: { users: [], devices: [] }, flags: [], reports: [] }; // blocked.devices: [{ id, user }]
 const ever = new Set(), today = new Set(); // usernames seen ever, and seen on store.day
 const accounts = new Map(), tokens = new Map(); // username -> account; hash of a login token -> username
 const dirty = new Set(), gone = new Set(); // accounts waiting to be written, and deleted ones waiting to be removed
@@ -111,6 +114,7 @@ function adopt(d) { // take loaded data as the current state
   Object.assign(store, d); if (!Array.isArray(store.posts)) store.posts = [];
   if (!store.blocked || !Array.isArray(store.blocked.users) || !Array.isArray(store.blocked.devices)) store.blocked = { users: [], devices: [] };
   if (!Array.isArray(store.flags)) store.flags = [];
+  if (!Array.isArray(store.reports)) store.reports = [];
   ever.clear(); (store.ever || []).forEach(c => ever.add(c)); today.clear(); (store.today || []).forEach(c => today.add(c));
 }
 function adoptAccounts(list) {
@@ -195,12 +199,15 @@ const pushGpoll = () => wss.clients.forEach(c => c.name && send(c, { type: 'gpol
 const USER_RE = /^[a-z0-9_]{3,16}$/;
 // Text moderation, used on names, bios, chat, topics, polls, posts and comments. Two layers:
 // 1. BLOCKED_WORDS (Render: Environment, comma-separated): matched after undoing the usual tricks (l33t, spaces and dots between letters, repeated letters).
-// 2. OpenAI's moderation model, when OPENAI_API_KEY is set. Only the extreme end is blocked: slurs and hate speech, and anything sexual involving minors.
-//    Swearing, insults, arguments and everything else are let through.
+// 2. OpenAI's moderation model, when OPENAI_API_KEY is set. FILTER_LEVEL (Render: Environment) sets how strict it is:
+//    1 = only slurs / hate speech and anything sexual involving minors.
+//    2 = the default: catches those sooner (lower thresholds), plus threats and violent talk aimed at someone (even mild or half-joking ones), graphic violence, explicit sexual content and encouraging self-harm.
+//    3 = strictest: also ordinary harassment and violent talk. Swearing on its own is never blocked.
 // Whatever gets blocked is noted in store.flags so a moderator can see who tried it.
 const squash = t => String(t).toLowerCase().replace(/[@4]/g, 'a').replace(/[1!|]/g, 'i').replace(/3/g, 'e').replace(/0/g, 'o').replace(/[5$]/g, 's').replace(/7/g, 't').replace(/[^a-z]/g, '').replace(/(.)\1+/g, '$1');
 const BLOCKED = (process.env.BLOCKED_WORDS || '').split(',').map(squash).filter(w => w.length > 2);
 const badName = t => { const l = squash(t); return BLOCKED.some(w => l.includes(w)); };
+const FILTER = Math.max(1, Math.min(3, Math.round(+process.env.FILTER_LEVEL) || 2));
 const okCache = new Map(); // text already checked -> '' if fine, or the reason it is blocked
 function flag(who, where, why, text) { // remember the last 60 blocked messages for the moderation panel. Child-safety blocks keep no copy of the text
   store.flags.push({ u: who || '', t: Date.now(), where: where || '', why, text: why === 'child safety' ? '' : String(text).slice(0, 120) });
@@ -217,7 +224,13 @@ async function textOk(text, who, where) { // false means: block it
       const r = await fetch('https://api.openai.com/v1/moderations', { method: 'POST', signal: AbortSignal.timeout(4000), headers: { Authorization: 'Bearer ' + OPENAI, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'omni-moderation-latest', input: text }) });
       if (!r.ok) throw new Error('OpenAI answered ' + r.status);
       const res = (await r.json()).results[0], c = res.categories || {}, sc = res.category_scores || {};
-      why = c['sexual/minors'] || sc['sexual/minors'] > .2 ? 'child safety' : c.hate || c['hate/threatening'] ? 'slur or hate' : ''; // nothing else is blocked
+      const L = FILTER - 1; // picks the threshold for this level out of each [level 1, level 2, level 3] list
+      why = c['sexual/minors'] || sc['sexual/minors'] > [.2, .08, .04][L] ? 'child safety'
+        : c.hate || c['hate/threatening'] || sc.hate > [1, .2, .1][L] ? 'slur or hate'
+        : c['harassment/threatening'] || sc['harassment/threatening'] > [.5, .1, .05][L] || (L >= 1 && (c['violence/graphic'] || c.violence || sc.violence > [1, .4, .25][L])) ? 'threat' // threatening someone, even when it is worded as a joke or a dare
+        : L >= 1 && (c.sexual || sc.sexual > .5) ? 'sexual content'
+        : L >= 1 && (c['self-harm/instructions'] || c['self-harm/intent']) ? 'self-harm'
+        : L >= 2 && (c.harassment || c.violence) ? 'harassment' : '';
       if (okCache.size > 3000) okCache.clear(); okCache.set(key, why);
     } catch (e) { console.warn('text check failed:', e.message); return true; } // if the checker is down, the site keeps working
   }
@@ -243,7 +256,7 @@ function presence(ws) { // tell one person which of their friends are online and
   if (!ws.acct) return;
   const list = ws.acct.friends.filter(c => online.has(c) && isFriend(c, ws.code)).map(c => {
     const all = socketsOf(c), o = all.find(x => x.room) || all[0];
-    return { code: c, name: o.name, room: o.room ? o.room.id : 0 };
+    return { code: c, name: o.name, room: o.room ? (o.room.private ? -1 : o.room.id) : 0 }; // -1: in a private call, which friends cannot walk into
   });
   send(ws, { type: 'presence', list });
 }
@@ -266,7 +279,7 @@ function startSession(ws, a, fresh, dev) { // this socket is now logged in as ac
   if (dev && !a.devices.includes(dev)) { a.devices.push(dev); if (a.devices.length > 5) a.devices.shift(); saveAcct(a); } // remembered so a block can cover the device too
   if (!online.has(ws.code)) online.set(ws.code, new Set());
   online.get(ws.code).add(ws); seen(ws.code);
-  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY, pics: !!OPENAI, saved: useSB, latest: latest(), picBase: OPENAI && postPics ? PIC_BASE : '', stats: stats(), token, me: meView(a), admin: ADMINS.has(a.username) });
+  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, v: VERSION, gifs: !!KLIPY, pics: !!OPENAI, saved: useSB, reports: ADMINS.has(a.username) ? store.reports.length : 0, latest: latest(), picBase: OPENAI && postPics ? PIC_BASE : '', stats: stats(), token, me: meView(a), admin: ADMINS.has(a.username) });
   send(ws, { type: 'gpoll', poll: gpollView(ws) }); sendFriends(a.username); pushLobby();
 }
 async function auth(ws, m) { // the only messages a socket may send before it is logged in
@@ -397,18 +410,26 @@ function c4win(b, i) { // b is 7 wide and 6 tall with row 0 at the top; i is the
 }
 // Shooter arena guns: damage per bullet, milliseconds between shots, bullets per shot. The page has the same table plus how each one looks.
 const SHGUNS = { pistol: { dmg: 25, gap: 280, n: 1 }, smg: { dmg: 12, gap: 90, n: 1 }, shotgun: { dmg: 14, gap: 750, n: 5 }, sniper: { dmg: 80, gap: 1100, n: 1 } };
-// A race counts as running from Start until someone finishes (or 2 minutes pass); a shooter match until someone wins (or a minute goes by with no hits). Nobody can start another while one is running.
-const raceLive = r => !!r.race && !r.race.free && !r.race.done.size && Date.now() - r.race.at < 120000;
+// A shooter match counts as running until someone wins, or a minute goes by with no hits. Nobody can start another while one is running.
 const shootLive = r => !!r.shoot && !!r.shoot.live && !r.shoot.over && Date.now() - r.shoot.last < 60000;
+const privates = new Map(); // id -> a room like the ten public ones, plus: private, allowed (usernames that may join), made (when)
+const mazers = r => [...r.members.values()].filter(p => p.mazing); // who is inside the horror maze right now
+function mazeState(r) { // what every player in the maze needs to know about the round; also picks who moves the monster
+  const z = r.maze, ids = mazers(r).map(p => p.id); if (!ids.includes(z.host)) z.host = ids[0] || 0;
+  return { type: 'maze-state', seed: z.seed, keys: z.keys, caught: z.caught, state: z.state, host: z.host, grace: Math.max(0, z.at + 8000 - Date.now()) };
+}
+const mazeNew = () => ({ seed: 1 + Math.floor(Math.random() * 1e9), keys: [0, 0, 0, 0, 0], caught: [], state: 'play', at: Date.now(), host: 0 }); // the monster sleeps for the first 8 seconds
 function leave(ws) {
   const r = ws.room; if (!r) return;
-  r.members.delete(ws.id); ws.room = null; ws.racing = false;
+  r.members.delete(ws.id); ws.room = null;
+  if (ws.mazing) { ws.mazing = false; mazers(r).forEach(p => send(p, { type: 'maze-gone', id: ws.id })); if (r.maze && mazers(r).length) mazers(r).forEach(p => send(p, mazeState(r))); }
   if (ws.hanging) { ws.hanging = false; r.members.forEach(p => p.hanging && send(p, { type: 'hang-gone', id: ws.id })); }
   if (ws.shooting) { ws.shooting = false; r.members.forEach(p => p.shooting && send(p, { type: 'shoot-gone', id: ws.id })); }
   toRoom(r, { type: 'peer-left', id: ws.id });
   say(r, `${ws.name} left`);
   if (r.vote) { r.vote.yes.delete(ws.id); r.vote.no.delete(ws.id); checkVote(r); }
-  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; r.race = null; r.shoot = null; } // empty room resets
+  if (r.private && !r.members.size) privates.delete(r.id); // a private call ends when the last person leaves
+  if (!r.members.size) { r.topic = ''; r.chat = []; r.board = []; r.shoot = null; r.maze = null; } // empty room resets
   pushLobby();
 }
 
@@ -422,14 +443,15 @@ wss.on('connection', (ws, req) => {
     if (!m || typeof m !== 'object') return;
     if (!ws.acct) return void auth(ws, m); // nothing below works until this socket has logged in
     if (m.type === 'join') {
-      const r = rooms[(m.room | 0) - 1]; if (!r) return;
+      const priv = typeof m.room === 'string', r = priv ? privates.get(m.room) : rooms[(m.room | 0) - 1]; if (!r) return priv ? err(ws, 'That call has ended') : undefined;
+      if (r.private && !r.allowed.has(ws.code)) return err(ws, 'You were not invited to that call');
       if (r.members.size >= r.max) return send(ws, { type: 'error', text: `${r.name} is full` });
       const banned = Math.max(r.bans.get('c:' + ws.code) || 0, r.bans.get('n:' + ws.name.toLowerCase()) || 0) - Date.now();
       if (banned > 0) return send(ws, { type: 'error', text: `You were voted out of ${r.name}. Try again in ${Math.ceil(banned / 60000)} min.` });
       leave(ws); ws.st = {};
       const peers = [...r.members.values()].map(p => ({ id: p.id, name: p.name, avatar: p.avatar, code: p.code, ...p.st }));
       r.members.set(ws.id, ws); ws.room = r;
-      send(ws, { type: 'joined', room: r.id, name: r.name, max: r.max, topic: r.topic, board: r.board, peers, chat: r.chat, vote: voteInfo(r), race: r.race ? r.race.seed : 0, shoot: r.shoot ? r.shoot.seed : 0 });
+      send(ws, { type: 'joined', room: r.id, name: r.name, max: r.max, topic: r.topic, board: r.board, peers, chat: r.chat, vote: voteInfo(r), shoot: r.shoot ? r.shoot.seed : 0 });
       toRoom(r, { type: 'peer-joined', id: ws.id, name: ws.name, avatar: ws.avatar, code: ws.code, ...ws.st }, ws.id);
       say(r, `${ws.name} joined`); pushLobby();
     } else if (m.type === 'leave') leave(ws);
@@ -557,27 +579,6 @@ wss.on('connection', (ws, req) => {
         g.win = won ? me : g.b.every(c => c !== null) ? 'draw' : null;
       }
       toRoom(ws.room, { type: 'game', mid: msg.id, game: g });
-    } else if (m.type === 'race' && ws.room) {
-      const r = ws.room;
-      if (m.act === 'pos') { // where this player is, passed on to the others about 12 times a second
-        const x = +m.x, y = +m.y; if (!isFinite(x) || !isFinite(y) || slow(ws, 'lastPos', 60)) return;
-        r.members.forEach((p, id) => { if (id !== ws.id && p.racing) send(p, { type: 'race-pos', id: ws.id, x: Math.round(x), y: Math.round(y) }); }); // only people with the race open
-      } else if (m.act === 'open') { // they opened or closed the race panel
-        ws.racing = !!m.on; if (!ws.racing) return;
-        if (!r.race) r.race = { seed: 1 + Math.floor(Math.random() * 1e9), at: Date.now(), done: new Set(), free: true }; // nobody has started a race yet: one shared practice course for the room
-        send(ws, { type: 'race-course', seed: r.race.seed, age: Date.now() - r.race.at, racing: !r.race.free, done: r.race.done.has(ws.id), live: raceLive(r) }); // age: how long the course has been running, so moving platforms line up for everyone
-      } else if (m.act === 'start') {
-        if (raceLive(r)) return err(ws, 'A race is already running. Wait for it to finish');
-        if (slow(ws, 'lastRace', 8000)) return err(ws, 'Wait a few seconds before starting another race');
-        r.race = { seed: 1 + Math.floor(Math.random() * 1e9), at: Date.now() + 3500, done: new Set() }; // the seed builds the same course for everyone
-        toRoom(r, { type: 'race-start', seed: r.race.seed, wait: 3500, by: ws.name });
-        say(r, ws.name + ' started a platformer race. Press Join on the banner to race');
-      } else if (m.act === 'finish' && r.race && !r.race.free && !r.race.done.has(ws.id)) {
-        const ms = Date.now() - r.race.at; if (ms < 4000) return; // nobody finishes that fast
-        r.race.done.add(ws.id); const secs = (ms / 1000).toFixed(1);
-        say(r, r.race.done.size === 1 ? ws.name + ' won the platformer race in ' + secs + 's' : ws.name + ' finished the race in ' + secs + 's');
-        toRoom(r, { type: 'race-end', id: ws.id, name: ws.name, place: r.race.done.size, secs });
-      }
     } else if (m.type === 'shoot' && ws.room) { // shooter arena: each browser moves its own player and reports when its bullets land; health and score are kept here
       const r = ws.room, now = Date.now(), gun = SHGUNS[m.gun] ? m.gun : 'pistol', num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0);
       const all = msg => r.members.forEach(p => p.shooting && send(p, msg)), others = msg => r.members.forEach((p, id) => { if (id !== ws.id && p.shooting) send(p, msg); });
@@ -612,7 +613,34 @@ wss.on('connection', (ws, req) => {
       if (m.act === 'open') {
         ws.hanging = !!m.on; if (!ws.hanging) return others({ type: 'hang-gone', id: ws.id });
         if (!slow(ws, 'lastHangIn', 20000)) r.members.forEach((p, id) => { if (id !== ws.id && !p.hanging) send(p, { type: 'hang-open', name: ws.name }); }); // invite the people who are not in it
-      } else if (m.act === 'pos' && ws.hanging && !slow(ws, 'lastHPos', 70)) others({ type: 'hang-pos', id: ws.id, x: num(m.x), y: num(m.y), z: num(m.z), r: num(m.r), e: m.e ? 1 : 0 });
+      } else if (m.act === 'pos' && ws.hanging) { if (!slow(ws, 'lastHPos', 70)) others({ type: 'hang-pos', id: ws.id, x: num(m.x), y: num(m.y), z: num(m.z), r: num(m.r), e: m.e ? 1 : 0, s: m.s ? 1 : 0 }); }
+      else if (m.act === 'hit' && ws.hanging) { const t = r.members.get(m.to); if (t && t !== ws && t.hanging && !slow(ws, 'sword' + t.id, 400)) send(t, { type: 'hang-hit', by: ws.id }); } // a sword swing reached them; their own browser takes the heart off
+      else if (m.act === 'ko' && ws.hanging) { const k = r.members.get(m.by); if (k && k !== ws && !slow(ws, 'lastKo', 2000)) say(r, k.name + ' knocked ' + ws.name + ' out of the sword arena'); }
+      else if (m.act === 'goal' && ws.hanging) { const ms = m.ms | 0; if (ms >= 3000 && ms < 3600000 && !slow(ws, 'lastGoal', 5000)) say(r, ws.name + ' finished the 3D parkour in ' + (ms / 1000).toFixed(1) + 's'); }
+    } else if (m.type === 'maze' && ws.room) { // horror maze: the round lives here; the host's browser moves the monster and everyone reports their own position
+      const r = ws.room, num = v => (isFinite(+v) ? Math.round(+v * 100) / 100 : 0), all = msg => mazers(r).forEach(p => send(p, msg)), others = msg => mazers(r).forEach(p => p !== ws && send(p, msg));
+      if (m.act === 'open') {
+        ws.mazing = !!m.on;
+        if (!ws.mazing) { others({ type: 'maze-gone', id: ws.id }); if (r.maze && mazers(r).length) all(mazeState(r)); return; }
+        if (!r.maze || r.maze.state !== 'play' || mazers(r).length === 1) r.maze = mazeNew(); // nobody was in it, or the last round is over: a fresh maze
+        all(mazeState(r));
+        if (!slow(ws, 'lastMazeIn', 20000)) r.members.forEach(p => { if (!p.mazing) send(p, { type: 'maze-open', name: ws.name }); }); // invite the rest of the room
+      } else if (!ws.mazing || !r.maze) return;
+      else if (m.act === 'pos') { if (!slow(ws, 'lastMPos', 70)) others({ type: 'maze-pos', id: ws.id, x: num(m.x), z: num(m.z), r: num(m.r) }); }
+      else if (m.act === 'mon') { if (ws.id === r.maze.host && !slow(ws, 'lastMon', 70)) others({ type: 'maze-mon', x: num(m.x), z: num(m.z), r: num(m.r), see: m.see ? 1 : 0 }); }
+      else if (m.act === 'key') { const i = m.i | 0; if (r.maze.state === 'play' && i >= 0 && i < 5 && !r.maze.keys[i]) { r.maze.keys[i] = 1; all({ type: 'maze-key', keys: r.maze.keys, name: ws.name }); } }
+      else if (m.act === 'caught') {
+        if (r.maze.state !== 'play' || r.maze.caught.includes(ws.id) || Date.now() < r.maze.at + 8000) return;
+        r.maze.caught.push(ws.id); all({ type: 'maze-caught', caught: r.maze.caught, name: ws.name });
+        if (mazers(r).every(p => r.maze.caught.includes(p.id))) { r.maze.state = 'lost'; say(r, 'Nobody escaped the horror maze'); all(mazeState(r)); }
+      } else if (m.act === 'escape') {
+        if (r.maze.state !== 'play' || !r.maze.keys.every(Boolean) || r.maze.caught.includes(ws.id)) return;
+        r.maze.state = 'won'; say(r, ws.name + ' escaped the horror maze!'); all(mazeState(r));
+      } else if (m.act === 'start') { // a new round, but not while people are still alive in this one
+        if (r.maze.state === 'play' && mazers(r).length > 1 && Date.now() - r.maze.at < 900000) return err(ws, 'A round is already running. Wait for it to end');
+        if (slow(ws, 'lastMazeGo', 5000)) return;
+        r.maze = mazeNew(); all(mazeState(r)); say(r, ws.name + ' started a new horror maze round');
+      }
     } else if (m.type === 'kick' && ws.room) { // start a vote to kick someone; the starter counts as a yes
       const r = ws.room, t = r.members.get(m.id);
       if (!t || t === ws) return;
@@ -638,16 +666,29 @@ wss.on('connection', (ws, req) => {
     } else if (m.type === 'friend-del') {
       const a = ws.acct, i = a.friends.indexOf(m.code); if (i < 0) return;
       a.friends.splice(i, 1); saveAcct(a); sendFriends(a.username); sendFriends(m.code); pushLobby();
-    } else if (m.type === 'dm') { // direct message: passed straight on, never stored here
-      const text = String(m.text || '').trim().slice(0, 500); if (!text || slow(ws, 'lastDm', 300)) return;
-      if (!mutual(ws.code, m.to) || !online.has(m.to)) return send(ws, { type: 'dm-fail', text: 'Not sent: they are offline or have not added you back' });
-      const to = m.to;
+    } else if (m.type === 'dm') { // direct message: passed straight on, never stored here. Text, a GIF, or an image that was uploaded and checked
+      const gif = KLIPY && typeof m.gif === 'string' && m.gif.length < 300 && GIFURL.test(m.gif) ? m.gif : null, up = !gif && typeof m.pic === 'string' && pics.get(m.pic), pic = up && up.by === ws.code && !up.used ? m.pic : null;
+      const text = gif || pic ? '' : String(m.text || '').trim().slice(0, 500), to = m.to; if ((!text && !gif && !pic) || slow(ws, 'lastDm', 300)) return;
+      if (!mutual(ws.code, to) || !online.has(to)) return send(ws, { type: 'dm-fail', text: 'Not sent: they are offline or have not added you back' });
       textOk(text, ws.code, 'a direct message').then(ok => {
         if (!ok) return send(ws, { type: 'dm-fail', text: 'That message was blocked' });
-        const t = Date.now();
-        socketsOf(to).forEach(o => send(o, { type: 'dm', from: ws.code, name: ws.name, text, t }));
-        socketsOf(ws.code).forEach(o => send(o, { type: 'dm', to, text, t }));
+        const body = { text, t: Date.now() }; if (gif) body.gif = gif; if (pic) { up.used = true; body.pic = pic; }
+        socketsOf(to).forEach(o => send(o, { type: 'dm', from: ws.code, name: ws.name, ...body }));
+        socketsOf(ws.code).forEach(o => send(o, { type: 'dm', to, ...body }));
       });
+    } else if (m.type === 'call') { // ring a friend. Makes a private call (or, from inside one, brings them into it)
+      const to = String(m.to || ''); if (!mutual(ws.code, to) || !online.has(to)) return err(ws, 'They are offline or have not added you back');
+      if (slow(ws, 'lastCall', 4000)) return err(ws, 'Wait a few seconds before calling again');
+      privates.forEach((p, id) => { if (!p.members.size && Date.now() - p.made > 120000) privates.delete(id); }); // calls nobody ever joined
+      let r = ws.room && ws.room.private ? ws.room : null;
+      if (!r) {
+        r = { id: 'p' + crypto.randomBytes(6).toString('hex'), name: 'Private call', max: 8, private: true, allowed: new Set([ws.code]), made: Date.now(), topic: '', board: [], members: new Map(), chat: [], bans: new Map(), vote: null };
+        privates.set(r.id, r); send(ws, { type: 'call-room', room: r.id });
+      }
+      if (ws.room === r) send(ws, { type: 'note', text: 'Ringing ' + accounts.get(to).display + '…' }); // already in the call: just say it is ringing
+      r.allowed.add(to); socketsOf(to).forEach(o => send(o, { type: 'call-invite', from: ws.code, name: ws.name, room: r.id }));
+    } else if (m.type === 'call-no') { // they pressed Decline
+      const to = String(m.to || ''); if (mutual(ws.code, to) && !slow(ws, 'lastNo', 2000)) socketsOf(to).forEach(o => send(o, { type: 'note', text: ws.name + ' declined the call' }));
     } else if (m.type === 'search') { // everyone can search: people by @username or display name, posts by their text or author
       const q = clean(m.q, 40).toLowerCase().replace(/^@/, ''); if (q.length < 2) return err(ws, 'Type at least 2 letters to search');
       if (slow(ws, 'lastSearch', 400)) return;
@@ -682,8 +723,20 @@ wss.on('connection', (ws, req) => {
       } else return;
       if (m.act === 'reset-name' || m.act === 'clear-bio') socketsOf(a.username).forEach(o => send(o, { type: 'me', me: meView(a), saved: true, mod: true }));
       send(ws, { type: 'mod-done', act: m.act, user: a.username });
+    } else if (m.type === 'report') { // anyone can report a post, a comment or a person; it shows up in the moderation tab
+      const kind = ['post', 'comment', 'user'].includes(m.kind) ? m.kind : 'user';
+      const p = kind !== 'user' && store.posts.find(x => x.id === m.pid), c = kind === 'comment' && p && p.comments.find(x => x.id === m.cid);
+      const u = kind === 'post' ? p && p.code : kind === 'comment' ? c && c.code : String(m.user || '').toLowerCase();
+      if (!u || !accounts.has(u) || u === ws.code) return err(ws, 'That could not be reported');
+      if (slow(ws, 'lastReport', 15000)) return err(ws, 'Wait a few seconds before sending another report');
+      store.reports.push({ id: ++store.seq, by: ws.code, u, kind, pid: p ? p.id : 0, cid: c ? c.id : 0, text: (c ? c.text : p ? p.text || '(a photo)' : '').slice(0, 200), why: clean(m.why, 200), where: ws.room ? ws.room.name : '', t: Date.now() });
+      if (store.reports.length > 100) store.reports.shift();
+      save(); send(ws, { type: 'note', text: 'Report sent to the moderators. Thank you' });
+      wss.clients.forEach(o => { if (o.code && ADMINS.has(o.code)) send(o, { type: 'report-new', u, kind }); }); // moderators who are online hear about it straight away
+    } else if (m.type === 'report-done' && ADMINS.has(ws.code)) { // a moderator has dealt with it
+      store.reports = store.reports.filter(x => x.id !== m.id); save();
     } else if (m.type === 'mod-list' && ADMINS.has(ws.code)) { // the moderation panel: who is blocked
-      send(ws, { type: 'mod-list', users: store.blocked.users.map(u => ({ code: u, name: accounts.has(u) ? accounts.get(u).display : u, devices: store.blocked.devices.filter(d => d.user === u).length })), accounts: accounts.size, flags: store.flags.slice(-30).reverse(), checking: !!OPENAI });
+      send(ws, { type: 'mod-list', users: store.blocked.users.map(u => ({ code: u, name: accounts.has(u) ? accounts.get(u).display : u, devices: store.blocked.devices.filter(d => d.user === u).length })), accounts: accounts.size, flags: store.flags.slice(-30).reverse(), checking: !!OPENAI, level: FILTER, reports: store.reports.slice().reverse() });
     } else if (m.type === 'ability' && ws.room) { // throw a tomato at someone in the room; everyone there sees it land
       const t = ws.room.members.get(m.to); if (m.id !== 'a_tomato' || !t || t === ws) return;
       if (slow(ws, 'lastAbil', 10000)) return err(ws, 'Wait 10 seconds between tomatoes');

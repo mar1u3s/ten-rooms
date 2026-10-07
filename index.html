@@ -429,6 +429,8 @@ button:active:not(:disabled){transform:scale(.95)}
 .frhead .solid{padding:6px 16px;font-size:.85rem}
 .dm img{display:block;max-width:100%;max-height:180px;border-radius:8px}
 .dm small{display:block;margin-top:2px;font-size:.65rem;opacity:.6}
+/* shown to moderators when the server is older than this page */
+#oldServer{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:44;max-width:92vw;padding:10px 16px;font-size:.88rem;background:var(--bg);border:1px solid #ffb020;border-radius:14px;box-shadow:0 0 0 2px #ffb020}
 /* themes */
 #settings .panel{max-height:100%;overflow:auto}
 .themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -648,6 +650,7 @@ button:active:not(:disabled){transform:scale(.95)}
   </div>
 </div>
 
+<div id="oldServer" class="hidden" role="alert">server.js on GitHub is older than this page. New features (horror maze, calls, sword hits and anything else added recently) will not work until you upload the newest server.js as well.</div>
 <div id="notes" aria-live="polite"></div>
 <div id="hint" class="mod hidden" role="dialog" aria-label="Tip"><b id="hintText"></b><div><button type="button" class="ghost" id="hintSkip">Skip tips</button><button type="button" class="solid" id="hintNext">Next</button></div></div>
 
@@ -792,6 +795,7 @@ let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, 
 /* ---------- views + name ---------- */
 function show(v) { ['auth', 'lobby', 'feed', 'prof', 'call'].forEach(x => $(x).classList.toggle('hidden', x !== v)); $('nav').classList.toggle('hidden', v === 'auth' || v === 'call'); [['feedBack', 'lobby'], ['openFeed', 'feed'], ['openProf', 'prof']].forEach(([id, view]) => $(id).classList.toggle('on', v === view)); if (v !== 'lobby' && hintAt >= 0) showHint(-1); } // leaving the menu ends the tips
 // Accounts: you log in with a username and password. The server answers with a token that keeps this browser logged in.
+const NEED_SERVER = 22; let serverOld = false; // the server version this page was written for; serverOld: the server we reached is older than that
 let acct = null, token = localStorage.getItem('token') || '', authMode = 'login'; // acct: { code (your @username), display, bio, av }
 const dev = (() => { // a random id for this browser, so a moderator's block can cover the device as well as the account
   let k = localStorage.getItem('dev');
@@ -838,9 +842,9 @@ function drawMe() { $('me').textContent = acct.display + ' @' + acct.code; }
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; $('authGo').disabled = false; authNote(''); if (isAdmin && !m.saved) setTimeout(() => notify('Warning: accounts are NOT being saved. Supabase is not connected, so everything resets on the next update. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Render.'), 1500); $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); $('dmPic').classList.toggle('hidden', !m.pics); $('dmGif').classList.toggle('hidden', !m.gifs); picBase = m.picBase || ''; picWhy = !m.pics ? 'OPENAI_API_KEY is not set in Render' : !m.saved ? 'Supabase is not connected in Render' : ''; drawLatest(m.latest || []); $('openMod').classList.toggle('hidden', !isAdmin); $('openMod').classList.toggle('has-new', !!m.reports); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; serverOld = (m.v || 0) < NEED_SERVER; $('oldServer').classList.toggle('hidden', !(serverOld && isAdmin)); $('authGo').disabled = false; authNote(''); if (isAdmin && !m.saved) setTimeout(() => notify('Warning: accounts are NOT being saved. Supabase is not connected, so everything resets on the next update. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Render.'), 1500); $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); $('dmPic').classList.toggle('hidden', !m.pics); $('dmGif').classList.toggle('hidden', !m.gifs); picBase = m.picBase || ''; picWhy = !m.pics ? 'OPENAI_API_KEY is not set in Render' : !m.saved ? 'Supabase is not connected in Render' : ''; drawLatest(m.latest || []); $('openMod').classList.toggle('hidden', !isAdmin); $('openMod').classList.toggle('has-new', !!m.reports); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
   else if (m.type === 'lobby') { rooms = m.rooms; drawStats(m.stats); drawLobby(); }
-  else if (m.type === 'error') { toast(m.text); if (!inRoom && local) { local.getTracks().forEach(t => t.stop()); local = null; } } // a refused join must not leave the camera on
+  else if (m.type === 'error') { clearTimeout(callWait); toast(m.text); if (!inRoom && local) { local.getTracks().forEach(t => t.stop()); local = null; } } // a refused join must not leave the camera on
   else if (m.type === 'joined') onJoined(m);
   else if (m.type === 'peer-joined') { addTile(m.id, m.name, null, false, m); updateCount(); sfx.join(); notify(m.name + ' joined the room'); }
   else if (m.type === 'peer-left') { if (people[m.id]) notify(people[m.id].name + ' left the room'); dropPeer(m.id); sfx.leave(); }
@@ -853,7 +857,7 @@ function handle(m) {
   else if (m.type === 'maze-caught') { if (mzRound) { mzRound.caught = m.caught; mzApply(); if (mazeOpen) notify(m.name + ' was caught'); } }
   else if (m.type === 'maze-gone') { if (mzMates[m.id] && Z) { Z.scene.remove(mzMates[m.id].g); delete mzMates[m.id]; } }
   else if (m.type === 'maze-open') { if (!mazeOpen) invite(m.name + ' went into the horror maze', () => setMaze(true)); }
-  else if (m.type === 'call-room') { if (inRoom) { send({ type: 'leave' }); exitRoom(); } closeFr(); joinRoom(m.room); toast('Calling… they come in when they accept'); } // the private call you just started
+  else if (m.type === 'call-room') { clearTimeout(callWait); if (inRoom) { send({ type: 'leave' }); exitRoom(); } closeFr(); joinRoom(m.room); toast('Calling… they come in when they accept'); } // the private call you just started
   else if (m.type === 'call-invite') onCallInvite(m);
   else if (m.type === 'hang-pos') onHangPos(m);
   else if (m.type === 'hang-gone') { if (mates[m.id] && H) { H.scene.remove(mates[m.id].g); delete mates[m.id]; } }
@@ -867,7 +871,7 @@ function handle(m) {
   else if (m.type === 'shoot-score') { shScore = m.score; shMsg = m.text; shMsgAt = Date.now(); if (m.over) shLive = false; }
   else if (m.type === 'shoot-start') onShootStart(m);
   else if (m.type === 'mod-list') drawMod(m);
-  else if (m.type === 'note') toast(m.text);
+  else if (m.type === 'note') { clearTimeout(callWait); toast(m.text); }
   else if (m.type === 'report-new') { $('openMod').classList.add('has-new'); notify('New report about @' + m.u, () => { if (!inRoom) $('openMod').click(); }); }
   else if (m.type === 'state') setState(m.id, m);
   else if (m.type === 'avatar') { if (people[m.id]) upsert(m.id, { avatar: safeAv(m.data) }); }
@@ -2322,15 +2326,17 @@ function hangSay(name, text) { // a chat message from someone in the park floats
   if (g.userData.bubble) g.remove(g.userData.bubble); const b = hangLabel(text.length > 34 ? text.slice(0, 33) + '…' : text, true); b.position.y = 3.35; g.add(b); g.userData.bubble = b;
   setTimeout(() => { if (g.userData.bubble === b) { g.remove(b); g.userData.bubble = null; } }, 5000);
 }
-function hangSwing(t) { // swing the sword: anyone in the arena within reach and in front of you is hit
+function hangSwing(t) { // swing the sword: everyone in the arena within reach is hit, and you turn to face the nearest of them
   if (!H || !inArena(H.me.position) || t - H.swingAt < 500) return;
+  const p = H.me.position, near = Object.keys(mates).map(id => ({ id: +id, o: mates[id], d: Math.hypot(mates[id].x - p.x, mates[id].z - p.z) })).filter(x => inArena(x.o) && x.d < 3).sort((a, b) => a.d - b.d);
   H.swingAt = t; if (sfxOn) try { hiss(.12, .12, 0, 2500); } catch {}
-  for (const id in mates) { const o = mates[id], p = H.me.position, dx = o.x - p.x, dz = o.z - p.z; if (inArena(o) && Math.hypot(dx, dz) < 2.7 && Math.abs(Math.atan2(Math.sin(Math.atan2(dx, dz) - H.me.rotation.y), Math.cos(Math.atan2(dx, dz) - H.me.rotation.y))) < 1.1) send({ type: 'hang', act: 'hit', to: +id }); }
+  if (near.length) { H.face = Math.atan2(near[0].o.x - p.x, near[0].o.z - p.z); tone(1000, .06, 'square', .05); } // a click of steel when the swing connects
+  near.forEach(x => send({ type: 'hang', act: 'hit', to: x.id })); // the server passes it on, and their own browser knocks them back
 }
 function onHangHit(m) { // someone's sword reached you: lose a heart and get knocked back; at no hearts you are thrown out of the arena
   if (!H || !hangOpen || !inArena(H.me.position)) return;
   const p = H.me.position, o = mates[m.by], dx = o ? p.x - o.x : 1, dz = o ? p.z - o.z : 0, d = Math.hypot(dx, dz) || 1;
-  H.hp--; H.kx = dx / d * 9; H.kz = dz / d * 9; H.vy = 4.5; tone(180, .12, 'sawtooth', .08, .5);
+  H.hp--; H.kx = dx / d * 14; H.kz = dz / d * 14; H.vy = 5.5; tone(180, .12, 'sawtooth', .08, .5);
   if (H.hp <= 0) { send({ type: 'hang', act: 'ko', by: m.by }); p.set(ARENA.x + ARENA.r + 2.5, 0, ARENA.z); H.kx = H.kz = 0; H.hp = 3; toast('You were knocked out of the arena'); }
 }
 function hangLoop(t) {
@@ -2411,7 +2417,7 @@ $('hangX').onclick = () => setHang(false);
 /* ---------- horror maze: its own game. First person, dark, one flashlight each. Find the 5 keys and reach the door before the thing in the maze reaches you ---------- */
 // The server keeps the round (the maze's seed, keys found, who was caught). One player's browser, the "host", moves the monster and the server passes that on to the rest.
 const mzEl = $('maze'), mcv = $('mcv'), mmap = $('mmap'), mmg = mmap.getContext('2d'), MT = 2, MN = 21, MKEYS = 5; // MT: metres per tile; MN: tiles along each side
-let Z = null, mzGrid = [], mzKeys = [], mzExit = null, mzRound = null, mzMates = {}, mzLast = 0, mzSent = 0, mzDrone = null, mzDrag = null;
+let Z = null, mzGrid = [], mzKeys = [], mzExit = null, mzRound = null, mzMates = {}, mzLast = 0, mzSent = 0, mzDrone = null, mzDrag = null, mzWait = 0;
 const mzTile = v => Math.floor(v / MT), mzMid = c => (c + .5) * MT;
 const mzWall = (x, z) => { const c = mzTile(x), r = mzTile(z); return c < 0 || r < 0 || c >= MN || r >= MN || mzGrid[r][c] === 1; };
 const mzFree = (x, z, rad) => !mzWall(x - rad, z - rad) && !mzWall(x + rad, z - rad) && !mzWall(x - rad, z + rad) && !mzWall(x + rad, z + rad);
@@ -2446,8 +2452,8 @@ function mzThing() { // the monster: far too tall, far too thin, and its eyes do
 }
 function mzInit() { // build the scene for the round in mzRound
   const T = THREE, old = Z, ren = old ? old.ren : new T.WebGLRenderer({ canvas: mcv, antialias: false, powerPreference: 'high-performance' }), scene = new T.Scene(), cam = new T.PerspectiveCamera(74, 16 / 9, .05, 60);
-  mzBuild(mzRound.seed); ren.setPixelRatio(1); scene.background = new T.Color(0); scene.fog = new T.Fog(0, 1, 15);
-  scene.add(new T.AmbientLight(0x2a3040, .7));
+  mzBuild(mzRound.seed); ren.setPixelRatio(1); scene.background = new T.Color(0); scene.fog = new T.Fog(0, 1, 16.5);
+  scene.add(new T.AmbientLight(0x2a3040, .95));
   const stone = new T.MeshPhongMaterial({ color: 0x4a4f5a, shininess: 4 }), size = MN * MT, flat = (col, y, rot) => { const m = new T.Mesh(new T.PlaneGeometry(size, size), new T.MeshPhongMaterial({ color: col, shininess: 2 })); m.rotation.x = rot; m.position.set(size / 2, y, size / 2); scene.add(m); };
   flat(0x23262c, 0, -Math.PI / 2); flat(0x101114, 3.2, Math.PI / 2); // floor and a low ceiling
   const blocks = []; for (let r = 0; r < MN; r++) for (let c = 0; c < MN; c++) if (mzGrid[r][c]) blocks.push([c, r]);
@@ -2457,7 +2463,7 @@ function mzInit() { // build the scene for the round in mzRound
   const door = new T.Mesh(new T.BoxGeometry(MT * .8, 2.8, .25), new T.MeshBasicMaterial({ color: 0x7a1010 })); door.position.set(mzExit.x, 1.4, mzExit.z + MT * .4); scene.add(door);
   const thing = mzThing(); scene.add(thing);
   for (const id in mzMates) delete mzMates[id];
-  Z = { scene, cam, ren, lamp, keys, door, thing, x: mzMid(1), z: mzMid(1), yaw: Math.PI * 1.25, pitch: 0, stam: 1, bob: 0, dead: false, w: 0, h: 0, wake: performance.now() + (mzRound.grace || 0),
+  Z = { scene, cam, ren, lamp, keys, door, thing, x: mzMid(1), z: mzMid(1), yaw: mzWall(mzMid(2), mzMid(1)) ? Math.PI : -Math.PI / 2, pitch: 0, stam: 1, bob: 0, dead: false, w: 0, h: 0, wake: performance.now() + (mzRound.grace || 0),
     mon: { x: mzMid(MN >> 1 | 1), z: mzMid(MN >> 1 | 1), r: 0, tx: 0, tz: 0, plan: 0, next: null, see: false, seen: false }, beat: 0, fps: 60, n: 0, acc: 0, live: !!(old && old.live) }; // live: the drawing loop is already running
   Z.mon.tx = Z.mon.x; Z.mon.tz = Z.mon.z; mzApply();
 }
@@ -2559,6 +2565,8 @@ function setMaze(open) {
   mazeOpen = open; keysOff();
   if (open) {
     setBoard(false); setShoot(false); setHang(false); $('joinBar').classList.add('hidden'); $('stage').appendChild(mzEl); mzEl.classList.remove('hidden'); layout();
+    $('mzHud').textContent = 'Opening the maze…'; mmg.clearRect(0, 0, mmap.width, mmap.height); clearTimeout(mzWait);
+    mzWait = setTimeout(() => { if (mazeOpen && !mzRound) $('mzHud').textContent = 'The maze could not start: the server did not answer.' + (isAdmin ? ' server.js on GitHub is probably older than this page.' : ' Tell a moderator.'); }, 6000); // without this a silent server just leaves a black screen
     loadThree().then(() => { if (!mazeOpen) return; mzRound = null; mzHum(true); send({ type: 'maze', act: 'open', on: true }); }, // the server answers with the round, and that builds the maze
       () => { toast('The maze could not load. Check your connection and try again'); setMaze(false); });
   } else { mzEl.classList.add('hidden'); mzHum(false); if (document.pointerLockElement === mcv) document.exitPointerLock(); send({ type: 'maze', act: 'open', on: false }); layout(); }
@@ -2644,7 +2652,11 @@ $('dmFile').onchange = async e => { // the image is shrunk and checked by the se
   const file = e.target.files[0], to = dmOpen; e.target.value = ''; if (!file || !to) return;
   const id = await uploadImage(file); if (id) send({ type: 'dm', to, pic: id });
 };
-const callFriend = code => send({ type: 'call', to: code }); // the server makes a private call and rings them; from inside a private call it brings them into it
+let callWait = 0;
+function callFriend(code) { // the server makes a private call and rings them; from inside a private call it brings them into it
+  send({ type: 'call', to: code }); toast('Calling ' + nameOf(code) + '…'); clearTimeout(callWait);
+  callWait = setTimeout(() => toast('The call could not be started: the server did not answer.' + (isAdmin ? ' server.js on GitHub is probably older than this page.' : '')), 5000);
+}
 $('frCall').onclick = () => { if (dmOpen) callFriend(dmOpen); };
 let callFrom = null, ringTimer = 0;
 function endRing() { clearInterval(ringTimer); $('callBar').classList.add('hidden'); callFrom = null; }
