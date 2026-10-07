@@ -433,6 +433,7 @@ button:active:not(:disabled){transform:scale(.95)}
     <label for="u">Username</label><input id="u" maxlength="17" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="letters, numbers or _" required>
     <div id="dnRow" class="hidden" style="display:grid;gap:12px"><label for="dn">Display name</label><input id="dn" maxlength="20" autocomplete="nickname" placeholder="What people see. You can change it later"></div>
     <label for="pw">Password</label><input id="pw" type="password" minlength="6" maxlength="100" autocomplete="current-password" required>
+    <p class="sub hidden" id="authState" role="status"></p>
     <button class="solid" id="authGo">Log in</button>
     <button type="button" class="ghost" id="authSwap">Create an account</button>
   </form>
@@ -694,6 +695,8 @@ const dev = (() => { // a random id for this browser, so a moderator's block can
   return k;
 })();
 const avUrl = (code, v) => (v ? '/av/' + code + '?v=' + v : ''); // where someone's saved profile picture lives; v is 0 when they have none
+let pendingAuth = null; // a login typed in before the server answered; sent as soon as it does
+const authNote = text => { $('authState').textContent = text; $('authState').classList.toggle('hidden', !text); };
 function setAuthMode(mode) {
   authMode = mode; const reg = mode === 'register';
   $('dnRow').classList.toggle('hidden', !reg); $('authGo').textContent = reg ? 'Create account' : 'Log in'; $('authSwap').textContent = reg ? 'I already have an account' : 'Create an account';
@@ -703,18 +706,26 @@ function setAuthMode(mode) {
 $('authSwap').onclick = () => setAuthMode(authMode === 'login' ? 'register' : 'login');
 $('authForm').onsubmit = e => {
   e.preventDefault();
-  if (!ws || ws.readyState !== 1) return toast('Still connecting. Try again in a moment');
-  send({ type: authMode, user: $('u').value, pass: $('pw').value, display: $('dn').value, dev });
+  pendingAuth = { type: authMode, user: $('u').value, pass: $('pw').value, display: $('dn').value, dev }; $('authGo').disabled = true;
+  if (ws && ws.readyState === 1) { authNote('Checking…'); send(pendingAuth); pendingAuth = null; } // not connected yet: it is sent the moment the connection opens
+  else authNote('Waking the server up. This can take up to a minute, then you are logged in automatically.');
 };
 $('logout').onclick = () => { send({ type: 'logout', token }); token = ''; localStorage.removeItem('token'); exitRoom(); show('auth'); ws.close(4001); };
 
+let wakeTimer = 0;
 function connect() {
   ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/');
-  ws.onopen = () => { if (token) send({ type: 'auth', token, dev }); else show('auth'); };
+  ws.onopen = () => {
+    clearTimeout(wakeTimer); $('toast') && $('toast').remove();
+    if (pendingAuth) { authNote('Checking…'); send(pendingAuth); pendingAuth = null; }
+    else if (token) send({ type: 'auth', token, dev });
+    else { authNote(''); show('auth'); }
+  };
+  clearTimeout(wakeTimer); wakeTimer = setTimeout(() => { if (ws.readyState !== 1 && !inRoom) toast('Waking the server up. This can take up to a minute…'); }, 2500);
   ws.onmessage = e => handle(JSON.parse(e.data));
   ws.onclose = e => { // 4001: we closed it on purpose (log out, or a profile change that needs a fresh connection)
     if (inRoom) exitRoom();
-    if (e.code !== 4001) toast('Connection lost. Reconnecting…');
+    if (e.code !== 4001 && acct) toast('Connection lost. Reconnecting…'); // before the first login the wake-up message covers this
     setTimeout(connect, e.code === 4001 ? 150 : 2000);
   };
 }
@@ -722,7 +733,7 @@ function drawMe() { $('me').textContent = acct.display + ' @' + acct.code; }
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); picBase = m.picBase || ''; $('postPic').classList.toggle('hidden', !picBase); $('postCam').classList.toggle('hidden', !picBase); $('openMod').classList.toggle('hidden', !isAdmin); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; $('authGo').disabled = false; authNote(''); if (isAdmin && !m.saved) setTimeout(() => notify('Warning: accounts are NOT being saved. Supabase is not connected, so everything resets on the next update. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Render.'), 1500); $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); picBase = m.picBase || ''; $('postPic').classList.toggle('hidden', !picBase); $('postCam').classList.toggle('hidden', !picBase); $('openMod').classList.toggle('hidden', !isAdmin); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
   else if (m.type === 'lobby') { rooms = m.rooms; drawStats(m.stats); drawLobby(); }
   else if (m.type === 'error') { toast(m.text); if (!inRoom && local) { local.getTracks().forEach(t => t.stop()); local = null; } } // a refused join must not leave the camera on
   else if (m.type === 'joined') onJoined(m);
@@ -747,7 +758,7 @@ function handle(m) {
   else if (m.type === 'typing') setTyper(m.id, m.name, m.on);
   else if (m.type === 'topic') { if (document.activeElement !== $('topicIn')) $('topicIn').value = m.text; }
   else if (m.type === 'signal') onSignal(m.from, m.data);
-  else if (m.type === 'auth-fail') { if (m.expired) { token = ''; localStorage.removeItem('token'); } if (m.text) toast(m.text); if (inRoom) exitRoom(); show('auth'); }
+  else if (m.type === 'auth-fail') { if (m.expired) { token = ''; localStorage.removeItem('token'); } $('authGo').disabled = false; authNote(m.text || (m.expired ? 'Please log in again.' : '')); if (m.text) toast(m.text); if (inRoom) exitRoom(); show('auth'); }
   else if (m.type === 'me') { acct = m.me; drawMe(); if (m.saved) { toast(m.mod ? 'A moderator changed your profile' : 'Profile saved'); ws.close(4001); } } // reconnect so the new name is used everywhere
   else if (m.type === 'friends') onFriends(m);
   else if (m.type === 'profile') drawProfile(m);
