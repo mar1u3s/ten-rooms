@@ -406,6 +406,15 @@ button:active:not(:disabled){transform:scale(.95)}
 .tabs2 .has-new::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc);margin-left:8px}
 #hang .bwrap{padding:8px}
 #hcv{width:100%;height:100%;display:block;border-radius:12px;touch-action:none;cursor:grab}
+/* the board, race, shooter and hangout always fit the part of the stage you can see (before, a short screen cut the bottom off, which left the race looking blank) */
+.stage.boardopen{grid-template-rows:repeat(5,minmax(0,1fr))}
+.boardmod .bsz{flex:1 1 220px;min-width:0}
+@media(max-height:860px),(max-width:1100px){.boardmod .bh{padding:6px 12px;gap:8px}.boardmod .bsz{display:none}} /* small screens: drop the hint line so the game gets the room */
+#hang .bwrap{position:relative}
+.hud{position:absolute;left:18px;top:16px;font-size:.78rem;color:#fff;background:rgb(0 0 0/.5);padding:3px 10px;border-radius:999px;pointer-events:none}
+#modReports{display:grid;gap:8px}
+#modReports .frow{flex-wrap:wrap}
+#modReports .frn b{white-space:normal;overflow-wrap:anywhere}
 /* themes */
 #settings .panel{max-height:100%;overflow:auto}
 .themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -596,6 +605,8 @@ button:active:not(:disabled){transform:scale(.95)}
     <h2>Moderation</h2>
     <p class="sub" id="modInfo"></p>
     <form id="modFind"><input id="modUser" maxlength="17" placeholder="Open a profile by @username" aria-label="Username" autocomplete="off"><button class="solid">Open</button></form>
+    <p class="sub">Reports from users</p>
+    <div id="modReports"></div>
     <p class="sub">Blocked accounts</p>
     <div id="modList"></div>
     <p class="sub">Messages the filter blocked (newest first)</p>
@@ -654,11 +665,11 @@ button:active:not(:disabled){transform:scale(.95)}
 <div id="hang" class="boardmod mod hidden" role="region" aria-label="3D hangout">
   <div class="bh">
     <h3>3D hangout</h3>
-    <span class="bsz">WASD to walk, Space to jump, drag to look around, scroll to zoom, E to dance. Room chat shows over your head</span>
+    <span class="bsz">WASD to walk, Space to jump, drag to look, scroll to zoom, E to dance, R to go to the parkour start</span>
     <span style="flex:1"></span>
     <button type="button" class="ghost" id="hangX">Close</button>
   </div>
-  <div class="bwrap"><canvas id="hcv"></canvas></div>
+  <div class="bwrap"><canvas id="hcv"></canvas><div id="hangHud" class="hud"></div></div>
 </div>
 
 <div id="pollDlg" class="hidden">
@@ -709,6 +720,7 @@ let ws, ICE = [], myName = '', myId = 0, roomMax = 6, rooms = [], local = null, 
   addEventListener('pointerdown', e => { if (fxOn && rings.length < 6) rings.push({ x: e.clientX, y: e.clientY, r: 6 }); }); // every click sends out a ring
   size();
   (function tick() {
+    if (raceOpen || shootOpen || hangOpen) return void requestAnimationFrame(tick); // paused while a game is on screen: the game gets the frame time
     cx.clearRect(0, 0, W, H);
     if (fxOn) { // the loud part: drifting glows in the theme colours, shooting stars and click rings
       time += .004 * speed;
@@ -794,7 +806,7 @@ function drawMe() { $('me').textContent = acct.display + ' @' + acct.code; }
 const send = m => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
 
 function handle(m) {
-  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; $('authGo').disabled = false; authNote(''); if (isAdmin && !m.saved) setTimeout(() => notify('Warning: accounts are NOT being saved. Supabase is not connected, so everything resets on the next update. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Render.'), 1500); $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); picBase = m.picBase || ''; picWhy = !m.pics ? 'OPENAI_API_KEY is not set in Render' : !m.saved ? 'Supabase is not connected in Render' : ''; drawLatest(m.latest || []); $('openMod').classList.toggle('hidden', !isAdmin); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
+  if (m.type === 'hello') { myId = m.id; myName = m.name; ICE = m.ice; rooms = m.rooms; $('imgBtn').classList.toggle('hidden', !m.gifs); if (m.token) { token = m.token; localStorage.setItem('token', token); } acct = m.me; myCode = acct.code; isAdmin = !!m.admin; $('authGo').disabled = false; authNote(''); if (isAdmin && !m.saved) setTimeout(() => notify('Warning: accounts are NOT being saved. Supabase is not connected, so everything resets on the next update. Set SUPABASE_URL and SUPABASE_SECRET_KEY in Render.'), 1500); $('pw').value = ''; $('picBtn').classList.toggle('hidden', !m.pics); picBase = m.picBase || ''; picWhy = !m.pics ? 'OPENAI_API_KEY is not set in Render' : !m.saved ? 'Supabase is not connected in Render' : ''; drawLatest(m.latest || []); $('openMod').classList.toggle('hidden', !isAdmin); $('openMod').classList.toggle('has-new', !!m.reports); if (acct.av) { myAvatar = acct.av; try { localStorage.setItem('avatar', myAvatar); } catch {} } loadDms(); drawMe(); drawGpoll(); drawStats(m.stats); drawLobby(); { const v = ['feed', 'prof'].find(x => !$(x).classList.contains('hidden')); if (!v) show('lobby'); else if (v === 'feed') send({ type: 'feed', on: true }); else openProfile(profUser); } startHints(); setAv($('meAv'), myName, myAvatar); if (myAvatar && !acct.av) send({ type: 'avatar', data: myAvatar }); } // a picture from before accounts gets saved to the account once
   else if (m.type === 'lobby') { rooms = m.rooms; drawStats(m.stats); drawLobby(); }
   else if (m.type === 'error') { toast(m.text); if (!inRoom && local) { local.getTracks().forEach(t => t.stop()); local = null; } } // a refused join must not leave the camera on
   else if (m.type === 'joined') onJoined(m);
@@ -817,6 +829,8 @@ function handle(m) {
   else if (m.type === 'shoot-score') { shScore = m.score; shMsg = m.text; shMsgAt = Date.now(); if (m.over) shLive = false; }
   else if (m.type === 'shoot-start') onShootStart(m);
   else if (m.type === 'mod-list') drawMod(m);
+  else if (m.type === 'note') toast(m.text);
+  else if (m.type === 'report-new') { $('openMod').classList.add('has-new'); notify('New report about @' + m.u, () => { if (!inRoom) $('openMod').click(); }); }
   else if (m.type === 'state') setState(m.id, m);
   else if (m.type === 'avatar') { if (people[m.id]) upsert(m.id, { avatar: safeAv(m.data) }); }
   else if (m.type === 'stroke') onStroke(m);
@@ -980,7 +994,8 @@ function toggle(btn, kind) {
       try { const st = await navigator.mediaDevices.getUserMedia(vid ? { video: constraints().video } : { audio: constraints().audio }); swapTrack(st.getTracks()[0]); }
       catch { return toast('Could not access that device'); }
       sfx.on();
-    } else { const v = !tr[0].enabled; tr.forEach(x => x.enabled = v); (v ? sfx.on : sfx.off)(); }
+    } else if (vid && tr[0].enabled) { dropVideo(); sfx.off(); } // camera off: let go of the camera itself so its light goes out; turning it on again asks for it afresh
+    else { const v = !tr[0].enabled; tr.forEach(x => x.enabled = v); (v ? sfx.on : sfx.off)(); }
     updateBtns(); pushState();
   };
 }
@@ -1204,7 +1219,7 @@ async function stopShare() {
   const ds = sharing; sharing = null; ds.getTracks().forEach(t => t.stop());
   if (screenAudio) { Object.values(peers).forEach(pc => pc.screenTx && pc.screenTx.sender.replaceTrack(null)); screenAudio = null; } $('share').textContent = 'Share screen';
   let cam = null;
-  if (hadCam) { try { cam = (await navigator.mediaDevices.getUserMedia({ video: prefs.cam ? { deviceId: { ideal: prefs.cam } } : true })).getVideoTracks()[0]; } catch {} }
+  if (hadCam && camWasOn) { try { cam = (await navigator.mediaDevices.getUserMedia({ video: prefs.cam ? { deviceId: { ideal: prefs.cam } } : true })).getVideoTracks()[0]; } catch {} }
   if (cam) { swapTrack(cam); cam.enabled = camWasOn; } else dropVideo();
   updateBtns(); pushState(); tune();
 }
@@ -1310,6 +1325,7 @@ function makeRow(id) {
     fb.onclick = () => addFriend(people[id].code, people[id].name); kb.onclick = () => send({ type: 'kick', id: +id });
     acts.append(fb, kb); r.querySelector('.pmeta').appendChild(acts);
     const tb = document.createElement('button'); tb.type = 'button'; tb.className = 'ghost'; tb.textContent = '🍅 Throw a tomato'; tb.dataset.sfx = 'none'; tb.onclick = () => send({ type: 'ability', id: 'a_tomato', to: +id }); acts.appendChild(tb);
+    const rb = document.createElement('button'); rb.type = 'button'; rb.className = 'ghost'; rb.textContent = 'Report'; rb.onclick = () => report('user', { user: people[id].code }); acts.appendChild(rb);
   }
   return r;
 }
@@ -1781,11 +1797,13 @@ function postEl(p) {
   like.setAttribute('aria-label', 'Like'); like.setAttribute('aria-pressed', !!p.liked); like.onclick = () => send({ type: 'post-like', id: p.id });
   const cnt = mk(btns, 'button', 'ghost', '💬 ' + p.comments.length); cnt.setAttribute('aria-label', 'Write a comment');
   if (isAdmin || p.code === myCode) mk(btns, 'button', 'ghost', 'Delete').onclick = () => { if (confirm('Delete this post?')) send({ type: 'post-del', id: p.id }); };
+  if (p.code !== myCode) mk(btns, 'button', 'ghost', 'Report').onclick = () => report('post', { pid: p.id });
   const cs = mk(d, 'div', 'pcoms'), shown = openCom.has(p.id) ? p.comments : p.comments.slice(-3); // openCom: posts where "show earlier comments" was pressed
   if (p.comments.length > shown.length) mk(cs, 'button', 'ghost pmore', 'Show ' + (p.comments.length - shown.length) + ' earlier ' + (p.comments.length - shown.length === 1 ? 'comment' : 'comments')).onclick = () => { openCom.add(p.id); d.replaceWith(postEl(p)); };
   shown.forEach(c => {
     const row = mk(cs, 'div', 'pcom'), cav = mk(row, 'span', 'pav cav clicky'); setAv(cav, c.name, avUrl(c.code, c.av)); cav.onclick = () => openProfile(c.code); mk(row, 'b', '', c.name); mk(row, 'small', '', '@' + c.code); mk(row, 'span', '', c.text);
     if (isAdmin || c.code === myCode || p.code === myCode) { const x = mk(row, 'button', '', '×'); x.setAttribute('aria-label', 'Delete comment'); x.onclick = () => send({ type: 'post-del', id: p.id, cid: c.id }); }
+    if (c.code !== myCode) { const fl = mk(row, 'button', '', '⚑'); fl.title = 'Report this comment'; fl.setAttribute('aria-label', 'Report this comment'); fl.onclick = () => report('comment', { pid: p.id, cid: c.id }); }
   });
   const form = mk(cs, 'form', 'pcform'), inp = mk(form, 'input'); inp.maxLength = 300; inp.placeholder = 'Write a comment'; inp.autocomplete = 'off'; inp.setAttribute('aria-label', 'Write a comment');
   mk(form, 'button', 'solid', 'Send').type = 'submit'; cnt.onclick = () => inp.focus();
@@ -1880,6 +1898,7 @@ function drawProfile(m) {
   if (!mine) {
     if (friends.some(f => f.code === u.code)) { btn('Message', () => { $('openFr').click(); openDm(u.code); }); btn('Remove friend', () => send({ type: 'friend-del', code: u.code })); }
     else btn('Add friend', () => addFriend(u.code)).className = 'solid';
+    btn('Report', () => report('user', { user: u.code }));
   }
   if (isAdmin && !mine) { // moderator tools
     btn('Reset display name', () => send({ type: 'mod', act: 'reset-name', user: u.code }));
@@ -2280,9 +2299,10 @@ scv.addEventListener('pointerdown', e => { scv.setPointerCapture(e.pointerId); a
 scv.addEventListener('wheel', e => { e.preventDefault(); const ks = Object.keys(GUNS); setGun(ks[(ks.indexOf(gun) + (e.deltaY > 0 ? 1 : ks.length - 1)) % ks.length]); }, { passive: false }); // the wheel swaps guns too
 $('shootGo').onclick = () => send({ type: 'shoot', act: 'start' }); // the server refuses if a match is still being played $('shootX').onclick = () => setShoot(false);
 
-/* ---------- 3D hangout: a small park everyone in the room can walk around in together. Drawn with three.js, which is only downloaded the first time someone opens it ---------- */
+/* ---------- 3D hangout: a small park, with a parkour course, that everyone in the room can walk around in together. Drawn with three.js, which is only downloaded the first time someone opens it ---------- */
 const hgEl = $('hang'), hcv = $('hcv'), hk = {}; // hk: which keys are down, by physical key
-let H = null, mates = {}, roomId = 0, hangLast = 0, hangSent = 0; // H: the scene, camera, renderer and your own figure
+let H = null, mates = {}, roomId = 0, hangLast = 0, hangSent = 0, hangCols = [], hangBoxes = []; // H: the scene, camera, renderer and your own figure
+// hangCols: round things you cannot walk through, as [x, z, radius, height]. hangBoxes: blocks you can stand on or bump into, as { x, z, hw, hd, top, bot }
 const loadThree = () => (window.THREE ? Promise.resolve() : new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); }));
 function hangLabel(text, bubble) { // a name tag or speech bubble: text drawn on a small canvas and shown as a sprite that always faces the camera
   const T = THREE, c = document.createElement('canvas'), g = c.getContext('2d'); c.width = 512; c.height = 96;
@@ -2303,27 +2323,59 @@ function hangPose(g, moving, dancing, dt) { // swing the limbs when walking, wav
   const u = g.userData; u.phase += dt * (moving ? 10 : 0); const sw = moving ? Math.sin(u.phase) * .7 : 0;
   u.legs[0].rotation.x = sw; u.legs[1].rotation.x = -sw; u.arms[0].rotation.x = dancing ? Math.PI + Math.sin(performance.now() / 90) * .5 : -sw; u.arms[1].rotation.x = dancing ? Math.PI - Math.sin(performance.now() / 90) * .5 : sw;
 }
-const hangFloor = (x, z) => (x > 9 && x < 15 && z > -12 && z < -8 ? .5 : 0); // the stage is the only raised ground
 function hangInit() {
-  const T = THREE, scene = new T.Scene(), cam = new T.PerspectiveCamera(60, 16 / 9, .1, 220), ren = new T.WebGLRenderer({ canvas: hcv, antialias: true }), rnd = seeded(roomId * 7919 + 13);
+  const T = THREE, scene = new T.Scene(), cam = new T.PerspectiveCamera(60, 16 / 9, .1, 160), ren = new T.WebGLRenderer({ canvas: hcv, antialias: true, powerPreference: 'high-performance' }), rnd = seeded(roomId * 7919 + 13);
   const mat = col => new T.MeshLambertMaterial({ color: col }), put = (geo, col, x, y, z, basic) => { const m = new T.Mesh(geo, basic ? new T.MeshBasicMaterial({ color: col }) : mat(col)); m.position.set(x, y, z); scene.add(m); return m; };
-  ren.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5)); scene.background = new T.Color(0x86c5ff); scene.fog = new T.Fog(0x86c5ff, 35, 110);
+  const pr = Math.min(window.devicePixelRatio || 1, 1.25); ren.setPixelRatio(pr); scene.background = new T.Color(0x86c5ff); scene.fog = new T.Fog(0x86c5ff, 35, 110);
+  hangCols = [[0, 0, .9, .9]]; hangBoxes = [{ x: 12, z: -10, hw: 3, hd: 2, top: .5, bot: 0 }]; // the campfire and the stage
   scene.add(new T.HemisphereLight(0xffffff, 0x4a6b3a, .95)); const sun = new T.DirectionalLight(0xfff2d0, .8); sun.position.set(20, 30, 10); scene.add(sun);
   put(new T.PlaneGeometry(240, 240), 0x5aa45a, 0, 0, 0).rotation.x = -Math.PI / 2; // grass
-  put(new T.CircleGeometry(7.5, 40), 0xcdb68c, 0, .02, 0).rotation.x = -Math.PI / 2; // sandy circle round the fire
-  put(new T.CircleGeometry(5.5, 32), 0x3f8fd6, -15, .03, 11).rotation.x = -Math.PI / 2; // pond
+  put(new T.CircleGeometry(7.5, 32), 0xcdb68c, 0, .02, 0).rotation.x = -Math.PI / 2; // sandy circle round the fire
+  put(new T.CircleGeometry(5.5, 24), 0x3f8fd6, -15, .03, 11).rotation.x = -Math.PI / 2; // pond
   put(new T.BoxGeometry(6, .5, 4), 0x9a6b3f, 12, .25, -10); // a low stage to stand on
-  for (let i = 0; i < 3; i++) { const log = put(new T.CylinderGeometry(.14, .14, 1.5, 8), 0x5c3b22, 0, .16, 0); log.rotation.z = Math.PI / 2; log.rotation.y = i * 1.05; } // campfire logs
-  const fire = put(new T.ConeGeometry(.5, 1.3, 8), 0xff8a2a, 0, .8, 0, true), glow = new T.PointLight(0xff9a3c, 1.3, 20); glow.position.set(0, 1.2, 0); scene.add(glow);
-  for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + .78, bench = put(new T.BoxGeometry(2.6, .45, .7), 0x8a5a33, Math.cos(a) * 4.6, .23, Math.sin(a) * 4.6); bench.rotation.y = -a + Math.PI / 2; } // benches round the fire
-  for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2, x = Math.cos(a) * 9.5, z = Math.sin(a) * 9.5; put(new T.CylinderGeometry(.08, .1, 3.2, 8), 0x2b2f3a, x, 1.6, z); put(new T.SphereGeometry(.28, 12, 10), 0xfff3b0, x, 3.3, z, true); } // lamp posts
-  for (let i = 0; i < 46; i++) { // trees and rocks, placed by the room's number so everyone in the room sees the same park
-    const a = rnd() * 6.283, d = 12 + rnd() * 44, x = Math.cos(a) * d, z = Math.sin(a) * d, s = .8 + rnd() * .9; if (Math.hypot(x + 15, z - 11) < 7 || (x > 7 && x < 17 && z > -14 && z < -6)) continue;
-    if (rnd() < .78) { put(new T.CylinderGeometry(.22 * s, .3 * s, 1.6 * s, 7), 0x6b4a2b, x, .8 * s, z); put(new T.ConeGeometry(1.5 * s, 2.6 * s, 8), rnd() < .5 ? 0x2f7d3b : 0x3c9447, x, 2.7 * s, z); put(new T.ConeGeometry(1.1 * s, 2 * s, 8), 0x3a8d45, x, 3.9 * s, z); }
-    else put(new T.IcosahedronGeometry(.7 * s, 0), 0x8b8f98, x, .35 * s, z);
+  for (let i = 0; i < 3; i++) { const log = put(new T.CylinderGeometry(.14, .14, 1.5, 6), 0x5c3b22, 0, .16, 0); log.rotation.z = Math.PI / 2; log.rotation.y = i * 1.05; } // campfire logs
+  for (let i = 0; i < 4; i++) { // benches round the fire
+    const a = i * Math.PI / 2 + .78, bx = Math.cos(a) * 4.6, bz = Math.sin(a) * 4.6; put(new T.BoxGeometry(2.6, .45, .7), 0x8a5a33, bx, .23, bz).rotation.y = -a + Math.PI / 2;
+    [-.9, 0, .9].forEach(k => hangCols.push([bx - Math.sin(a) * k, bz + Math.cos(a) * k, .5, .45]));
   }
-  const me = hangFigure(new T.Color(accHex), 'You'); me.position.set((rnd() - .5) * 6, 0, 5 + rnd() * 2); scene.add(me);
-  H = { scene, cam, ren, me, fire, glow, yaw: 0, pitch: .32, dist: 7.5, vy: 0, dance: 0, w: 0, h: 0 };
+  for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2, x = Math.cos(a) * 9.5, z = Math.sin(a) * 9.5; put(new T.CylinderGeometry(.08, .1, 3.2, 6), 0x2b2f3a, x, 1.6, z); put(new T.SphereGeometry(.28, 10, 8), 0xfff3b0, x, 3.3, z, true); hangCols.push([x, z, .2, 9]); } // lamp posts
+  // parkour course: floating platforms that climb away from the park. Step on the first to start the clock, reach the gold one to stop it
+  let cx = 22, cz = 8, top = .6, dir = .5; const plats = [];
+  for (let i = 0; i < 20; i++) {
+    const last = i === 19, hw = last ? 2 : i % 5 === 4 ? 1.5 : 1 + rnd() * .3, b = { x: cx, z: cz, hw, hd: hw, top, bot: top - .4 }; plats.push(b); hangBoxes.push(b);
+    put(new T.BoxGeometry(hw * 2, .4, hw * 2), last ? 0xffc93c : new T.Color().setHSL(.55 - i * .025, .7, .55), cx, top - .2, cz);
+    dir += (rnd() - .5) * 1.1; if (Math.hypot(cx - 36, cz - 24) > 15) dir = Math.atan2(24 - cz, 36 - cx) + (rnd() - .5) * .6; // turn back toward the middle of the course area
+    const step = hw + 1.3 + rnd() * 1.2 + 1.15; cx += Math.cos(dir) * step; cz += Math.sin(dir) * step; if (rnd() < .75) top += .25 + rnd() * .5; // gaps and rises a normal jump can make
+  }
+  const goal = plats[19]; put(new T.CylinderGeometry(.06, .06, 3, 6), 0xffffff, goal.x, goal.top + 1.5, goal.z); put(new T.BoxGeometry(1.1, .7, .05), 0xff3d6e, goal.x + .58, goal.top + 2.6, goal.z);
+  const sign = hangLabel('Parkour starts here'); sign.position.set(22, 2.6, 8); scene.add(sign);
+  const trees = [], rocks = []; // trees and rocks are placed by the room's number, so everyone in the room sees the same park
+  for (let i = 0; i < 60; i++) {
+    const a = rnd() * 6.283, d = 12 + rnd() * 44, x = Math.cos(a) * d, z = Math.sin(a) * d, s = .8 + rnd() * .9, tree = rnd() < .78;
+    if (Math.hypot(x + 15, z - 11) < 7 || (x > 7 && x < 17 && z > -14 && z < -6) || Math.hypot(x - 34, z - 22) < 21) continue; // not in the pond, on the stage or in the course
+    (tree ? trees : rocks).push({ x, z, s }); hangCols.push(tree ? [x, z, .4 * s, 9] : [x, z, .6 * s, .7 * s]);
+  }
+  const many = (geo, col, list, y) => { // one draw call for all trunks, one for all tree tops, and so on: this is what keeps the frame rate up
+    const im = new T.InstancedMesh(geo, mat(col), list.length), m4 = new T.Matrix4(), q = new T.Quaternion();
+    list.forEach((o, i) => im.setMatrixAt(i, m4.compose(new T.Vector3(o.x, y * o.s, o.z), q, new T.Vector3(o.s, o.s, o.s)))); scene.add(im);
+  };
+  many(new T.CylinderGeometry(.22, .3, 1.6, 6), 0x6b4a2b, trees, .8); many(new T.ConeGeometry(1.5, 2.6, 7), 0x2f7d3b, trees, 2.7); many(new T.ConeGeometry(1.1, 2, 7), 0x3c9447, trees, 3.9); many(new T.IcosahedronGeometry(.7, 0), 0x8b8f98, rocks, .35);
+  scene.traverse(o => { o.matrixAutoUpdate = false; o.updateMatrix(); }); // nothing above ever moves, so its position is worked out once
+  const fire = put(new T.ConeGeometry(.5, 1.3, 7), 0xff8a2a, 0, .8, 0, true), me = hangFigure(new T.Color(accHex), 'You'); me.position.set(4 + rnd() * 2, 0, 9 + rnd() * 2); scene.add(me);
+  H = { scene, cam, ren, me, fire, plats, yaw: 0, pitch: .32, dist: 7.5, vy: 0, dance: 0, w: 0, h: 0, pr, n: 0, acc: 0, fps: 60, on: -1, t0: 0 };
+}
+function hangCollide(p) { // push your figure back out of anything solid
+  for (const c of hangCols) { if (p.y > c[3]) continue; const dx = p.x - c[0], dz = p.z - c[1], d = Math.hypot(dx, dz), min = c[2] + .35; if (d < min && d > .0001) { p.x = c[0] + dx / d * min; p.z = c[1] + dz / d * min; } }
+  for (const b of hangBoxes) { // only the sides: standing on top is handled by hangFloor
+    if (p.y >= b.top - .35 || p.y + 1.7 <= b.bot) continue;
+    const ox = b.hw + .3 - Math.abs(p.x - b.x), oz = b.hd + .3 - Math.abs(p.z - b.z); if (ox <= 0 || oz <= 0) continue;
+    if (ox < oz) p.x += p.x > b.x ? ox : -ox; else p.z += p.z > b.z ? oz : -oz;
+  }
+}
+function hangFloor(p) { // how high the ground is under you: the top of the highest block you are over and not below
+  let f = 0; H.on = -1;
+  for (const b of hangBoxes) if (b.top > f && b.top <= p.y + .36 && Math.abs(p.x - b.x) < b.hw + .15 && Math.abs(p.z - b.z) < b.hd + .15) { f = b.top; H.on = H.plats.indexOf(b); }
+  return f;
 }
 function hangSay(name, text) { // a chat message from someone in the park floats over their head for a few seconds
   if (!H) return; const id = name === myName ? 'me' : Object.keys(mates).find(k => people[k] && people[k].name === name), g = id === 'me' ? H.me : id && mates[id].g; if (!g) return;
@@ -2333,25 +2385,36 @@ function hangSay(name, text) { // a chat message from someone in the park floats
 function hangLoop(t) {
   if (!hangOpen || !H) return;
   requestAnimationFrame(hangLoop);
-  const dt = Math.min(.05, (t - (hangLast || t)) / 1000), me = H.me, w = hcv.clientWidth, h = hcv.clientHeight; hangLast = t;
+  const dt = Math.min(.05, (t - (hangLast || t)) / 1000), me = H.me, p = me.position, w = hcv.clientWidth, h = hcv.clientHeight; hangLast = t;
   if (w && h && (w !== H.w || h !== H.h)) { H.w = w; H.h = h; H.ren.setSize(w, h, false); H.cam.aspect = w / h; H.cam.updateProjectionMatrix(); } // follow the panel's size
+  H.n++; H.acc += dt; if (H.n >= 90) { // every 90 frames: if it is running under 40 fps, draw at a lower resolution
+    H.fps = Math.round(H.n / H.acc); H.n = 0; H.acc = 0;
+    if (H.fps < 40 && H.pr > .55) { H.pr -= .25; H.ren.setPixelRatio(H.pr); H.w = 0; }
+  }
   const fwd = (hk.KeyW || hk.ArrowUp ? 1 : 0) - (hk.KeyS || hk.ArrowDown ? 1 : 0), side = (hk.KeyD || hk.ArrowRight ? 1 : 0) - (hk.KeyA || hk.ArrowLeft ? 1 : 0), moving = !!(fwd || side), dancing = t < H.dance;
   if (moving) { // W walks away from the camera, A and D step sideways
     const mx = -Math.sin(H.yaw) * fwd + Math.cos(H.yaw) * side, mz = -Math.cos(H.yaw) * fwd - Math.sin(H.yaw) * side, len = Math.hypot(mx, mz) || 1;
-    me.position.x = clamp2(me.position.x + mx / len * 5.5 * dt, -55, 55); me.position.z = clamp2(me.position.z + mz / len * 5.5 * dt, -55, 55); me.rotation.y = Math.atan2(mx, mz);
+    p.x = clamp2(p.x + mx / len * 5.5 * dt, -58, 58); p.z = clamp2(p.z + mz / len * 5.5 * dt, -58, 58); me.rotation.y = Math.atan2(mx, mz);
   } else if (dancing) me.rotation.y += dt * 7;
-  const floor = hangFloor(me.position.x, me.position.z);
-  if (hk.Space && me.position.y <= floor + .001) H.vy = 6.5;
-  H.vy -= 18 * dt; me.position.y += H.vy * dt; if (me.position.y <= floor) { me.position.y = floor; H.vy = 0; }
+  hangCollide(p);
+  let floor = hangFloor(p);
+  if (hk.Space && p.y <= floor + .001) H.vy = 6.5;
+  H.vy -= 18 * dt; p.y += H.vy * dt; floor = hangFloor(p); if (p.y <= floor) { p.y = floor; H.vy = 0; }
+  if (H.on === 0 && p.y === floor) H.t0 = t; // standing on the first platform: the clock starts when you leave it
+  else if (H.on === 19 && H.t0 && t - H.t0 > 0) { send({ type: 'hang', act: 'goal', ms: Math.round(t - H.t0) }); toast('Parkour finished in ' + ((t - H.t0) / 1000).toFixed(1) + 's!'); H.t0 = 0; }
+  if (hk.KeyR) { p.set(19.5, 0, 6.5); H.vy = 0; H.t0 = 0; } // R: back to the start of the course
   hangPose(me, moving, dancing, dt);
   for (const id in mates) { // everyone else glides toward the last spot they reported
     const o = mates[id], g = o.g; if (Date.now() - o.t > 4000 || !people[id]) { H.scene.remove(g); delete mates[id]; continue; }
     const far = Math.hypot(o.x - g.position.x, o.z - g.position.z); g.position.x += (o.x - g.position.x) * .2; g.position.y += (o.y - g.position.y) * .3; g.position.z += (o.z - g.position.z) * .2;
     if (o.e) g.rotation.y += dt * 7; else g.rotation.y = o.r; hangPose(g, far > .06, !!o.e, dt);
   }
-  H.fire.scale.y = 1 + Math.sin(t / 70) * .18; H.fire.rotation.y += dt * 3; H.glow.intensity = 1.2 + Math.sin(t / 50) * .25;
-  const cp = Math.cos(H.pitch) * H.dist; H.cam.position.set(me.position.x + Math.sin(H.yaw) * cp, me.position.y + 1.6 + Math.sin(H.pitch) * H.dist, me.position.z + Math.cos(H.yaw) * cp); H.cam.lookAt(me.position.x, me.position.y + 1.5, me.position.z);
-  if (t - hangSent > 100) { hangSent = t; send({ type: 'hang', act: 'pos', x: me.position.x, y: me.position.y, z: me.position.z, r: me.rotation.y, e: dancing ? 1 : 0 }); }
+  H.fire.scale.y = 1 + Math.sin(t / 70) * .18; H.fire.rotation.y += dt * 3;
+  const cp = Math.cos(H.pitch) * H.dist; H.cam.position.set(p.x + Math.sin(H.yaw) * cp, p.y + 1.6 + Math.sin(H.pitch) * H.dist, p.z + Math.cos(H.yaw) * cp); H.cam.lookAt(p.x, p.y + 1.5, p.z);
+  if (t - hangSent > 100) { // ten times a second: tell the others where you are, and refresh the little readout
+    hangSent = t; send({ type: 'hang', act: 'pos', x: p.x, y: p.y, z: p.z, r: me.rotation.y, e: dancing ? 1 : 0 });
+    $('hangHud').textContent = (H.t0 && H.on !== 0 ? 'Parkour ' + ((t - H.t0) / 1000).toFixed(1) + 's · ' : '') + H.fps + ' fps';
+  }
   H.ren.render(H.scene, H.cam);
 }
 function onHangPos(m) {
@@ -2379,12 +2442,29 @@ hcv.addEventListener('wheel', e => { e.preventDefault(); if (H) H.dist = clamp2(
 $('hangX').onclick = () => setHang(false);
 
 /* ---------- moderation panel (moderators only): blocked accounts, and a quick way to open any profile ---------- */
+function report(kind, what) { // a post, a comment or a person; it goes to the moderators' Moderation tab
+  const why = prompt('What is wrong? You can leave this empty.'); if (why === null) return;
+  send({ type: 'report', kind, why, ...what });
+}
 const closeMod = () => $('modDlg').classList.add('hidden');
 function drawMod(m) {
   const box = $('modList'); box.innerHTML = ''; $('modInfo').textContent = m.accounts + ' accounts exist. Open a profile to reset a name, clear a bio, block or delete. Posts and comments have their own Delete buttons.';
   if (!m.users.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'Nobody is blocked.'; box.appendChild(p); }
+  const rp = $('modReports'); rp.innerHTML = ''; // reports sent in by users, newest first
+  m.reports = m.reports || []; m.flags = m.flags || []; // an older server may not send these
+  if (!m.reports.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'No reports waiting.'; rp.appendChild(p); }
+  m.reports.forEach(x => {
+    const r = document.createElement('div'), act = (text, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = text; b.onclick = fn; r.appendChild(b); };
+    r.className = 'frow'; r.innerHTML = '<div class="frn"><b></b><small></small></div>';
+    r.querySelector('b').textContent = (x.kind === 'user' ? 'Reported person: @' + x.u : (x.kind === 'post' ? 'Post' : 'Comment') + ' by @' + x.u + ': ' + x.text) + (x.why ? ' (' + x.why + ')' : '');
+    r.querySelector('small').textContent = 'reported by @' + x.by + (x.where ? ' in ' + x.where : '') + ' · ' + when(x.t);
+    act('Profile', () => { closeMod(); openProfile(x.u); });
+    if (x.pid) act(x.cid ? 'Delete comment' : 'Delete post', () => { send({ type: 'post-del', id: x.pid, cid: x.cid || undefined }); send({ type: 'report-done', id: x.id }); setTimeout(() => send({ type: 'mod-list' }), 300); });
+    act('Dismiss', () => { send({ type: 'report-done', id: x.id }); setTimeout(() => send({ type: 'mod-list' }), 300); });
+    rp.appendChild(r);
+  });
   const fl = $('modFlags'); fl.innerHTML = ''; // what the text filter stopped, and who sent it; click one to open their profile
-  if (!m.flags.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = m.checking ? 'Nothing blocked yet.' : 'The filter is off: OPENAI_API_KEY is not set in Render.'; fl.appendChild(p); }
+  if (!m.flags.length) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = m.checking ? 'Nothing blocked yet. Filter level ' + m.level + ' of 3.' : 'The filter is off: OPENAI_API_KEY is not set in Render.'; fl.appendChild(p); }
   m.flags.forEach(x => {
     const r = document.createElement('div'); r.className = 'frow'; r.innerHTML = '<div class="frn"><b></b><small></small></div>';
     r.querySelector('b').textContent = x.text || '(text not kept)'; r.querySelector('small').textContent = '@' + x.u + ' · ' + x.where + ' · ' + x.why + ' · ' + when(x.t);
@@ -2397,7 +2477,7 @@ function drawMod(m) {
     b.onclick = () => { send({ type: 'mod', act: 'unblock', user: u.code }); setTimeout(() => send({ type: 'mod-list' }), 300); }; r.appendChild(b); box.appendChild(r);
   });
 }
-$('openMod').onclick = () => { $('modDlg').classList.remove('hidden'); send({ type: 'mod-list' }); };
+$('openMod').onclick = () => { $('openMod').classList.remove('has-new'); $('modDlg').classList.remove('hidden'); send({ type: 'mod-list' }); };
 $('modDone').onclick = closeMod; $('modDlg').onclick = e => { if (e.target === $('modDlg')) closeMod(); };
 $('modFind').onsubmit = e => { e.preventDefault(); const u = $('modUser').value.trim().toLowerCase().replace(/^@/, ''); if (u) { closeMod(); openProfile(u); } };
 
