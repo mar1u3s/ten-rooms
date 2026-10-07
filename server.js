@@ -59,6 +59,7 @@ function upload(req, res) { // POST /upload: the JPEG bytes, with the login toke
 
 const server = http.createServer((req, res) => {
   if (req.url === '/health') { res.writeHead(200); return res.end('ok'); }
+  if (req.url === '/status') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ storage: useSB ? 'supabase' : 'local file (lost on every deploy)', accounts: accounts.size })); }
   const av = /^\/av\/([a-z0-9_]{3,16})(\?|$)/.exec(req.url); // someone's profile picture; the ?v= number changes whenever they change it, so browsers can keep it forever
   if (av) {
     const a = accounts.get(av[1]), d = a && a.av; if (!d) { res.writeHead(404); return res.end('No picture'); }
@@ -96,7 +97,9 @@ const pushLobby = () => { const l = lobby(), st = stats(); wss.clients.forEach(c
 // Saved data. With SUPABASE_URL and SUPABASE_SECRET_KEY set (Render: Environment) it lives in Supabase and survives deploys and restarts:
 // the table app_state holds one JSON document (posts, global poll, visitor counts) and the table accounts holds one row per account.
 // Without them it falls back to local files, which Render wipes on every deploy.
-const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, ''), SB_KEY = process.env.SUPABASE_SECRET_KEY || '', useSB = !!(SB_URL && SB_KEY);
+const envVal = (...names) => { for (const k of names) { const v = String(process.env[k] || '').trim().replace(/^["']|["']$/g, ''); if (v) return v; } return ''; }; // the first of these settings that has a value
+const SB_URL = envVal('SUPABASE_URL').replace(/\/+$/, ''), SB_KEY = envVal('SUPABASE_SECRET_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY', 'SUPABASE_KEY'), useSB = !!(SB_URL && SB_KEY);
+if (!useSB) console.warn('WARNING: Supabase is not connected (' + (SB_URL ? 'SUPABASE_SECRET_KEY' : 'SUPABASE_URL') + ' is not set). Accounts and posts are kept in a local file and will be LOST on the next deploy or restart.');
 const DATA = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'tenrooms.json'), ACC = path.join(path.dirname(DATA), 'accounts.json');
 const ADMINS = new Set((process.env.ADMIN_USERS || 'diddydespacito').split(',').map(s => s.trim().toLowerCase().replace(/^@/, '')).filter(Boolean)); // usernames that can moderate: delete posts and accounts, reset names, run the global poll
 const store = { posts: [], gpoll: null, ever: [], today: [], day: '', seq: 0, blocked: { users: [], devices: [] } }; // blocked.devices: [{ id, user }]
@@ -250,7 +253,7 @@ function startSession(ws, a, fresh, dev) { // this socket is now logged in as ac
   if (dev && !a.devices.includes(dev)) { a.devices.push(dev); if (a.devices.length > 5) a.devices.shift(); saveAcct(a); } // remembered so a block can cover the device too
   if (!online.has(ws.code)) online.set(ws.code, new Set());
   online.get(ws.code).add(ws); seen(ws.code);
-  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY, pics: !!OPENAI, picBase: OPENAI && postPics ? PIC_BASE : '', stats: stats(), token, me: meView(a), admin: ADMINS.has(a.username) });
+  send(ws, { type: 'hello', id: ws.id, name: ws.name, rooms: lobby(), ice: ICE, gifs: !!KLIPY, pics: !!OPENAI, saved: useSB, picBase: OPENAI && postPics ? PIC_BASE : '', stats: stats(), token, me: meView(a), admin: ADMINS.has(a.username) });
   send(ws, { type: 'gpoll', poll: gpollView(ws) }); sendFriends(a.username); pushLobby();
 }
 async function auth(ws, m) { // the only messages a socket may send before it is logged in
@@ -279,9 +282,11 @@ async function auth(ws, m) { // the only messages a socket may send before it is
       const a = { username: user, display, bio: '', salt, hash, friends: [], sessions: [], devices: [], created: Date.now() };
       accounts.set(user, a); gone.delete(user); startSession(ws, a, true, dev);
     } else {
-      if (tooMany('log' + ws.ip, 10, 600000)) return fail('Too many tries. Wait a few minutes');
+      const key = 'log' + ws.ip, f = tries.get(key);
+      if (f && f.n >= 10 && Date.now() - f.t < 600000) return fail('Too many wrong tries. Wait a few minutes');
       const a = accounts.get(user), hash = await hashPass(pass, a ? a.salt : 'no-such-account');
-      if (!a || !crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(a.hash))) return fail('Wrong username or password');
+      if (!a || !crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(a.hash))) { tooMany(key, 10, 600000); return fail(a ? 'Wrong password' : 'There is no account called @' + user + '. Create it, or check the spelling'); }
+      tries.delete(key); // a correct login clears the count
       if (store.blocked.users.includes(user)) return fail('This account is blocked');
       startSession(ws, a, true, dev);
     }
